@@ -19,7 +19,14 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@01-app/*": ["./src/01-app/*"],
+      "@02-processes/*": ["./src/02-processes/*"],
+      "@03-pages/*": ["./src/03-pages/*"],
+      "@04-widgets/*": ["./src/04-widgets/*"],
+      "@05-features/*": ["./src/05-features/*"],
+      "@06-entities/*": ["./src/06-entities/*"],
+      "@07-shared/*": ["./src/07-shared/*"]
     }
   },
   "include": [

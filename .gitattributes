@@ -1,0 +1,6 @@
+# 모든 텍스트 파일의 줄바꿈을 LF로 강제
+* text=auto eol=lf
+
+# 특정 바이너리 파일(이미지 등)은 제외
+*.png binary
+*.jpg binary
