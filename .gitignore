@@ -43,3 +43,5 @@ yarn-error.log*
 /out/
 /build
 /dist
+*storybook.log
+storybook-static
