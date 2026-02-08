@@ -54,7 +54,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
         await authApi.signup({
           email: formData.email,
           password: formData.password,
+          passwordConfirm: formData.password,
           name: formData.name,
+          loginType: 'local',      // 백엔드 명세의 기본값
+          brainType: 'focused',    // 백엔드 명세의 기본값
+          membershipLevel: 'basic' // 백엔드 명세의 기본값
         });
         setIsLogin(true);
         setFormData({ ...formData, password: '' });
