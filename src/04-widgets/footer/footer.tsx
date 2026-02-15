@@ -28,14 +28,14 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
         <div className="grid md:grid-cols-4 gap-12 mb-20">
           <div className="col-span-2 space-y-8">
             <div
-              className="flex items-center gap-3 group cursor-pointer"
+              className="flex items-center gap-3 group"
               onClick={() => setCurrentPage('home')}
             >
               <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center border border-white/5">
                 <Activity className="text-indigo-500 w-6 h-6 drop-shadow-[0_0_5px_rgba(99,102,241,0.5)]" />
               </div>
               <span
-                className={`font-black text-2xl tracking-tighter uppercase transition-colors ${isDark ? 'text-white' : 'text-slate-900'}`}
+                className={`cursor-default font-black text-2xl tracking-tighter uppercase transition-colors ${isDark ? 'text-white' : 'text-slate-900'}`}
               >
                 뇌파 시그널
               </span>
@@ -63,7 +63,7 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
 
           <div className="space-y-6">
             <h4
-              className={`text-xs font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
+              className={`cursor-default text-xs font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
             >
               SITEMAP
             </h4>
@@ -74,7 +74,7 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
                 <li key={item.id}>
                   <button
                     onClick={() => setCurrentPage(item.id)}
-                    className="hover:text-indigo-500 transition-colors"
+                    className="cursor-pointer hover:text-indigo-500 transition-colors"
                   >
                     {item.name}
                   </button>
@@ -85,7 +85,7 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
 
           <div className="space-y-6">
             <h4
-              className={`text-xs font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
+              className={`cursor-default text-xs font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
             >
               Policy
             </h4>
