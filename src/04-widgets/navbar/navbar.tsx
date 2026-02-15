@@ -51,7 +51,12 @@ const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5 py-4">
+    //네브바 불투명하게 변경
+    <nav className={`fixed top-0 left-0 right-0 z-50 border-b py-4 transition-all duration-300 backdrop-blur-md ${
+      theme === 'dark' 
+        ? 'bg-slate-950/70 border-white/10' // 다크모드: 70% 불투명도 + 블러
+        : 'bg-white/70 border-slate-200/50' // 라이트모드: 70% 불투명도 + 블러
+    }`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <div
           className="flex items-center gap-4 cursor-pointer group"
@@ -76,7 +81,8 @@ const Navbar: React.FC<NavbarProps> = ({
             <button
               key={item.id}
               onClick={() => setCurrentPage(item.id)}
-              className={`text-sm font-bold transition-all hover:text-indigo-500 ${
+              //네브아이템 마우스 호버 시 손모양 화살표로 변경
+              className={`cursor-pointer text-sm font-bold transition-all hover:text-indigo-500 ${
                 currentPage === item.id
                   ? 'text-indigo-500'
                   : theme === 'dark'
@@ -91,7 +97,7 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-3 ml-2 pl-4 border-l border-white/10">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-white/5 transition-colors mr-1"
+              className="cursor-pointer p-2 rounded-full hover:bg-white/5 transition-colors mr-1"
             >
               {theme === 'dark' ? (
                 <Sun size={18} className="text-yellow-400" />
@@ -104,8 +110,12 @@ const Navbar: React.FC<NavbarProps> = ({
               {!isLoggedIn ? (
                 <button
                   onClick={openAuthModal}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-                >
+                  className={`cursor-pointer select-none flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+      theme === 'dark'
+        ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+        : 'bg-slate-100 border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+    }`}
+  >
                   <LogIn size={14} />
                   로그인
                 </button>
