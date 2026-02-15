@@ -122,7 +122,7 @@ const Navbar: React.FC<NavbarProps> = ({
               ) : (
                 <button
                   onClick={handleLogout} // 로그아웃 기능으로 변경
-                  className="group flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-white/5 border border-white/10 text-indigo-400 hover:text-rose-400 transition-all"
+                  className="cursor-pointer group flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-white/5 border border-white/10 text-indigo-400 hover:text-rose-400 transition-all"
                   title="로그아웃 하시겠습니까?"
                 >
                   <User size={14} className="group-hover:hidden" />
