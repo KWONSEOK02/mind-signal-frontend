@@ -10,8 +10,8 @@ export interface SignupRequest extends LoginRequest {
   name: string;
   passwordConfirm: string; // 추가
   loginType: string;      // 추가
-  brainType: string;      // 추가
-  membershipLevel: string; // 추가
+  brainType?: string;      // 추가
+  membershipLevel?: string; // 추가
 }
 
 export interface AuthResponse {
