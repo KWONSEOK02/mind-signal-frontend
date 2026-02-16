@@ -32,6 +32,13 @@ const Navbar: React.FC<NavbarProps> = ({
   userName, // 추가
   openAuthModal,
 }) => {
+
+  // 페이지 이동과 동시에 스크롤을 맨 위로 올리는 함수 추가
+  const handleNavClick = (pageId: PageType) => {
+    setCurrentPage(pageId);
+    window.scrollTo(0, 0); // 즉시 맨 위로 이동
+  };
+
   const navItems: { name: string; id: PageType }[] = [
     { name: '홈', id: 'home' },
     { name: '소개', id: 'intro' },
@@ -60,7 +67,7 @@ const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <div
           className="flex items-center gap-4 cursor-pointer group"
-          onClick={() => setCurrentPage('home')}
+          onClick={() => handleNavClick('home')}
         >
           <div className="w-12 h-12 bg-slate-900 rounded-[14px] flex items-center justify-center shadow-inner relative overflow-hidden border border-white/5">
             <div className="absolute inset-0 bg-indigo-500/5 blur-xl"></div>
@@ -77,11 +84,11 @@ const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         <div className="hidden md:flex items-center gap-6">
+          {/* 메뉴 아이템 클릭 부분 수정 */}
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setCurrentPage(item.id)}
-              //네브아이템 마우스 호버 시 손모양 화살표로 변경
+              onClick={() => handleNavClick(item.id)} // 함수 호출로 변경
               className={`cursor-pointer text-sm font-bold transition-all hover:text-indigo-500 ${
                 currentPage === item.id
                   ? 'text-indigo-500'
