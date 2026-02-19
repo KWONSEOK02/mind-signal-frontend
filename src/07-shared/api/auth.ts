@@ -21,17 +21,33 @@ export interface AuthResponse {
 }
 
 /**
- * 1.5-A: QR 페어링 관련 인터페이스 (Note A 반영)
+ * 페어링 세션의 구체적인 진행 상태 타입 정의함
+ */
+export type PairingSessionStatus =
+  | 'IDLE'
+  | 'PAIRED'
+  | 'EXPIRED'
+  | 'ERROR'
+  | 'CREATED';
+
+/**
+ * 백엔드 응답 규격에 맞춘 페어링 데이터 구조 정의함
  */
 export interface PairingResponse {
-  status: 'CREATED' | 'PAIRED' | 'EXPIRED' | 'ERROR';
-  code?: string; // 발급된 페어링 코드
-  expiresAt?: number; // 백엔드 Redis 기준 만료 타임스탬프
+  // 바깥쪽 status: API 호출 성공 여부임
+  status: 'success' | 'fail';
+  data: {
+    id: string;
+    pairingToken: string;
+    userId: string;
+    // 안쪽 status: 페어링 세션의 현재 단계임
+    status: PairingSessionStatus;
+    pairedAt: string | null;
+    expiresAt: string;
+    measuredAt: string | null;
+    sessionId?: string;
+  };
   message?: string;
-}
-
-export interface PairRequest {
-  code: string; // 클라이언트가 스캔한 코드
 }
 
 export const authApi = {
@@ -43,11 +59,11 @@ export const authApi = {
   //[Host] 새로운 페어링 세션을 생성하고 QR 코드를 발급받는다.
   createdPairing: () => api.post<PairingResponse>('/sessions'),
   /**
-   * [Client] 스캔한 코드를 전달하여 페어링을 요청한다.
-   * 백엔드에서 원자적 페어링(Atomic Pairing)을 검증한다.
+   * [Client] 휴대폰 승인 요청 (POST /api/sessions/:pairingToken/pair)
+   * 백엔드 라우트 /:pairingToken/pair 구조에 맞게 수정함
    */
-  verifyPairing: (data: PairRequest) =>
-    api.post<PairingResponse>('/sessions/pair', data),
+  verifyPairing: (pairingToken: string) =>
+    api.post<PairingResponse>(`/sessions/${pairingToken}/pair`),
   // 세션 상태를 실시간 외에 폴링이나 수동 확인이 필요할 경우 사용한다.
   checkSessionStatus: (sessionId: string) =>
     api.get<PairingResponse>(`/sessions/status/${sessionId}`),

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react'; // Suspense 추가
-import { useSearchParams, useRouter } from 'next/navigation'; // URL 관리를 위해 추가
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/04-widgets/navbar';
 import AuthModal from '@/05-features/auth/ui/auth-modal';
 import { authApi } from '@/07-shared/api/auth';
@@ -15,16 +15,15 @@ import Expand from '@/03-pages/expand/expand';
 import Footer from '@/04-widgets/footer/footer';
 import ChatAssistant from '@/05-features/chat-assistant/chat-assistant';
 
-// [수정 포인트 1] 실제 로직을 담은 내부 컴포넌트 분리
-// useSearchParams를 사용하는 모든 로직을 이곳으로 옮깁니다.
+/**
+ * [Main] 실제 로직을 담은 메인 콘텐츠 컴포넌트 정의함
+ */
 function MainContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 1. URL 파라미터에서 현재 페이지 값을 가져옵니다.
+  // AGENTS.md 5.1: 렌더링 중 파생 상태 계산함
   const pageFromUrl = searchParams?.get('page') as PageType;
-
-  // 2. 초기값 설정: URL에 값이 있으면 사용하고, 없으면 'home'을 기본값으로 합니다.
   const initialPage = pageFromUrl || 'home';
 
   const [currentPage, setCurrentPage] = useState<PageType>(initialPage);
@@ -32,9 +31,10 @@ function MainContent() {
   const [userName, setUserName] = useState<string>('');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [mounted, setMounted] = useState(false);
 
   /**
-   * 렌더링 중 상태 동기화를 통한 Cascading Render 방지 로직 사용함
+   * AGENTS.md 5.1: 렌더링 중 상태 동기화 수행함
    */
   if (pageFromUrl && pageFromUrl !== currentPage) {
     setCurrentPage(pageFromUrl);
@@ -43,28 +43,44 @@ function MainContent() {
   const toggleTheme = () =>
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
-  /**
-   * 페이지 전환 및 URL 동기화 함수 정의
-   */
   const handlePageChange = (page: PageType) => {
     setCurrentPage(page);
     router.push(`?page=${page}`, { scroll: false });
-    window.scrollTo(0, 0);
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
   };
 
   /**
-   * 초기 인증 상태 확인 및 사용자 정보 로드 수행
+   * 하이드레이션 보장 및 인증 정보 로드 수행함
    */
   useEffect(() => {
+    /**
+     * 린트 에러 해결: 지연 실행을 통해 Cascading Render 방지함
+     * requestAnimationFrame을 사용하여 브라우저가 첫 프레임을 그린 후 실행되도록 함
+     */
+    const frameId = requestAnimationFrame(() => {
+      setMounted(true);
+    });
+
     const initAuth = async () => {
+      if (typeof window === 'undefined') return;
+
       const token = localStorage.getItem('token');
       if (!token) return;
 
       try {
         const response = await authApi.getMe();
-        const { user } = response.data;
-        setUserName(user.name);
-        setIsLoggedIn(true);
+        /**
+         * 제공된 JSON 규격 반영함: data.data 가 아닌 data.user 구조임
+         * response.data.user.name을 참조하여 사용자 이름 설정함
+         */
+        if (response.data && response.data.status === 'success') {
+          // 중첩된 data 없이 user 필드가 바로 오는 구조로 파싱 수행함
+          const user = response.data.user;
+          if (user) {
+            setUserName(user.name || 'User');
+            setIsLoggedIn(true);
+          }
+        }
       } catch {
         localStorage.removeItem('token');
         setIsLoggedIn(false);
@@ -72,65 +88,75 @@ function MainContent() {
       }
     };
     initAuth();
-  }, [isLoggedIn]);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [isLoggedIn]); // mounted 의존성 제거하여 순환 호출 방지함
+
+  /**
+   * AGENTS.md 6.5: 마운트 전 서버 결과물(dark) 유지, 마운트 후 theme 반영함
+   */
+  const activeThemeClass = mounted ? theme : 'dark';
 
   return (
-    <div
-      className={`min-h-screen transition-colors duration-500 ${
-        theme === 'dark'
-          ? 'bg-slate-950 text-white'
-          : 'bg-slate-50 text-slate-900'
-      }`}
-    >
-      <div className="relative z-10">
-        <Navbar
-          currentPage={currentPage}
-          setCurrentPage={handlePageChange}
+    <div className={activeThemeClass}>
+      <div
+        className={`min-h-screen transition-colors duration-500 ${
+          activeThemeClass === 'dark'
+            ? 'bg-slate-950 text-white'
+            : 'bg-slate-50 text-slate-900'
+        }`}
+      >
+        <div className="relative z-10">
+          <Navbar
+            currentPage={currentPage}
+            setCurrentPage={handlePageChange}
+            theme={theme}
+            toggleTheme={toggleTheme}
+            isLoggedIn={isLoggedIn}
+            setIsLoggedIn={setIsLoggedIn}
+            userName={userName}
+            openAuthModal={() => setIsAuthModalOpen(true)}
+          />
+
+          <main className="min-h-screen pt-20">
+            {currentPage === 'home' && (
+              <Home setCurrentPage={handlePageChange} theme={theme} />
+            )}
+            {currentPage === 'intro' && <Intro theme={theme} />}
+
+            {currentPage === 'lab' && <LabPage />}
+
+            {currentPage === 'join' && <JoinPage />}
+            {currentPage === 'results' && (
+              <Results
+                theme={theme}
+                isLoggedIn={isLoggedIn}
+                setIsLoggedIn={setIsLoggedIn}
+                setCurrentPage={handlePageChange}
+                openAuthModal={() => setIsAuthModalOpen(true)}
+              />
+            )}
+            {currentPage === 'expand' && <Expand theme={theme} />}
+          </main>
+
+          <Footer theme={theme} setCurrentPage={handlePageChange} />
+          <ChatAssistant theme={theme} />
+        </div>
+
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onLoginSuccess={() => setIsLoggedIn(true)}
           theme={theme}
-          toggleTheme={toggleTheme}
-          isLoggedIn={isLoggedIn}
-          setIsLoggedIn={setIsLoggedIn}
-          userName={userName}
-          openAuthModal={() => setIsAuthModalOpen(true)}
         />
-
-        <main className="min-h-screen pt-20">
-          {currentPage === 'home' && (
-            <Home setCurrentPage={handlePageChange} theme={theme} />
-          )}
-          {currentPage === 'intro' && <Intro theme={theme} />}
-          {currentPage === 'lab' && <LabPage theme={theme} />}
-
-          {/* 모바일 참여 페이지를 루트 라우트에 통합함 */}
-          {currentPage === 'join' && <JoinPage />}
-          {currentPage === 'results' && (
-            <Results
-              theme={theme}
-              isLoggedIn={isLoggedIn}
-              setIsLoggedIn={setIsLoggedIn}
-              setCurrentPage={handlePageChange}
-              openAuthModal={() => setIsAuthModalOpen(true)}
-            />
-          )}
-          {currentPage === 'expand' && <Expand theme={theme} />}
-        </main>
-
-        <Footer theme={theme} setCurrentPage={handlePageChange} />
-        <ChatAssistant theme={theme} />
       </div>
-
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={() => setIsLoggedIn(true)}
-        theme={theme}
-      />
     </div>
   );
 }
 
-//Suspense 경계를 제공하는 애플리케이션 엔트리 포인트
-
+/**
+ * [Root] Suspense 경계를 제공하는 엔트리 포인트 정의함
+ */
 export default function MainPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>

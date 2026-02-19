@@ -1,38 +1,27 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { authApi, PairingResponse } from '@/07-shared/api/auth';
+import { authApi, PairingSessionStatus } from '@/07-shared/api/auth';
 import { config as appConfig } from '@07-shared/config/config';
 import { AxiosError } from 'axios';
 
 /**
- * 백엔드 공통 응답 규격 정의함
+ * UI 전용 로컬 상태와 백엔드 세션 상태를 결합함
  */
-interface BackendResponse<T> {
-  status: string;
-  data: T;
-  message?: string;
-}
-
-/**
- * 페어링 데이터 상세 타입 정의함
- */
-interface PairingData {
-  pairingToken: string;
-  expiresAt: string | number | Date;
-}
+export type PairingUIStatus = PairingSessionStatus | 'IDLE' | 'LOADING';
 
 /**
  * [Model] 기기 페어링 상태 및 타이머 관리 훅 정의함
  */
 export const usePairing = () => {
-  const [status, setStatus] = useState<
-    PairingResponse['status'] | 'IDLE' | 'LOADING'
-  >('IDLE');
+  const [status, setStatus] = useState<PairingUIStatus>('IDLE');
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(
     appConfig.session.pairingTimeout
   );
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  /**
+   * 실행 중인 타이머를 초기화하고 참조를 제거함
+   */
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -41,62 +30,58 @@ export const usePairing = () => {
   }, []);
 
   /**
-   * 백엔드 API 응답 파싱 및 타이머 구동 수행함
+   * 세션 생성 API 호출 및 데이터 파싱 수행함
    */
   const startPairing = useCallback(async () => {
     setStatus('LOADING');
     clearTimer();
     try {
       const response = await authApi.createdPairing();
-      // any 제거하고 BackendResponse 타입을 지정함
-      const res = response.data as BackendResponse<PairingData>;
+      const res = response.data;
 
+      // API 응답 성공 시 내부 상태 업데이트 수행함
       if (res.status === 'success' && res.data) {
-        const { pairingToken, expiresAt } = res.data;
+        setPairingCode(res.data.pairingToken);
+        setStatus('CREATED');
+        const expiryMs = new Date(res.data.expiresAt).getTime();
+        const initialDiff = Math.max(
+          0,
+          Math.floor((expiryMs - Date.now()) / 1000)
+        );
 
-        if (pairingToken && expiresAt) {
-          setPairingCode(pairingToken);
-          setStatus('CREATED');
-
-          const expiryMs = new Date(expiresAt).getTime();
-          const initialDiff = Math.max(
-            0,
-            Math.floor((expiryMs - Date.now()) / 1000)
-          );
-
-          setTimeLeft(initialDiff);
-          timerRef.current = setInterval(() => {
-            setTimeLeft((prev) => {
-              if (prev <= 1) {
-                clearTimer();
-                setStatus('EXPIRED');
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
-        }
+        setTimeLeft(initialDiff);
+        timerRef.current = setInterval(() => {
+          setTimeLeft((prev) => {
+            if (prev <= 1) {
+              clearTimer();
+              setStatus('EXPIRED');
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
       } else {
         setStatus('ERROR');
       }
     } catch (error) {
-      console.error('Failed to start pairing:', error);
+      console.error('Pairing 시작 실패함:', error);
       setStatus('ERROR');
     }
   }, [clearTimer]);
 
   /**
-   * 스캔된 코드를 통해 페어링 승인 여부 검증함
+   * 휴대폰에서 스캔한 코드로 승인 요청 및 최종 상태 확인 수행함
    */
   const requestPairing = useCallback(
     async (scannedCode: string) => {
       setStatus('LOADING');
       try {
-        const response = await authApi.verifyPairing({ code: scannedCode });
-        // any 제거하고 BackendResponse 타입을 지정함
-        const res = response.data as BackendResponse<null>;
+        // 동적 경로 파라미터 활용하여 API 호출함
+        const response = await authApi.verifyPairing(scannedCode);
+        const res = response.data;
 
-        if (res.status === 'success') {
+        // API 성공 여부와 세션의 PAIRED 상태를 동시 검증함
+        if (res.status === 'success' && res.data.status === 'PAIRED') {
           setStatus('PAIRED');
           clearTimer();
           return { success: true };
@@ -104,7 +89,7 @@ export const usePairing = () => {
         return { success: false, message: res.message };
       } catch (error) {
         const axiosError = error as AxiosError;
-        const errorStatus =
+        const errorStatus: PairingUIStatus =
           axiosError.response?.status === 410 ? 'EXPIRED' : 'ERROR';
         setStatus(errorStatus);
         return { success: false, errorStatus };
@@ -113,17 +98,14 @@ export const usePairing = () => {
     [clearTimer]
   );
 
+  /**
+   * 컴포넌트 언마운트 시 타이머 정리 수행함
+   */
   useEffect(() => {
     return () => clearTimer();
   }, [clearTimer]);
 
-  return {
-    status,
-    pairingCode,
-    timeLeft,
-    startPairing,
-    requestPairing,
-  };
+  return { status, pairingCode, timeLeft, startPairing, requestPairing };
 };
 
 export default usePairing;
