@@ -31,18 +31,28 @@ const QRScanner: React.FC<QRScannerProps> = ({
     // 1. 스캔 성공 시 결과 전달 로직 수행함
     if (result && typeof result.getText === 'function') {
       onScanSuccess(result.getText());
+      return;
     }
 
     // 2. 에러 발생 시 처리 로직 수행함
     if (err) {
       if (err instanceof Error) {
-        // 카메라 권한 미승인 등 특정 에러 분기 처리함
-        if (err.name === 'NotAllowedError') {
-          setError('카메라 접근 권한이 필요함');
+        // 단순 미검출 에러는 무시하여 스캔을 지속함
+        // 라이브러리 특성상 코드가 인식되지 않으면 매 프레임 해당 에러를 반환함
+        if (err.message.includes('No MultiFormat Readers')) {
+          return;
+        }
+
+        // 카메라 권한 미승인 등 실제 장애 상황만 에러로 처리함
+        if (err.name === 'NotAllowedError' || err.name === 'NotFoundError') {
+          setError('카메라 접근 권한이 필요하거나 장치를 찾을 수 없음');
         } else {
           setError(err.message);
         }
-      } else {
+      } else if (
+        typeof err === 'string' &&
+        !err.includes('No MultiFormat Readers')
+      ) {
         setError('알 수 없는 카메라 에러 발생함');
       }
     }

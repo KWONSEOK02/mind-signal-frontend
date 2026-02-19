@@ -8,7 +8,8 @@ import { authApi } from '@/07-shared/api/auth';
 import { PageType } from '@/07-shared/types';
 import Home from '@/03-pages/home/home';
 import Intro from '@/03-pages/intro/intro';
-import Lab from '@/03-pages/lab/lab';
+import { LabPage } from '@/03-pages/lab/lab';
+import { JoinPage } from '@/03-pages/lab/join';
 import Results from '@/03-pages/results/results';
 import Expand from '@/03-pages/expand/expand';
 import Footer from '@/04-widgets/footer/footer';
@@ -32,9 +33,9 @@ function MainContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
-  // [중요: 린트 에러 해결 포인트]
-  // 기존의 useEffect 대신, 렌더링 과정에서 URL 파라미터와 현재 상태가 다를 경우 직접 업데이트.
-  // 이는 'Cascading Renders' 에러를 방지하는 React의 권장 패턴
+  /**
+   * 렌더링 중 상태 동기화를 통한 Cascading Render 방지 로직 사용함
+   */
   if (pageFromUrl && pageFromUrl !== currentPage) {
     setCurrentPage(pageFromUrl);
   }
@@ -42,12 +43,18 @@ function MainContent() {
   const toggleTheme = () =>
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
+  /**
+   * 페이지 전환 및 URL 동기화 함수 정의
+   */
   const handlePageChange = (page: PageType) => {
     setCurrentPage(page);
     router.push(`?page=${page}`, { scroll: false });
     window.scrollTo(0, 0);
   };
 
+  /**
+   * 초기 인증 상태 확인 및 사용자 정보 로드 수행
+   */
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('token');
@@ -92,7 +99,10 @@ function MainContent() {
             <Home setCurrentPage={handlePageChange} theme={theme} />
           )}
           {currentPage === 'intro' && <Intro theme={theme} />}
-          {currentPage === 'lab' && <Lab theme={theme} />}
+          {currentPage === 'lab' && <LabPage theme={theme} />}
+
+          {/* 모바일 참여 페이지를 루트 라우트에 통합함 */}
+          {currentPage === 'join' && <JoinPage />}
           {currentPage === 'results' && (
             <Results
               theme={theme}
@@ -119,8 +129,8 @@ function MainContent() {
   );
 }
 
-// [수정 포인트 2] 빌드 에러를 해결하는 Entry Point
-// MainPage는 오직 Suspense Boundary만 관리하며 MainContent를 감싼다.
+//Suspense 경계를 제공하는 애플리케이션 엔트리 포인트
+
 export default function MainPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>

@@ -1,10 +1,9 @@
 import axios from 'axios';
-
-const BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mind-signal-backend-74ab2db9e087.herokuapp.com'}/api`;
+import { config as appConfig } from '@07-shared/config/config';
 
 // 1. 'export const api'로 변경하여 외부에서 { api }로 부를 수 있게 합니다.
 export const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: appConfig.api.baseUrl,
   headers: { 'Content-Type': 'application/json' },
 });
 

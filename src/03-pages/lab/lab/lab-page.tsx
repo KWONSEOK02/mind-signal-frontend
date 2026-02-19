@@ -33,9 +33,9 @@ interface BrainRawData {
 }
 
 /**
- * 실험실(Lab) 페이지 컴포넌트
+ * [Host] 실험실(Lab) 페이지 컴포넌트 정의함
  */
-const Lab: React.FC<LabProps> = ({ theme }) => {
+const LabPage: React.FC<LabProps> = ({ theme }) => {
   const { status, pairingCode, timeLeft, startPairing, requestPairing } =
     usePairing();
 
@@ -66,7 +66,7 @@ const Lab: React.FC<LabProps> = ({ theme }) => {
   }, []);
 
   /**
-   * 페어링 완료 시 시뮬레이션 데이터 업데이트함
+   * 페어링 완료 시 시뮬레이션 데이터 업데이트 수행함
    * 린트 에러 방지를 위해 비동기 프레임(setTimeout)에서 실행하여 카스케이딩 렌더링 차단함
    */
   useEffect(() => {
@@ -145,8 +145,8 @@ const Lab: React.FC<LabProps> = ({ theme }) => {
             <p
               className={`text-lg leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
             >
-              뇌파 측정을 시작하려면 전용 기기와의 페어링이 필요합니다. <br />
-              QR 코드를 스캔하면 실험에 참여하실 수 있습니다.
+              뇌파 측정을 시작하려면 전용 기기와의 페어링이 필요함. <br />
+              QR 코드를 스캔하면 실험에 참여할 수 있음.
             </p>
           </div>
 
@@ -163,7 +163,10 @@ const Lab: React.FC<LabProps> = ({ theme }) => {
               </button>
             ) : status === 'CREATED' ? (
               <QRGenerator
-                value={pairingCode || ''}
+                /**
+                 * 쿼리 파라미터 기반의 참여 페이지 접속 경로 사용함
+                 */
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/?page=join&code=${pairingCode || ''}`}
                 timeLeft={timeLeft}
                 onRefresh={startPairing}
                 isDark={isDark}
@@ -178,7 +181,7 @@ const Lab: React.FC<LabProps> = ({ theme }) => {
               onClick={() => setShowScanner(true)}
               className="mt-8 text-sm opacity-50 hover:opacity-100 underline underline-offset-4"
             >
-              이미 기기를 가지고 계신가요? 스캔하기
+              이미 기기를 가지고 있음? 스캔하기
             </button>
           </div>
         </div>
@@ -330,4 +333,4 @@ const Lab: React.FC<LabProps> = ({ theme }) => {
   );
 };
 
-export default Lab;
+export default LabPage;

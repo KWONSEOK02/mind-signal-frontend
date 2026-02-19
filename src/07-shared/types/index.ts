@@ -1,4 +1,4 @@
-export type PageType = 'home' | 'intro' | 'lab' | 'results' | 'expand';
+export type PageType = 'home' | 'intro' | 'lab' | 'results' | 'expand' | 'join';
 
 export interface User {
   userId: string;
