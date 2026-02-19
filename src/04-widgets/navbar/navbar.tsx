@@ -32,7 +32,6 @@ const Navbar: React.FC<NavbarProps> = ({
   userName, // 추가
   openAuthModal,
 }) => {
-
   // 페이지 이동과 동시에 스크롤을 맨 위로 올리는 함수 추가
   const handleNavClick = (pageId: PageType) => {
     setCurrentPage(pageId);
@@ -59,11 +58,13 @@ const Navbar: React.FC<NavbarProps> = ({
 
   return (
     //네브바 불투명하게 변경
-    <nav className={`fixed top-0 left-0 right-0 z-50 border-b py-4 transition-all duration-300 backdrop-blur-md ${
-      theme === 'dark' 
-        ? 'bg-slate-950/70 border-white/10' // 다크모드: 70% 불투명도 + 블러
-        : 'bg-white/70 border-slate-200/50' // 라이트모드: 70% 불투명도 + 블러
-    }`}>
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 border-b py-4 transition-all duration-300 backdrop-blur-md ${
+        theme === 'dark'
+          ? 'bg-slate-950/70 border-white/10' // 다크모드: 70% 불투명도 + 블러
+          : 'bg-white/70 border-slate-200/50' // 라이트모드: 70% 불투명도 + 블러
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <div
           className="flex items-center gap-4 cursor-pointer group"
@@ -118,11 +119,11 @@ const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={openAuthModal}
                   className={`cursor-pointer select-none flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
-      theme === 'dark'
-        ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
-        : 'bg-slate-100 border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
-    }`}
-  >
+                    theme === 'dark'
+                      ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                      : 'bg-slate-100 border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                  }`}
+                >
                   <LogIn size={14} />
                   로그인
                 </button>

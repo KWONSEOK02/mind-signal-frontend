@@ -11,9 +11,9 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
   const isDark = theme === 'dark';
 
   const handleNavClick = (pageId: PageType) => {
-  setCurrentPage(pageId); // 페이지 변경
-  window.scrollTo({ top: 0, behavior: 'smooth' }); // 스크롤을 맨 위로 부드럽게
-};
+    setCurrentPage(pageId); // 페이지 변경
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // 스크롤을 맨 위로 부드럽게
+  };
 
   const sitemaps: { name: string; id: PageType }[] = [
     { name: '홈', id: 'home' },
@@ -34,7 +34,7 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
           <div className="col-span-2 space-y-8">
             <div
               className="flex items-center gap-3 group"
-              onClick={() => handleNavClick('home')} 
+              onClick={() => handleNavClick('home')}
             >
               <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center border border-white/5">
                 <Activity className="text-indigo-500 w-6 h-6 drop-shadow-[0_0_5px_rgba(99,102,241,0.5)]" />

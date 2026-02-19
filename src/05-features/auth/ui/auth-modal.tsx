@@ -10,7 +10,6 @@ interface AuthModalProps {
   theme: 'light' | 'dark';
 }
 
-
 const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
@@ -40,41 +39,45 @@ const AuthModal: React.FC<AuthModalProps> = ({
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setError('');
-  setSuccess('');
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
 
-  try {
-    if (isLogin) {
-      // 로그인: { data } 로 쓰면 response.data 대신 바로 data를 쓸 수 있어 편함.
-      const { data } = (await authApi.login(formData)) as { data: AuthResponse };
-      
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        onLoginSuccess();
-        onClose();
+    try {
+      if (isLogin) {
+        // 로그인: { data } 로 쓰면 response.data 대신 바로 data를 쓸 수 있어 편함.
+        const { data } = (await authApi.login(formData)) as {
+          data: AuthResponse;
+        };
+
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          onLoginSuccess();
+          onClose();
+        }
+      } else {
+        // 회원가입: ...formData를 쓰면 이메일, 비번, 이름을 한 번에 보낼 수 있음
+        await authApi.signup({
+          ...formData,
+          passwordConfirm: formData.password,
+          loginType: 'local',
+        });
+
+        setIsLogin(true); // 가입 성공하면 로그인 화면으로 이동
+        setSuccess('회원가입이 완료되었습니다. 로그인을 진행해주세요.');
+        setFormData((prev) => ({ ...prev, password: '' })); // 비번만 지워짐.
       }
-    } else {
-      // 회원가입: ...formData를 쓰면 이메일, 비번, 이름을 한 번에 보낼 수 있음
-      await authApi.signup({
-        ...formData,
-        passwordConfirm: formData.password,
-        loginType: 'local',
-      });
-      
-      setIsLogin(true); // 가입 성공하면 로그인 화면으로 이동
-      setSuccess('회원가입이 완료되었습니다. 로그인을 진행해주세요.');
-      setFormData(prev => ({ ...prev, password: '' })); // 비번만 지워짐.
+    } catch (err: unknown) {
+      //Swagger에 적어둔 "이미 가입된 이메일" 같은 메시지를 그대로 보여줌.
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      const serverMessage = axiosError.response?.data?.message;
+
+      setError(serverMessage || '요청 처리에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err: any) {
-    //Swagger에 적어둔 "이미 가입된 이메일" 같은 메시지를 그대로 보여줌.
-    const serverMessage = err.response?.data?.message;
-    setError(serverMessage || '요청 처리에 실패했습니다. 다시 시도해주세요.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -85,8 +88,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   // 라이트 모드에서도 테두리가 잘 보이도록 설정된 스타일
   const inputStyle = `w-full p-3 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-    theme === 'dark' 
-      ? 'border-white/10 bg-white/5 text-white' 
+    theme === 'dark'
+      ? 'border-white/10 bg-white/5 text-white'
       : 'border-slate-300 bg-white text-slate-900'
   }`;
 
@@ -132,86 +135,87 @@ const AuthModal: React.FC<AuthModalProps> = ({
               {error}
             </div>
           )}
-          
 
           {/* handleSubmit을 form에 연결 */}
           <form onSubmit={handleSubmit} className="space-y-4">
-  {!isLogin && (
-    <input
-      type="text"
-      name="name"
-      placeholder="이름"
-      value={formData.name}
-      onChange={handleChange}
-      className={inputStyle}
-      required
-    />
-  )}
-  <input
-    type="email"
-    name="email"
-    placeholder="user@example.com"
-    value={formData.email}
-    onChange={handleChange}
-    className={inputStyle}
-    required
-  />
-  <input
-    type="password"
-    name="password"
-    placeholder="비밀번호"
-    value={formData.password}
-    onChange={handleChange}
-    className={inputStyle}
-    required
-  />
+            {!isLogin && (
+              <input
+                type="text"
+                name="name"
+                placeholder="이름"
+                value={formData.name}
+                onChange={handleChange}
+                className={inputStyle}
+                required
+              />
+            )}
+            <input
+              type="email"
+              name="email"
+              placeholder="user@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              className={inputStyle}
+              required
+            />
+            <input
+              type="password"
+              name="password"
+              placeholder="비밀번호"
+              value={formData.password}
+              onChange={handleChange}
+              className={inputStyle}
+              required
+            />
 
-  <button
-    type="submit"
-    disabled={isLoading}
-    className="w-full py-4 mt-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all disabled:opacity-50 cursor-pointer"
-  >
-    {isLoading ? '처리 중...' : isLogin ? '로그인' : '회원가입'}
-  </button>
-</form>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-4 mt-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all disabled:opacity-50 cursor-pointer"
+            >
+              {isLoading ? '처리 중...' : isLogin ? '로그인' : '회원가입'}
+            </button>
+          </form>
 
           <div className="mt-8 text-center select-none">
-  <div className={`text-xs font-bold ${
-    theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-  }`}>
-    {isLogin ? (
-      <p className="cursor-default">
-        계정이 없으신가요?{' '}
-        <span 
-          onClick={() => { 
-            setIsLogin(false); 
-            setError(''); 
-            setSuccess(''); 
-            setFormData({ email: '', password: '', name: '' });//로그인->회원가입으로 전환할 때 폼 데이터 초기화
-          }}
-          className="text-indigo-500 ml-1 cursor-pointer hover:underline decoration-2 underline-offset-4"
-        >
-          회원가입
-        </span>
-      </p>
-    ) : (
-      <p className="cursor-default">
-        이미 계정이 있으신가요?{' '}
-        <span 
-          onClick={() => { 
-            setIsLogin(true); 
-            setError(''); 
-            setSuccess(''); 
-            setFormData({ email: '', password: '', name: ''});//회원가입->로그인으로 전환할 때 폼 데이터 초기화
-          }}
-          className="text-indigo-500 ml-1 cursor-pointer hover:underline decoration-2 underline-offset-4"
-        >
-          로그인
-        </span>
-      </p>
-    )}
-  </div>
-</div>
+            <div
+              className={`text-xs font-bold ${
+                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            >
+              {isLogin ? (
+                <p className="cursor-default">
+                  계정이 없으신가요?{' '}
+                  <span
+                    onClick={() => {
+                      setIsLogin(false);
+                      setError('');
+                      setSuccess('');
+                      setFormData({ email: '', password: '', name: '' }); //로그인->회원가입으로 전환할 때 폼 데이터 초기화
+                    }}
+                    className="text-indigo-500 ml-1 cursor-pointer hover:underline decoration-2 underline-offset-4"
+                  >
+                    회원가입
+                  </span>
+                </p>
+              ) : (
+                <p className="cursor-default">
+                  이미 계정이 있으신가요?{' '}
+                  <span
+                    onClick={() => {
+                      setIsLogin(true);
+                      setError('');
+                      setSuccess('');
+                      setFormData({ email: '', password: '', name: '' }); //회원가입->로그인으로 전환할 때 폼 데이터 초기화
+                    }}
+                    className="text-indigo-500 ml-1 cursor-pointer hover:underline decoration-2 underline-offset-4"
+                  >
+                    로그인
+                  </span>
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
