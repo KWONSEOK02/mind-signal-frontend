@@ -32,6 +32,12 @@ const Navbar: React.FC<NavbarProps> = ({
   userName, // 추가
   openAuthModal,
 }) => {
+  // 페이지 이동과 동시에 스크롤을 맨 위로 올리는 함수 추가
+  const handleNavClick = (pageId: PageType) => {
+    setCurrentPage(pageId);
+    window.scrollTo(0, 0); // 즉시 맨 위로 이동
+  };
+
   const navItems: { name: string; id: PageType }[] = [
     { name: '홈', id: 'home' },
     { name: '소개', id: 'intro' },
@@ -51,11 +57,18 @@ const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5 py-4">
+    //네브바 불투명하게 변경
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 border-b py-4 transition-all duration-300 backdrop-blur-md ${
+        theme === 'dark'
+          ? 'bg-slate-950/70 border-white/10' // 다크모드: 70% 불투명도 + 블러
+          : 'bg-white/70 border-slate-200/50' // 라이트모드: 70% 불투명도 + 블러
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <div
           className="flex items-center gap-4 cursor-pointer group"
-          onClick={() => setCurrentPage('home')}
+          onClick={() => handleNavClick('home')}
         >
           <div className="w-12 h-12 bg-slate-900 rounded-[14px] flex items-center justify-center shadow-inner relative overflow-hidden border border-white/5">
             <div className="absolute inset-0 bg-indigo-500/5 blur-xl"></div>
@@ -72,11 +85,12 @@ const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         <div className="hidden md:flex items-center gap-6">
+          {/* 메뉴 아이템 클릭 부분 수정 */}
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setCurrentPage(item.id)}
-              className={`text-sm font-bold transition-all hover:text-indigo-500 ${
+              onClick={() => handleNavClick(item.id)} // 함수 호출로 변경
+              className={`cursor-pointer text-sm font-bold transition-all hover:text-indigo-500 ${
                 currentPage === item.id
                   ? 'text-indigo-500'
                   : theme === 'dark'
@@ -91,7 +105,7 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-3 ml-2 pl-4 border-l border-white/10">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-white/5 transition-colors mr-1"
+              className="cursor-pointer p-2 rounded-full hover:bg-white/5 transition-colors mr-1"
             >
               {theme === 'dark' ? (
                 <Sun size={18} className="text-yellow-400" />
@@ -104,7 +118,11 @@ const Navbar: React.FC<NavbarProps> = ({
               {!isLoggedIn ? (
                 <button
                   onClick={openAuthModal}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                  className={`cursor-pointer select-none flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                    theme === 'dark'
+                      ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                      : 'bg-slate-100 border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                  }`}
                 >
                   <LogIn size={14} />
                   로그인
@@ -112,7 +130,7 @@ const Navbar: React.FC<NavbarProps> = ({
               ) : (
                 <button
                   onClick={handleLogout} // 로그아웃 기능으로 변경
-                  className="group flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-white/5 border border-white/10 text-indigo-400 hover:text-rose-400 transition-all"
+                  className="cursor-pointer group flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-white/5 border border-white/10 text-indigo-400 hover:text-rose-400 transition-all"
                   title="로그아웃 하시겠습니까?"
                 >
                   <User size={14} className="group-hover:hidden" />
