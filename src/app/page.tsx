@@ -8,8 +8,8 @@ import { authApi } from '@/07-shared/api/auth';
 import { PageType } from '@/07-shared/types';
 import Home from '@/03-pages/home/home';
 import Intro from '@/03-pages/intro/intro';
-import { LabPage } from '@/03-pages/lab/lab';
-import { JoinPage } from '@/03-pages/lab/join';
+import { LabPage } from '@/03-pages/lab';
+import { JoinPage } from '@/03-pages/lab';
 import Results from '@/03-pages/results/results';
 import Expand from '@/03-pages/expand/expand';
 import Footer from '@/04-widgets/footer/footer';
@@ -34,7 +34,7 @@ function MainContent() {
   const [mounted, setMounted] = useState(false);
 
   /**
-   * AGENTS.md 5.1: 렌더링 중 상태 동기화 수행함
+   * AGENTS.md 5.1: 쿼리 파라미터 변경 시 내부 상태 동기화 수행함
    */
   if (pageFromUrl && pageFromUrl !== currentPage) {
     setCurrentPage(pageFromUrl);
@@ -53,10 +53,6 @@ function MainContent() {
    * 하이드레이션 보장 및 인증 정보 로드 수행함
    */
   useEffect(() => {
-    /**
-     * 린트 에러 해결: 지연 실행을 통해 Cascading Render 방지함
-     * requestAnimationFrame을 사용하여 브라우저가 첫 프레임을 그린 후 실행되도록 함
-     */
     const frameId = requestAnimationFrame(() => {
       setMounted(true);
     });
@@ -92,9 +88,7 @@ function MainContent() {
     return () => cancelAnimationFrame(frameId);
   }, [isLoggedIn]); // mounted 의존성 제거하여 순환 호출 방지함
 
-  /**
-   * AGENTS.md 6.5: 마운트 전 서버 결과물(dark) 유지, 마운트 후 theme 반영함
-   */
+  // 마운트 전 서버-클라이언트 간 테마 불일치 방지 로직 적용함
   const activeThemeClass = mounted ? theme : 'dark';
 
   return (
@@ -123,9 +117,7 @@ function MainContent() {
               <Home setCurrentPage={handlePageChange} theme={theme} />
             )}
             {currentPage === 'intro' && <Intro theme={theme} />}
-
             {currentPage === 'lab' && <LabPage />}
-
             {currentPage === 'join' && <JoinPage />}
             {currentPage === 'results' && (
               <Results
