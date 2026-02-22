@@ -1,17 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authApi, PairingSessionStatus } from '@/07-shared/api/auth';
-import { config as appConfig } from '@07-shared/config/config';
+import { config as appConfig } from '@/07-shared/config/config';
 import { AxiosError } from 'axios';
 
 /**
- * UI 전용 로컬 상태와 백엔드 세션 상태를 결합함
+ * UI 전용 상태(IDLE, LOADING, PENDING)를 포함한 페어링 상태 타입 정의함
  */
-export type PairingUIStatus = PairingSessionStatus | 'IDLE' | 'LOADING';
+export type PairingUIStatus =
+  | PairingSessionStatus
+  | 'IDLE'
+  | 'LOADING'
+  | 'PENDING';
 
 /**
- * [Model] 기기 페어링 상태 및 타이머 관리 훅 정의함
+ * [Model] 기기 페어링 상태 관리 및 타이머 로직을 제어하는 커스텀 훅 정의함
  */
-export const usePairing = () => {
+const usePairing = () => {
   const [status, setStatus] = useState<PairingUIStatus>('IDLE');
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(
@@ -20,7 +24,7 @@ export const usePairing = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
-   * 실행 중인 타이머를 초기화하고 참조를 제거함
+   * 활성화된 타이머 인스턴스 제거 수행함
    */
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -30,7 +34,17 @@ export const usePairing = () => {
   }, []);
 
   /**
-   * 세션 생성 API 호출 및 데이터 파싱 수행함
+   * 페어링 관련 모든 로컬 상태 초기값으로 리셋함
+   */
+  const resetStatus = useCallback(() => {
+    clearTimer();
+    setStatus('IDLE');
+    setPairingCode(null);
+    setTimeLeft(appConfig.session.pairingTimeout);
+  }, [clearTimer]);
+
+  /**
+   * 신규 페어링 세션 발급 및 만료 타이머 시작함
    */
   const startPairing = useCallback(async () => {
     setStatus('LOADING');
@@ -39,17 +53,11 @@ export const usePairing = () => {
       const response = await authApi.createdPairing();
       const res = response.data;
 
-      // API 응답 성공 시 내부 상태 업데이트 수행함
-      if (res.status === 'success' && res.data) {
+      if (res.status === 'success') {
         setPairingCode(res.data.pairingToken);
-        setStatus('CREATED');
-        const expiryMs = new Date(res.data.expiresAt).getTime();
-        const initialDiff = Math.max(
-          0,
-          Math.floor((expiryMs - Date.now()) / 1000)
-        );
+        setStatus('PENDING');
+        setTimeLeft(appConfig.session.pairingTimeout);
 
-        setTimeLeft(initialDiff);
         timerRef.current = setInterval(() => {
           setTimeLeft((prev) => {
             if (prev <= 1) {
@@ -64,23 +72,21 @@ export const usePairing = () => {
         setStatus('ERROR');
       }
     } catch (error) {
-      console.error('Pairing 시작 실패함:', error);
+      console.error('페어링 시작 실패함:', error);
       setStatus('ERROR');
     }
   }, [clearTimer]);
 
   /**
-   * 휴대폰에서 스캔한 코드로 승인 요청 및 최종 상태 확인 수행함
+   * 모바일 스캔 코드 검증 및 최종 페어링 승인 수행함
    */
   const requestPairing = useCallback(
     async (scannedCode: string) => {
       setStatus('LOADING');
       try {
-        // 동적 경로 파라미터 활용하여 API 호출함
         const response = await authApi.verifyPairing(scannedCode);
         const res = response.data;
 
-        // API 성공 여부와 세션의 PAIRED 상태를 동시 검증함
         if (res.status === 'success' && res.data.status === 'PAIRED') {
           setStatus('PAIRED');
           clearTimer();
@@ -89,6 +95,10 @@ export const usePairing = () => {
         return { success: false, message: res.message };
       } catch (error) {
         const axiosError = error as AxiosError;
+
+        // 410 상태 코드 판별 및 에러 로그 기록함
+        console.error('Pairing 검증 중 오류 발생함:', axiosError);
+
         const errorStatus: PairingUIStatus =
           axiosError.response?.status === 410 ? 'EXPIRED' : 'ERROR';
         setStatus(errorStatus);
@@ -98,14 +108,18 @@ export const usePairing = () => {
     [clearTimer]
   );
 
-  /**
-   * 컴포넌트 언마운트 시 타이머 정리 수행함
-   */
   useEffect(() => {
     return () => clearTimer();
   }, [clearTimer]);
 
-  return { status, pairingCode, timeLeft, startPairing, requestPairing };
+  return {
+    status,
+    pairingCode,
+    timeLeft,
+    startPairing,
+    requestPairing,
+    resetStatus,
+  };
 };
 
 export default usePairing;

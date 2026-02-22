@@ -28,21 +28,12 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
       className={`flex flex-col items-center gap-4 p-5 rounded-3xl border-2 border-dashed w-full max-w-[260px] mx-auto transition-all
       ${isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-200 shadow-lg'}`}
     >
-      {/* QR 영역: 점선 컨테이너 내부 배치를 위해 140px로 축소 수행함 */}
       <div className="p-3 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-slate-100">
         <QRCodeSVG
           value={value}
           size={140}
-          level="H"
-          includeMargin={false}
-          imageSettings={{
-            src: '/logo-sm.png',
-            x: undefined,
-            y: undefined,
-            height: 28,
-            width: 28,
-            excavate: true,
-          }}
+          level="M"
+          includeMargin={false} // 부모 패딩 활용 위해 비활성화함
         />
       </div>
 
