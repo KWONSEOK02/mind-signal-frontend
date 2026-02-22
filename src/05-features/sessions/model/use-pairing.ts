@@ -98,15 +98,27 @@ const usePairing = () => {
           clearTimer();
           return { success: true };
         }
+
+        // 서버에서 실패 응답(fail)을 보낸 경우 처리함
+        console.warn('Pairing 요청 거부됨:', res.message);
+        setStatus('ERROR');
         return { success: false, message: res.message };
       } catch (error) {
-        const axiosError = error as AxiosError;
-        console.error('Pairing 검증 중 오류 발생함:', axiosError);
+        const axiosError = error as AxiosError<{ message?: string }>;
+        const responseStatus = axiosError.response?.status;
+        const serverMessage = axiosError.response?.data?.message;
 
-        const errorStatus: PairingUIStatus =
-          axiosError.response?.status === 410 ? 'EXPIRED' : 'ERROR';
+        // [핵심 수정] 401(토큰 만료)과 410(세션 소멸)을 모두 EXPIRED로 처리함
+        const isExpired = responseStatus === 401 || responseStatus === 410;
+        const errorStatus: PairingUIStatus = isExpired ? 'EXPIRED' : 'ERROR';
+
+        console.error(
+          `Pairing 검증 중 오류 발생(HTTP ${responseStatus}):`,
+          serverMessage || axiosError.message
+        );
+
         setStatus(errorStatus);
-        return { success: false, errorStatus };
+        return { success: false, errorStatus, message: serverMessage };
       }
     },
     [clearTimer]
