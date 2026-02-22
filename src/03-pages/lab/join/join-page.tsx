@@ -21,8 +21,23 @@ const JoinPage = () => {
 
   const [isScanning, setIsScanning] = useState(false);
   const [mounted, setMounted] = useState(false);
-  // 중복 처리를 방지하기 위한 Ref 사용함
   const lastProcessedCode = useRef<string | null>(null);
+
+  /**
+   * 스캔 결과 또는 URL에서 순수 토큰만 추출하는 유틸리티 함수 정의함
+   */
+  const extractToken = (input: string) => {
+    try {
+      // 입력값이 URL 형태인 경우 파라미터에서 추출 수행함
+      if (input.includes('?')) {
+        const url = new URL(input);
+        return url.searchParams.get('code') || input;
+      }
+      return input;
+    } catch {
+      return input;
+    }
+  };
 
   /**
    * 하이드레이션Mismatch 방지 및 URL 기반 자동 페어링 로직 수행함
@@ -32,32 +47,37 @@ const JoinPage = () => {
       setMounted(true);
     });
 
-    const currentCode = searchParams?.get('code');
+    const rawCode = searchParams?.get('code');
+    const currentToken = rawCode ? extractToken(rawCode) : null;
 
-    // 코드가 존재하고 이전에 처리한 코드와 다를 경우에만 실행함
-    if (currentCode && currentCode !== lastProcessedCode.current) {
-      lastProcessedCode.current = currentCode;
-      resetStatus(); // 이전 상태 초기화함
-      requestPairing(currentCode);
+    if (currentToken && currentToken !== lastProcessedCode.current) {
+      lastProcessedCode.current = currentToken;
+      resetStatus();
+      requestPairing(currentToken);
     }
 
     return () => cancelAnimationFrame(frameId);
   }, [searchParams, requestPairing, resetStatus]);
 
   /**
-   * 스캔 성공 시 페어링 요청 처리 수행함
+   * 스캔 성공 시 URL에서 토큰만 추출하여 페어링 요청 처리함
    */
-  const handleScanSuccess = async (code: string) => {
+  const handleScanSuccess = async (scannedData: string) => {
     setIsScanning(false);
-    lastProcessedCode.current = code;
-    await requestPairing(code);
+
+    // 로그의 404 에러 방지를 위해 토큰만 정제함
+    const token = extractToken(scannedData);
+
+    if (token !== lastProcessedCode.current) {
+      lastProcessedCode.current = token;
+      await requestPairing(token);
+    }
   };
 
   if (!mounted) return null;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-6 text-center bg-slate-950">
-      {/* 스캔 모드 활성화 시 전체 화면 스캐너 노출함 */}
       {isScanning && (
         <div className="fixed inset-0 z-50 bg-black">
           <QRScanner
@@ -67,7 +87,6 @@ const JoinPage = () => {
         </div>
       )}
 
-      {/* 1. 페어링 성공 상태 UI 구성함 */}
       {status === 'PAIRED' ? (
         <div className="space-y-6 animate-in fade-in zoom-in duration-500">
           <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-500/30">
@@ -85,7 +104,6 @@ const JoinPage = () => {
           </div>
         </div>
       ) : (
-        /* 2. 대기 및 스캔 시작 UI 구성함 */
         !isScanning && (
           <div className="space-y-8 w-full max-w-sm animate-in fade-in duration-700">
             <div className="relative mx-auto w-24 h-24 bg-indigo-500/10 rounded-full flex items-center justify-center">
@@ -115,7 +133,6 @@ const JoinPage = () => {
               QR 스캔 시작함
             </button>
 
-            {/* 에러 피드백 영역 정의함 */}
             {(status === 'ERROR' || status === 'EXPIRED') && (
               <div className="pt-4 space-y-3 animate-in slide-in-from-top-2">
                 <div className="flex items-center justify-center gap-2 text-red-500">
