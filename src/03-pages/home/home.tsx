@@ -81,8 +81,8 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
             onClick={() => handleNavigation('intro')}
             className={`group px-10 py-5 glass border rounded-3xl font-black text-lg flex items-center gap-3 cursor-pointer transition-all duration-300 ${
               isDark
-                ? 'border-white/10 text-slate-300 hover:text-white hover:bg-white/10'
-                : 'border-indigo-100 text-slate-700 hover:shadow-lg shadow-indigo-500/5'
+                ? 'border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-transparent'
+                : 'border-indigo-100 text-slate-700 hover:bg-indigo-100 hover:border-transparent hover:shadow-lg shadow-indigo-500/5'
             }`}
           >
             프로젝트 소개{' '}
