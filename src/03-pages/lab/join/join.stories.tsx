@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import JoinPage from './join-page';
 
 const meta: Meta<typeof JoinPage> = {
