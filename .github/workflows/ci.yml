@@ -1,0 +1,35 @@
+# .github/workflows/ci.yml
+name: CI Workflow
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  # 이 'job'의 이름인 'build-and-test'를 GitHub Settings에서 검색해야 함
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # package.json의 @types/node 기반 설정함
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Lint
+        run: npm run lint # 코드 스타일 검사 실행함
+
+      - name: Run Tests
+        run: npm run test # Jest 테스트 실행함
+
+      - name: Build Project
+        run: npm run build # Next.js 빌드 성공 여부 확인함
