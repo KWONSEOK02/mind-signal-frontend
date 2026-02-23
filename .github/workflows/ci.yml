@@ -1,0 +1,44 @@
+# .github/workflows/ci.yml
+name: CI Workflow
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  # GitHub Settings에서 'build-and-test'를 필수 체크 항목으로 등록해야 함
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        # 저장소 코드를 가상 머신으로 가져옴
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # @types/node 버전에 맞춰 노드 환경 설정함
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+        # 프로젝트 의존성 패키지 설치함
+
+      - name: Run Lint
+        run: npm run lint
+        # ESLint를 통한 정적 코드 분석 수행함
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+        # Vitest 및 Storybook 테스트를 위한 브라우저 환경 구축함
+
+      - name: Run Tests
+        run: npm run test
+        # Vitest를 사용한 유닛 및 컴포넌트 테스트 실행함
+
+      - name: Build Project
+        run: npm run build
+        # Next.js 프로덕션 빌드 성공 여부 검증함
