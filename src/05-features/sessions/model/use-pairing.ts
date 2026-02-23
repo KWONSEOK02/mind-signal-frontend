@@ -1,17 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authApi, PairingSessionStatus } from '@/07-shared/api/auth';
-import { config as appConfig } from '@07-shared/config/config';
+import { config as appConfig } from '@/07-shared/config/config';
 import { AxiosError } from 'axios';
 
 /**
  * UI 전용 로컬 상태와 백엔드 세션 상태를 결합함
  */
-export type PairingUIStatus = PairingSessionStatus | 'IDLE' | 'LOADING';
+export type PairingUIStatus =
+  | PairingSessionStatus
+  | 'IDLE'
+  | 'LOADING'
+  | 'PENDING';
 
 /**
  * [Model] 기기 페어링 상태 및 타이머 관리 훅 정의함
  */
-export const usePairing = () => {
+const usePairing = () => {
   const [status, setStatus] = useState<PairingUIStatus>('IDLE');
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(
@@ -30,6 +34,16 @@ export const usePairing = () => {
   }, []);
 
   /**
+   * 페어링 관련 모든 상태를 초기값으로 리셋함
+   */
+  const resetStatus = useCallback(() => {
+    clearTimer();
+    setStatus('IDLE');
+    setPairingCode(null);
+    setTimeLeft(appConfig.session.pairingTimeout);
+  }, [clearTimer]);
+
+  /**
    * 세션 생성 API 호출 및 데이터 파싱 수행함
    */
   const startPairing = useCallback(async () => {
@@ -39,10 +53,10 @@ export const usePairing = () => {
       const response = await authApi.createdPairing();
       const res = response.data;
 
-      // API 응답 성공 시 내부 상태 업데이트 수행함
       if (res.status === 'success' && res.data) {
         setPairingCode(res.data.pairingToken);
-        setStatus('CREATED');
+        setStatus('PENDING'); // 대기 상태로 설정함
+
         const expiryMs = new Date(res.data.expiresAt).getTime();
         const initialDiff = Math.max(
           0,
@@ -76,36 +90,52 @@ export const usePairing = () => {
     async (scannedCode: string) => {
       setStatus('LOADING');
       try {
-        // 동적 경로 파라미터 활용하여 API 호출함
         const response = await authApi.verifyPairing(scannedCode);
         const res = response.data;
 
-        // API 성공 여부와 세션의 PAIRED 상태를 동시 검증함
         if (res.status === 'success' && res.data.status === 'PAIRED') {
           setStatus('PAIRED');
           clearTimer();
           return { success: true };
         }
+
+        // 서버에서 실패 응답(fail)을 보낸 경우 처리함
+        console.warn('Pairing 요청 거부됨:', res.message);
+        setStatus('ERROR');
         return { success: false, message: res.message };
       } catch (error) {
-        const axiosError = error as AxiosError;
-        const errorStatus: PairingUIStatus =
-          axiosError.response?.status === 410 ? 'EXPIRED' : 'ERROR';
+        const axiosError = error as AxiosError<{ message?: string }>;
+        const responseStatus = axiosError.response?.status;
+        const serverMessage = axiosError.response?.data?.message;
+
+        // [핵심 수정] 401(토큰 만료)과 410(세션 소멸)을 모두 EXPIRED로 처리함
+        const isExpired = responseStatus === 401 || responseStatus === 410;
+        const errorStatus: PairingUIStatus = isExpired ? 'EXPIRED' : 'ERROR';
+
+        console.error(
+          `Pairing 검증 중 오류 발생(HTTP ${responseStatus}):`,
+          serverMessage || axiosError.message
+        );
+
         setStatus(errorStatus);
-        return { success: false, errorStatus };
+        return { success: false, errorStatus, message: serverMessage };
       }
     },
     [clearTimer]
   );
 
-  /**
-   * 컴포넌트 언마운트 시 타이머 정리 수행함
-   */
   useEffect(() => {
     return () => clearTimer();
   }, [clearTimer]);
 
-  return { status, pairingCode, timeLeft, startPairing, requestPairing };
+  return {
+    status,
+    pairingCode,
+    timeLeft,
+    startPairing,
+    requestPairing,
+    resetStatus,
+  };
 };
 
 export default usePairing;
