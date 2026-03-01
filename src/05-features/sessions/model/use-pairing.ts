@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { authApi, PairingSessionStatus } from '@/07-shared/api/auth';
+import { sessionApi, PairingSessionStatus } from '@/07-shared/api';
 import { config as appConfig } from '@/07-shared/config/config';
 import { AxiosError } from 'axios';
 
@@ -50,7 +50,7 @@ const usePairing = () => {
     setStatus('LOADING');
     clearTimer();
     try {
-      const response = await authApi.createdPairing();
+      const response = await sessionApi.createdPairing();
       const res = response.data;
 
       if (res.status === 'success' && res.data) {
@@ -90,7 +90,7 @@ const usePairing = () => {
     async (scannedCode: string) => {
       setStatus('LOADING');
       try {
-        const response = await authApi.verifyPairing(scannedCode);
+        const response = await sessionApi.verifyPairing(scannedCode);
         const res = response.data;
 
         if (res.status === 'success' && res.data.status === 'PAIRED') {

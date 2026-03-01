@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { usePairing } from '@/05-features/sessions';
+import React, { useEffect, useSyncExternalStore } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import usePairing from '@/05-features/sessions/model/use-pairing';
 import QRScanner from '@/05-features/sessions/ui/qr-scanner';
 import {
   Camera,
@@ -13,149 +13,154 @@ import {
 } from 'lucide-react';
 
 /**
- * [Page] 모바일 사용자의 페어링 참여 및 스캔 프로세스 관리 페이지 정의함
+ * 하이드레이션 상태 동기화를 위한 빈 구독 함수임
+ */
+const emptySubscribe = () => () => {};
+
+/**
+ * [Page] 실험 참가자 조인 페이지이며 모든 린트 경고가 해결된 버전임
  */
 const JoinPage = () => {
+  const router = useRouter();
   const searchParams = useSearchParams();
+
+  /**
+   * AGENTS 6.5: 서버와 클라이언트의 마운트 상태를 안전하게 동기화함
+   */
+  const isClient = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
   const { status, requestPairing, resetStatus } = usePairing();
 
-  const [isScanning, setIsScanning] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const lastProcessedCode = useRef<string | null>(null);
-
   /**
-   * 스캔 결과 또는 URL에서 순수 토큰만 추출하는 유틸리티 함수 정의함
-   */
-  const extractToken = (input: string) => {
-    try {
-      // 입력값이 URL 형태인 경우 파라미터에서 추출 수행함
-      if (input.includes('?')) {
-        const url = new URL(input);
-        return url.searchParams.get('code') || input;
-      }
-      return input;
-    } catch {
-      return input;
-    }
-  };
-
-  /**
-   * 하이드레이션Mismatch 방지 및 URL 기반 자동 페어링 로직 수행함
+   * 클라이언트 마운트 후 URL 파라미터(code) 감지 시 자동 페어링 수행함
    */
   useEffect(() => {
-    const frameId = requestAnimationFrame(() => {
-      setMounted(true);
-    });
+    if (!isClient) return;
 
-    const rawCode = searchParams?.get('code');
-    const currentToken = rawCode ? extractToken(rawCode) : null;
-
-    if (currentToken && currentToken !== lastProcessedCode.current) {
-      lastProcessedCode.current = currentToken;
-      resetStatus();
-      requestPairing(currentToken);
+    const code = searchParams.get('code');
+    if (code && status === 'IDLE') {
+      requestPairing(code).then((result) => {
+        if (result.success) router.push('/lab');
+      });
     }
-
-    return () => cancelAnimationFrame(frameId);
-  }, [searchParams, requestPairing, resetStatus]);
+  }, [isClient, searchParams, status, requestPairing, router]);
 
   /**
-   * 스캔 성공 시 URL에서 토큰만 추출하여 페어링 요청 처리함
+   * QR 스캔 성공 시의 페어링 요청 처리 로직임
    */
   const handleScanSuccess = async (scannedData: string) => {
-    setIsScanning(false);
+    if (status === 'LOADING' || status === 'PAIRED') return;
 
-    // 로그의 404 에러 방지를 위해 토큰만 정제함
-    const token = extractToken(scannedData);
-
-    if (token !== lastProcessedCode.current) {
-      lastProcessedCode.current = token;
-      await requestPairing(token);
+    const result = await requestPairing(scannedData);
+    if (result.success) {
+      router.push('/lab');
     }
   };
 
-  if (!mounted) return null;
+  /**
+   * 하이드레이션 완료 전에는 배경 레이아웃만 노출하여 시각적 불일치 방지함
+   */
+  if (!isClient) return <div className="min-h-screen bg-slate-950" />;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] px-6 text-center bg-slate-950">
-      {isScanning && (
-        <div className="fixed inset-0 z-50 bg-black">
-          <QRScanner
-            onScanSuccess={handleScanSuccess}
-            onClose={() => setIsScanning(false)}
-          />
+    <main className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-md space-y-8">
+        {/* 상단 헤더 섹션 정의함 */}
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-bold text-indigo-400 uppercase tracking-widest">
+            Participant Mode
+          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight">
+            실험 참가자 모드
+          </h1>
+          <p className="text-slate-400 text-sm">
+            관리자의 화면에 표시된 QR 코드를 스캔하여 접속함
+          </p>
         </div>
-      )}
 
-      {status === 'PAIRED' ? (
-        <div className="space-y-6 animate-in fade-in zoom-in duration-500">
-          <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-500/30">
-            <CheckCircle2 className="text-emerald-500 w-10 h-10" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-white uppercase tracking-tighter">
-              Connected
-            </h2>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              기기 연동이 완료됨
-              <br />
-              실험실 화면에서 신호를 확인함
-            </p>
-          </div>
-        </div>
-      ) : (
-        !isScanning && (
-          <div className="space-y-8 w-full max-w-sm animate-in fade-in duration-700">
-            <div className="relative mx-auto w-24 h-24 bg-indigo-500/10 rounded-full flex items-center justify-center">
-              <Smartphone className="text-indigo-500 w-12 h-12" />
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center animate-bounce">
-                <Camera className="text-white w-3.5 h-3.5" />
+        {/* 인터랙션 카드 구성함 */}
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+
+          <div className="relative bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+            {status === 'IDLE' ||
+            status === 'LOADING' ||
+            status === 'PENDING' ? (
+              <div className="p-8 space-y-6">
+                <div className="aspect-square bg-black/40 rounded-2xl border-2 border-dashed border-white/5 flex items-center justify-center relative overflow-hidden">
+                  <QRScanner
+                    onScanSuccess={handleScanSuccess}
+                    onClose={() => router.back()}
+                    isDark={true}
+                  />
+                  <div className="absolute inset-0 pointer-events-none border-[40px] border-slate-900/40"></div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
+                  <Camera className="text-indigo-400 shrink-0" size={20} />
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    카메라를 QR 코드에 맞춰주면 자동으로 인식하여 실험 세션에
+                    연결됨
+                  </p>
+                </div>
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <h1 className="text-2xl font-black tracking-tight text-white uppercase">
-                실험 참여하기
-              </h1>
-              <p className="text-slate-400 text-sm leading-relaxed font-medium">
-                {status === 'LOADING'
-                  ? '연결 정보를 확인 중임...'
-                  : 'QR 코드를 스캔하여 세션에 접속함'}
-              </p>
-            </div>
-
-            <button
-              onClick={() => setIsScanning(true)}
-              disabled={status === 'LOADING'}
-              className="w-full py-4 bg-white hover:bg-slate-200 text-slate-950 rounded-2xl font-black text-lg shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
-            >
-              <Camera size={22} />
-              QR 스캔 시작함
-            </button>
-
-            {(status === 'ERROR' || status === 'EXPIRED') && (
-              <div className="pt-4 space-y-3 animate-in slide-in-from-top-2">
-                <div className="flex items-center justify-center gap-2 text-red-500">
-                  <AlertCircle size={16} />
-                  <span className="text-xs font-black uppercase tracking-widest">
-                    {status === 'EXPIRED'
-                      ? 'Session Expired'
-                      : 'Connection Failed'}
-                  </span>
+            ) : status === 'PAIRED' ? (
+              <div className="p-12 text-center space-y-6 animate-in fade-in zoom-in duration-500">
+                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="text-green-500" size={40} />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-xl font-bold text-white">연결 성공</h2>
+                  <p className="text-sm text-slate-400">
+                    실험 세션에 성공적으로 참여함. 잠시 후 대시보드로 이동함.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-12 text-center space-y-6 animate-in fade-in zoom-in duration-500">
+                <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
+                  <AlertCircle className="text-red-500" size={40} />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-xl font-bold text-white">연결 실패</h2>
+                  <p className="text-sm text-slate-400">
+                    유효하지 않거나 만료된 세션임. 다시 시도 바람.
+                  </p>
                 </div>
                 <button
-                  onClick={() => window.location.reload()}
-                  className="flex items-center gap-2 mx-auto text-[10px] text-indigo-400 font-bold hover:text-indigo-300 transition-colors"
+                  onClick={resetStatus}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all"
                 >
-                  <RefreshCw size={12} />
-                  다시 시도하기
+                  <RefreshCw size={16} /> 다시 스캔하기
                 </button>
               </div>
             )}
           </div>
-        )
-      )}
-    </div>
+        </div>
+
+        {/* 하단 정보 섹션 정의 및 Smartphone 아이콘 사용함 */}
+        <div className="flex items-center justify-center gap-8 py-4 opacity-40">
+          <div className="flex items-center gap-2">
+            {/* 린트 경고 해결을 위해 Smartphone 컴포넌트 실제 사용함 */}
+            <Smartphone size={14} className="text-slate-400" />
+            <span className="text-[10px] font-bold text-slate-400 uppercase">
+              Mobile App
+            </span>
+          </div>
+          <div className="w-1 h-1 bg-slate-700 rounded-full"></div>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={14} className="text-slate-400" />
+            <span className="text-[10px] font-bold text-slate-400 uppercase">
+              Secure Pairing
+            </span>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 };
 

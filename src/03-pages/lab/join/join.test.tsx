@@ -1,43 +1,43 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import JoinPage from './join-page';
 
-// AGENTS 2.1 반영: 배럴 파일 대신 직접 소스 파일 모킹 수행함
+/**
+ * usePairing 모의 처리함
+ */
 vi.mock('@/05-features/sessions/model/use-pairing', () => ({
-  usePairing: () => ({
+  default: () => ({
     status: 'IDLE',
+    pairingCode: 'TEST-CODE',
+    timeLeft: 300,
+    startPairing: vi.fn(),
     requestPairing: vi.fn(),
     resetStatus: vi.fn(),
   }),
 }));
 
+/**
+ * next/navigation 모의 처리함
+ */
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => ({
-    get: vi.fn().mockReturnValue(null),
-  }),
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  useSearchParams: () => ({ get: vi.fn().mockReturnValue(null) }),
 }));
 
-describe('JoinPage 최적화 테스트', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('클라이언트 마운트 후 QR 스캔 버튼이 렌더링되어야 함', async () => {
+describe('JoinPage 최적화 UI 테스트 수행함', () => {
+  it('페이지 제목과 참가자 모드 뱃지가 정상적으로 렌더링되어야 함', () => {
     render(<JoinPage />);
 
-    // AGENTS 6.5: mounted 상태가 true로 전환된 후의 요소 확인함
-    const scanButton = await screen.findByText(/QR 스캔 시작함/i);
-    expect(scanButton).toBeDefined();
+    // Exact 매칭 대신 유연한 매칭 사용함
+    expect(screen.getByText(/Participant Mode/i)).toBeDefined();
+    expect(screen.getByText(/실험 참가자 모드/i)).toBeDefined();
   });
 
-  it('버튼 클릭 시 상호작용 로직이 이벤트 핸들러 내에서 수행되어야 함', async () => {
+  it('QR 스캔 관련 안내 메시지가 노출되어야 함', () => {
     render(<JoinPage />);
-
-    const scanButton = await screen.findByText(/QR 스캔 시작함/i);
-    fireEvent.click(scanButton);
-
-    // AGENTS 5.7: 상태 변화에 따른 UI 노출 여부 확인함
-    const scannerText = screen.queryByText(/연결 정보를 확인 중임/i);
-    expect(scannerText).toBeDefined();
+    // 조인 페이지 전용 텍스트 존재 여부 확인함
+    expect(
+      screen.getByText(/관리자의 화면에 표시된 QR 코드를 스캔/i)
+    ).toBeDefined();
   });
 });

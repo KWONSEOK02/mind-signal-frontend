@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react'; //useEffect 추가(모달 상태 초기화 문제 해결)
-import { authApi, AuthResponse } from '@/07-shared/api/auth';
+import { authApi, AuthResponse } from '@/07-shared/api';
 
 interface AuthModalProps {
   isOpen: boolean;

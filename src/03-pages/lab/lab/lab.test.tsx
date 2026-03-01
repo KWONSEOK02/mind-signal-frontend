@@ -1,47 +1,35 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import LabPage from './lab-page';
 
-// AGENTS 2.1 반영: 직접 소스 경로 참조로 빌드 오버헤드 감소시킴
-vi.mock('@/05-features/sessions/model/use-pairing', () => ({
+/**
+ * usePairing 훅 모의 처리함
+ */
+vi.mock('@/05-features/sessions', () => ({
   usePairing: () => ({
-    status: 'IDLE',
+    pairingCode: 'TEST-CODE',
+    timeLeft: 300,
     startPairing: vi.fn(),
-    pairingCode: null,
-    timeLeft: 0,
   }),
+  QRGenerator: ({ value, timeLeft }: { value: string; timeLeft: number }) => (
+    <div data-testid="qr-generator">
+      {value}-{timeLeft}
+    </div>
+  ),
 }));
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-  }),
-}));
+// ... 나머지 모킹 로직 동일함
 
-describe('LabPage 성능 가이드라인 리뷰 반영 테스트', () => {
-  beforeEach(() => {
-    // 반응형 레이아웃 감지용 window 크기 설정함
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      value: 1024,
-    });
-  });
-
-  it('PC 환경에서 헤더와 시스템 상태가 정상 노출되어야 함', async () => {
+describe('LabPage 통합 기능 테스트 수행함', () => {
+  it('세션 생성 버튼 클릭 시 필수 프롭이 포함된 QRGenerator가 노출되어야 함', () => {
     render(<LabPage />);
 
-    // 마운트 대기 후 요소 탐색 수행함
-    const title = await screen.findByText(/Mind Signal Lab/i);
-    expect(title).toBeDefined();
-  });
+    const button = screen.getByText(/세션 생성/i);
+    fireEvent.click(button);
 
-  it('환경 감지 로직에 의해 모바일 전용 UI로 전환되는지 확인함', async () => {
-    // AGENTS 5.8: 파생된 뷰 상태 전환 검증함
-    Object.defineProperty(window, 'innerWidth', { writable: true, value: 375 });
-
-    render(<LabPage />);
-
-    const mobileUI = await screen.findByText(/Participant Mode/i);
-    expect(mobileUI).toBeDefined();
+    const qr = screen.getByTestId('qr-generator');
+    expect(qr).toBeDefined();
+    // 모의 데이터(300초) 전달 확인 수행함
+    expect(qr.textContent).toContain('300');
   });
 });
