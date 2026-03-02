@@ -1,23 +1,34 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { signalApi, EmotivMetrics } from '@/07-shared/api';
 
 /**
- * [Model] 실시간 EMOTIV 지표 전송 및 타임스탬프 상태 관리 훅임
+ * [Feature] 그룹 ID와 인덱스를 기반으로 실시간 신호 전송을 제어함
  */
-const useSignal = (sessionId: string | null) => {
+const useSignal = (groupId: string | null, subjectIndex: number | null) => {
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [currentMetrics, setCurrentMetrics] = useState<EmotivMetrics | null>(
     null
   );
-  const [lastSentTime, setLastSentTime] = useState<number | null>(null);
+  const [lastSentTime, setLastSentTime] = useState<string | null>(null);
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
-   * 데이터를 캡처하여 Redis로 전송하고 성공 시 타임스탬프 갱신함
+   * 고유 상관 식별자(correlationId) 생성 수행함
+   */
+  const getCorrelationId = useCallback(() => {
+    if (!groupId || subjectIndex === null) return null;
+    return `${groupId}_${subjectIndex}`;
+  }, [groupId, subjectIndex]);
+
+  /**
+   * 뇌파 지표 캡처 및 전송 로직 수행함
    */
   const captureAndSend = useCallback(async () => {
-    if (!sessionId) return;
+    const correlationId = getCorrelationId();
+    if (!correlationId) return;
 
+    // 파이썬 엔진에서 수신할 가상 데이터 생성함 (실제 연동 시 수정 필요함)
     const mockMetrics: EmotivMetrics = {
       engagement: Math.random(),
       interest: Math.random(),
@@ -27,35 +38,27 @@ const useSignal = (sessionId: string | null) => {
       focus: Math.random(),
     };
 
-    const payload = {
-      sessionId,
-      timestamp: Date.now(),
-      metrics: mockMetrics,
-    };
-
     try {
-      // API 호출은 부수 효과(Side Effect)이므로 이곳에서의 Date.now 사용은 허용됨
-      await signalApi.sendRealtimeData(payload);
-
-      // 상태 업데이트를 통해 안정적인 렌더링 데이터 제공함
+      await signalApi.sendSignal(correlationId, mockMetrics);
       setCurrentMetrics(mockMetrics);
-      setLastSentTime(Date.now());
+      setLastSentTime(new Date().toLocaleTimeString());
     } catch (error) {
-      console.error('Signal transmission failed:', error);
+      console.error('신호 전송 실패함:', error);
     }
-  }, [sessionId]);
+  }, [getCorrelationId]);
 
   /**
-   * 측정 시작 인터벌 설정함
+   * 실시간 측정 및 전송 시작함
    */
   const startMeasurement = useCallback(() => {
-    if (!sessionId) return;
+    if (isMeasuring) return;
     setIsMeasuring(true);
-    intervalRef.current = setInterval(captureAndSend, 100);
-  }, [sessionId, captureAndSend]);
+    // 1초 간격으로 서버에 지표 전송함
+    intervalRef.current = setInterval(captureAndSend, 1000);
+  }, [isMeasuring, captureAndSend]);
 
   /**
-   * 측정 중지 및 상태 초기화 수행함
+   * 측정 중지 및 타이머 해제 수행함
    */
   const stopMeasurement = useCallback(() => {
     setIsMeasuring(false);
@@ -65,10 +68,16 @@ const useSignal = (sessionId: string | null) => {
     }
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
   return {
     isMeasuring,
     currentMetrics,
-    lastSentTime, // 컴포넌트에서 직접 호출하지 않도록 안정적인 상태값 반환함
+    lastSentTime,
     startMeasurement,
     stopMeasurement,
   };

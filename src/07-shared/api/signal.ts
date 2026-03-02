@@ -1,7 +1,9 @@
-import api from './base';
+import { api } from './base';
+import { AxiosResponse } from 'axios';
 
 /**
  * EMOTIV 가공 지표 구조 정의함
+ * 위젯 및 차트에서 실시간 렌더링의 기준 데이터로 사용함
  */
 export interface EmotivMetrics {
   engagement: number;
@@ -13,32 +15,43 @@ export interface EmotivMetrics {
 }
 
 /**
- * 실시간 측정 데이터 페이로드 정의함
+ * 뇌파 데이터 전송을 위한 페이로드 구조 정의함
  */
-export interface RealtimeMeasurementPayload {
-  sessionId: string;
-  timestamp: number;
+export interface SignalPayload {
+  correlationId: string; // [groupId]_[subjectIndex] 형식의 식별자임
   metrics: EmotivMetrics;
 }
 
 /**
- * 측정 데이터 전송 응답 규격임
+ * 서버 응답 규격 정의함
  */
-export interface MeasurementResponse {
+export interface SignalResponse {
   status: 'success' | 'fail';
   message?: string;
+  data?: unknown;
 }
 
 /**
- * 실시간 신호 데이터 전송 API 모음임
+ * 실시간 뇌파 신호 전송 관련 API 모음임
  */
 const signalApi = {
   /**
-   * 가공된 지표 데이터를 Redis로 실시간 전송함
-   * 이미지 명세를 준수하여 /measurements/realtime 엔드포인트 사용함
+   * 식별자(correlationId)를 기반으로 실시간 뇌파 데이터를 서버로 전송 수행함
    */
-  sendRealtimeData: (payload: RealtimeMeasurementPayload) =>
-    api.post<MeasurementResponse>('/measurements/realtime', payload),
+  sendSignal: (
+    correlationId: string,
+    metrics: EmotivMetrics
+  ): Promise<AxiosResponse<SignalResponse>> =>
+    api.post<SignalResponse>('/signals/realtime', {
+      correlationId,
+      metrics,
+    }),
+
+  /**
+   * 특정 상관 식별자의 실시간 신호 상태 확인 수행함
+   */
+  getSignalStatus: (correlationId: string) =>
+    api.get<SignalResponse>(`/signals/status/${correlationId}`),
 };
 
 export default signalApi;

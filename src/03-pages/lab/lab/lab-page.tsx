@@ -1,91 +1,142 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
-import { SignalMeasurer, useSignal } from '@/05-features/signals';
+import React, { useState, useSyncExternalStore, useCallback } from 'react';
+import { useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { SignalComparisonWidget } from '@/04-widgets';
+import { EXPERIMENT_CONFIG } from '@/07-shared'; // 미사용 SESSION_STATUS 제거함
 import {
   LayoutDashboard,
   Activity,
   Settings,
   PlusCircle,
+  Play,
   X,
+  CheckCircle2,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
 
 /**
- * [Page] 2인 대칭 모니터링 및 세션 관리가 통합된 실시간 실험실 페이지임
+ * [Page] 운영자가 실험 모드에 따라 피실험자를 연결하고 모니터링하는 대시보드 정의함
  */
 const LabPage = () => {
-  /**
-   * AGENTS 6.5: 클라이언트 마운트 여부를 동기적으로 확인 수행함
-   */
   const isClient = useSyncExternalStore(
     emptySubscribe,
     () => true,
     () => false
   );
-
-  const [hostId] = useState<string>('session-host-001');
-  const [participantId] = useState<string>('session-guest-002');
   const [isQRVisible, setIsQRVisible] = useState(false);
 
   /**
-   * AGENTS 5.1: 페어링 비즈니스 로직 및 뇌파 지표 수집 연동함
+   * 현재 실험 설정 로드함
    */
-  const { pairingCode, timeLeft, startPairing } = usePairing();
-  const hostSignal = useSignal(hostId);
-  const guestSignal = useSignal(participantId);
+  const currentConfig = EXPERIMENT_CONFIG.DUAL;
 
   /**
-   * 하이드레이션 불일치 방지를 위해 마운트 전에는 배경만 렌더링함
+   * 설정된 목표 인원수를 기반으로 페어링 로직 구동함
+   * 미사용 status 변수 제거 수행함
    */
+  const {
+    pairingCode,
+    groupId,
+    timeLeft,
+    pairedSubjects,
+    isAllPaired,
+    startPairing,
+    resetStatus,
+  } = usePairing(currentConfig.targetCount);
+
+  const subject1Signal = useSignal(groupId, 1);
+  const subject2Signal = useSignal(groupId, 2);
+
+  /**
+   * 모든 활성화된 피실험자의 데이터 측정 시작 수행함
+   */
+  const handleStartExperiment = useCallback(() => {
+    subject1Signal.startMeasurement();
+    if (currentConfig.targetCount > 1) {
+      subject2Signal.startMeasurement();
+    }
+  }, [subject1Signal, subject2Signal, currentConfig.targetCount]);
+
   if (!isClient) return <div className="min-h-screen bg-slate-950" />;
+
+  /**
+   * 상태에 따른 제어 버튼 렌더링 수행함
+   */
+  const renderControlButton = () => {
+    if (isAllPaired) {
+      return (
+        <button
+          onClick={handleStartExperiment}
+          className="group relative inline-flex items-center gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20"
+        >
+          <Play size={20} fill="currentColor" />
+          <span>실험 시작</span>
+        </button>
+      );
+    }
+
+    const nextSubjectNum = pairedSubjects.length + 1;
+    const buttonText = `Subject 0${nextSubjectNum} 연결 QR 생성`;
+
+    return (
+      <button
+        onClick={() => {
+          startPairing();
+          setIsQRVisible(true);
+        }}
+        className="group relative inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-indigo-500/20"
+      >
+        {isQRVisible ? <X size={20} /> : <PlusCircle size={20} />}
+        <span>{isQRVisible ? '닫기' : buttonText}</span>
+      </button>
+    );
+  };
 
   return (
     <main className="min-h-screen bg-slate-950 pt-24 pb-12 px-6">
       <div className="max-w-[1600px] mx-auto space-y-10">
-        {/* 대시보드 헤더 정의함 */}
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-10">
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-indigo-500 mb-1">
               <LayoutDashboard size={18} />
               <span className="text-[10px] font-black uppercase tracking-[0.2em]">
-                Real-time Analysis
+                Operator Dashboard
               </span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter italic">
-              DUAL <span className="text-indigo-500">SIGNAL</span> MONITOR
+              {currentConfig.title.split(' ')[0]}{' '}
+              <span className="text-indigo-500">
+                {currentConfig.title.split(' ')[1]}
+              </span>{' '}
+              {currentConfig.title.split(' ')[2]}
             </h1>
             <p className="text-slate-400 text-sm font-medium">
-              호스트와 참가자의 데이터를 실시간 대조 분석함
+              {currentConfig.description}
             </p>
           </div>
 
           <div className="flex items-center gap-4">
-            {/* 세션 생성 토글 버튼임 */}
-            <button
-              onClick={() => {
-                if (!isQRVisible) startPairing();
-                setIsQRVisible(!isQRVisible);
-              }}
-              className="group relative inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden shadow-lg shadow-indigo-500/20"
-            >
-              {isQRVisible ? <X size={20} /> : <PlusCircle size={20} />}
-              <span>{isQRVisible ? '닫기' : '세션 생성'}</span>
-            </button>
+            {renderControlButton()}
             <div className="h-10 w-[1px] bg-white/10 mx-2" />
-            <button className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors">
+            <button
+              onClick={resetStatus}
+              className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors"
+            >
               <Settings size={20} />
             </button>
           </div>
         </header>
 
-        {/* QR 생성 섹션 - 데이터 부재 시의 예외 처리 수행함 */}
-        {isQRVisible && (
+        {isQRVisible && !isAllPaired && (
           <section className="animate-in fade-in zoom-in duration-500">
             <div className="p-8 rounded-[2.5rem] bg-indigo-500/5 border border-indigo-500/20 backdrop-blur-sm flex flex-col items-center gap-6">
+              <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">
+                STEP {pairedSubjects.length + 1}: SUBJECT 0
+                {pairedSubjects.length + 1} WAITING
+              </p>
               <QRGenerator
                 value={pairingCode || 'SESSION-LOADING...'}
                 timeLeft={timeLeft}
@@ -96,24 +147,53 @@ const LabPage = () => {
           </section>
         )}
 
-        {/* 2인 대칭 모니터링 섹션임 */}
-        <section className="min-h-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <section className="min-h-[400px]">
           <SignalComparisonWidget
-            hostMetrics={hostSignal.currentMetrics}
-            participantMetrics={guestSignal.currentMetrics}
+            subject1Metrics={subject1Signal.currentMetrics}
+            subject2Metrics={
+              currentConfig.targetCount > 1
+                ? subject2Signal.currentMetrics
+                : null
+            }
           />
         </section>
 
-        {/* 제어 및 시스템 상태 패널 구성함 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-6">
           <div className="lg:col-span-2">
-            <SignalMeasurer
-              sessionId={hostId}
-              isMeasuring={hostSignal.isMeasuring}
-              onStart={hostSignal.startMeasurement}
-              onStop={hostSignal.stopMeasurement}
-              lastSentTime={hostSignal.lastSentTime}
-            />
+            <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-4">
+              <div className="flex items-center gap-2">
+                <Activity size={18} className="text-indigo-500" />
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Live Connection Status
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {[1, 2].map((num) => (
+                  <div
+                    key={num}
+                    className={`p-4 rounded-xl border flex flex-col gap-1 ${pairedSubjects.includes(num) ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/[0.03] border-white/5'} ${num > currentConfig.targetCount ? 'opacity-20' : ''}`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <p className="text-[10px] text-slate-500 font-bold uppercase">
+                        Subject 0{num}
+                      </p>
+                      {pairedSubjects.includes(num) && (
+                        <CheckCircle2 size={14} className="text-indigo-500" />
+                      )}
+                    </div>
+                    <p
+                      className={`text-lg font-black ${pairedSubjects.includes(num) ? 'text-white' : 'text-slate-700'}`}
+                    >
+                      {pairedSubjects.includes(num)
+                        ? 'CONNECTED'
+                        : num > currentConfig.targetCount
+                          ? 'DISABLED'
+                          : 'WAITING'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="p-8 rounded-[2rem] bg-indigo-500/10 border border-indigo-500/20 relative overflow-hidden group">
@@ -123,16 +203,19 @@ const LabPage = () => {
             />
             <div className="relative space-y-4">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div
+                  className={`w-2 h-2 rounded-full ${isAllPaired ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}
+                />
                 <span className="text-xs font-bold text-white uppercase tracking-widest">
-                  System Status
+                  System Phase
                 </span>
               </div>
               <p className="text-2xl font-black text-white uppercase italic tracking-tighter">
-                Dual Linked
+                {isAllPaired ? 'Experiment Ready' : 'Awaiting Entry'}
               </p>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                현재 호스트 데이터 수신 중이며 참가자 연결을 대기하고 있음.
+              <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                운영자 채널 활성화 완료됨. {currentConfig.targetCount}명의
+                피실험자가 합류해야 실험 시작 버튼이 활성화됨.
               </p>
             </div>
           </div>

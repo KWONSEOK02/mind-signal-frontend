@@ -1,75 +1,93 @@
 'use client';
 
 import React from 'react';
-// 표준 임포트 방식으로 변경하되 next.config.ts 설정으로 최적화함
-import { Activity, Play, Square, Signal } from 'lucide-react';
+import { Play, Square, Activity, Clock } from 'lucide-react';
 
+/**
+ * 컴포넌트 Props 인터페이스 정의함
+ */
 interface SignalMeasurerProps {
-  sessionId: string | null;
+  sessionId: string;
   isMeasuring: boolean;
   onStart: () => void;
   onStop: () => void;
-  lastSentTime: number | null;
+  lastSentTime: string | null; // 타입을 number에서 string으로 변경함
 }
 
 /**
- * [Feature] 실시간 측정 제어 및 상태 표시 컴포넌트임
+ * [Feature] 피실험자의 실시간 뇌파 측정 제어 및 상태 표시 컴포넌트 정의함
  */
 const SignalMeasurer: React.FC<SignalMeasurerProps> = ({
-  sessionId,
   isMeasuring,
   onStart,
   onStop,
   lastSentTime,
 }) => {
   return (
-    <div className="p-6 rounded-3xl bg-slate-900 border border-white/10 shadow-xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-sm space-y-8">
+      {/* 상태 헤더 영역 구성함 */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
-            className={`p-2 rounded-lg ${isMeasuring ? 'bg-green-500/20 text-green-500' : 'bg-slate-800 text-slate-400'}`}
+            className={`p-2 rounded-xl ${isMeasuring ? 'bg-emerald-500/20 text-emerald-500' : 'bg-slate-800 text-slate-500'}`}
           >
-            <Activity size={20} />
+            <Activity
+              size={20}
+              className={isMeasuring ? 'animate-pulse' : ''}
+            />
           </div>
-          <h3 className="font-bold text-white">실시간 측정 제어</h3>
+          <div>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+              Signal Status
+            </h3>
+            <p className="text-[10px] text-slate-500 font-medium uppercase">
+              {isMeasuring ? 'Streaming Data...' : 'Ready to Measure'}
+            </p>
+          </div>
         </div>
-        {isMeasuring && (
-          <div className="flex items-center gap-2 text-xs text-indigo-400 animate-pulse">
-            <Signal size={14} />
-            <span>REDIS RELAY ACTIVE</span>
+
+        {/* 마지막 전송 시간 표시함 */}
+        {lastSentTime && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+            <Clock size={12} className="text-slate-500" />
+            <span className="text-[10px] font-mono text-slate-400">
+              {lastSentTime}
+            </span>
           </div>
         )}
       </div>
 
-      <div className="space-y-4">
-        <div className="p-4 rounded-xl bg-black/40 border border-white/5">
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">
-            Last Update
-          </p>
-          <p className="font-mono text-sm text-slate-300">
-            {lastSentTime
-              ? new Date(lastSentTime).toLocaleTimeString()
-              : 'WAITING FOR DATA'}
-          </p>
-        </div>
-
+      {/* 제어 버튼 영역 구성함 */}
+      <div className="grid grid-cols-1 gap-4">
         {!isMeasuring ? (
           <button
             onClick={onStart}
-            disabled={!sessionId}
-            className="w-full py-4 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 text-white rounded-xl font-bold transition-all active:scale-95"
+            className="group relative flex items-center justify-center gap-3 py-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-indigo-500/20"
           >
-            <Play size={18} fill="currentColor" /> 측정 시작
+            <Play size={20} fill="currentColor" />
+            <span className="uppercase tracking-widest text-sm">
+              측정 시작하기
+            </span>
           </button>
         ) : (
           <button
             onClick={onStop}
-            className="w-full py-4 flex items-center justify-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-500 border border-red-500/30 rounded-xl font-bold transition-all active:scale-95"
+            className="group flex items-center justify-center gap-3 py-6 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 rounded-2xl font-black transition-all duration-300 active:scale-[0.98]"
           >
-            <Square size={18} fill="currentColor" /> 측정 중지
+            <Square size={20} fill="currentColor" />
+            <span className="uppercase tracking-widest text-sm">
+              측정 중지하기
+            </span>
           </button>
         )}
       </div>
+
+      {/* 안내 문구 영역 구성함 */}
+      <p className="text-center text-[10px] text-slate-600 font-medium leading-relaxed">
+        측정 시작 시 뇌파 데이터가 실시간으로 운영자 대시보드에 전송됨.
+        <br />
+        안정적인 데이터 전송을 위해 네트워크 상태를 확인해야 함.
+      </p>
     </div>
   );
 };

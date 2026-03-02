@@ -1,48 +1,35 @@
 import { api } from './base';
+import { PairingData } from '../types'; // 통합된 타입 참조함
 
 /**
- * 페어링 세션의 구체적인 진행 상태 타입 정의함
- */
-export type PairingSessionStatus =
-  | 'IDLE'
-  | 'PAIRED'
-  | 'EXPIRED'
-  | 'ERROR'
-  | 'CREATED';
-
-/**
- * 백엔드 응답 규격에 맞춘 페어링 데이터 구조 정의함
+ * 백엔드 그룹 세션 공통 응답 규격 정의함
  */
 export interface PairingResponse {
-  // 바깥쪽 status: API 호출 성공 여부임
   status: 'success' | 'fail';
-  data: {
-    id: string;
-    pairingToken: string;
-    userId: string;
-    // 안쪽 status: 페어링 세션의 현재 단계임
-    status: PairingSessionStatus;
-    pairedAt: string | null;
-    expiresAt: string;
-    measuredAt: string | null;
-    sessionId?: string;
-  };
+  data: PairingData; // 통합 엔티티 사용함
   message?: string;
 }
 
 /**
- * 기기 페어링 및 측정 세션 관리 API 모음임
+ * 그룹 기반 페어링 및 세션 관리 API 모음 정의함
  */
 const sessionApi = {
-  // --- 1.5-A: QR 페어링 및 세션 제어 ---
-  // 호스트용 새로운 페어링 세션 생성하고 QR 코드를 발급받는다.
-  createdPairing: () => api.post<PairingResponse>('/sessions'),
-  // 클라이언트용 페어링 승인 요청 처리함
+  /**
+   * 운영자용 새로운 그룹 실험 세션 생성 요청 수행함
+   */
+  createdPairing: () => api.post<PairingResponse>('/sessions/group'),
+
+  /**
+   * 피실험자용 토큰 기반 그룹 합류 요청 수행함
+   */
   verifyPairing: (pairingToken: string) =>
     api.post<PairingResponse>(`/sessions/${pairingToken}/pair`),
-  // 세션의 실시간 진행 상태 확인 수행함
-  checkSessionStatus: (sessionId: string) =>
-    api.get<PairingResponse>(`/sessions/status/${sessionId}`),
+
+  /**
+   * 그룹 내 참가자 입장 여부 및 실시간 상태 조회 수행함
+   */
+  checkSessionStatus: (groupId: string) =>
+    api.get<PairingResponse>(`/sessions/group/status/${groupId}`),
 };
 
 export default sessionApi;

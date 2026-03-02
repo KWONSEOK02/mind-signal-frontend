@@ -13,64 +13,55 @@ import {
 } from 'recharts';
 import { EmotivMetrics } from '@/07-shared/api';
 
+/**
+ * 차트 위젯 Props 인터페이스 정의함
+ */
 interface SignalRealtimeChartProps {
-  data: EmotivMetrics | null;
+  metrics: EmotivMetrics | null; // 기존 data에서 metrics로 명칭 변경함
+  color: string; // 차트의 테마 색상 추가함
 }
 
 /**
  * [Widget] EMOTIV 지표 시각화를 위한 실시간 막대 차트 위젯임
  */
-const SignalRealtimeChart: React.FC<SignalRealtimeChartProps> = ({ data }) => {
+const SignalRealtimeChart: React.FC<SignalRealtimeChartProps> = ({
+  metrics,
+  color,
+}) => {
   /**
-   * Recharts 규격에 맞게 지표 데이터를 포맷팅함
+   * Recharts 규격에 맞게 실시간 지표 데이터를 포맷팅함
    */
-  const chartData = data
+  const chartData = metrics
     ? [
         {
           name: 'Engagement',
-          value: Number((data.engagement * 100).toFixed(1)),
-          color: '#6366f1',
+          value: Number((metrics.engagement * 100).toFixed(1)),
         },
         {
           name: 'Interest',
-          value: Number((data.interest * 100).toFixed(1)),
-          color: '#8b5cf6',
+          value: Number((metrics.interest * 100).toFixed(1)),
         },
         {
           name: 'Excitement',
-          value: Number((data.excitement * 100).toFixed(1)),
-          color: '#ec4899',
+          value: Number((metrics.excitement * 100).toFixed(1)),
         },
         {
           name: 'Stress',
-          value: Number((data.stress * 100).toFixed(1)),
-          color: '#f43f5e',
+          value: Number((metrics.stress * 100).toFixed(1)),
         },
         {
           name: 'Relaxation',
-          value: Number((data.relaxation * 100).toFixed(1)),
-          color: '#10b981',
+          value: Number((metrics.relaxation * 100).toFixed(1)),
         },
         {
           name: 'Focus',
-          value: Number((data.focus * 100).toFixed(1)),
-          color: '#f59e0b',
+          value: Number((metrics.focus * 100).toFixed(1)),
         },
       ]
     : [];
 
   return (
-    <div className="w-full h-[400px] p-8 rounded-3xl bg-slate-900/50 border border-white/10 backdrop-blur-sm shadow-2xl">
-      <div className="flex items-center justify-between mb-8">
-        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
-          Real-time Performance Metrics
-        </h4>
-        <div className="flex gap-2">
-          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-          <div className="w-2 h-2 rounded-full bg-indigo-500/40" />
-        </div>
-      </div>
-
+    <div className="w-full h-[400px]">
       {chartData.length > 0 ? (
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -107,20 +98,23 @@ const SignalRealtimeChart: React.FC<SignalRealtimeChartProps> = ({ data }) => {
               radius={[0, 6, 6, 0]}
               barSize={20}
               isAnimationActive={true}
-              animationDuration={300} // 데이터 주기(100ms)를 고려한 부드러운 보간 설정함
-              animationEasing="ease-out"
+              animationDuration={300}
             >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+              {chartData.map((_, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={color} // 전달받은 테마 색상 적용함
+                  fillOpacity={1 - index * 0.1} // 시각적 깊이를 위해 투명도 차등 적용함
+                />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3">
-          <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-          <p className="text-xs font-bold text-slate-600 tracking-tighter uppercase">
-            Waiting for device stream...
+          <div className="w-12 h-12 border-4 border-white/5 border-t-white/20 rounded-full animate-spin" />
+          <p className="text-[10px] font-bold text-slate-600 tracking-widest uppercase">
+            Synchronizing...
           </p>
         </div>
       )}
