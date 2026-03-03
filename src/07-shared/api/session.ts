@@ -17,7 +17,7 @@ const sessionApi = {
   /**
    * 운영자용 새로운 그룹 실험 세션 생성 요청 수행함
    */
-  createdPairing: () => api.post<PairingResponse>('/sessions/group'),
+  createdPairing: () => api.post<PairingResponse>('/sessions'),
 
   /**
    * 피실험자용 토큰 기반 그룹 합류 요청 수행함
@@ -29,7 +29,7 @@ const sessionApi = {
    * 그룹 내 참가자 입장 여부 및 실시간 상태 조회 수행함
    */
   checkSessionStatus: (groupId: string) =>
-    api.get<PairingResponse>(`/sessions/group/status/${groupId}`),
+    api.get<PairingResponse>(`/sessions/group/${groupId}/status`),
 };
 
 export default sessionApi;
