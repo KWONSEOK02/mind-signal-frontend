@@ -1,10 +1,16 @@
 'use client';
 
-import React, { useState, useSyncExternalStore, useCallback } from 'react';
+import React, {
+  useState,
+  useSyncExternalStore,
+  useCallback,
+  useEffect,
+} from 'react';
 import { useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { SignalComparisonWidget } from '@/04-widgets';
-import { EXPERIMENT_CONFIG } from '@/07-shared'; // 미사용 SESSION_STATUS 제거함
+import { EXPERIMENT_CONFIG } from '@/07-shared';
+import MobileLabView from './ui/mobile-lab-view'; // 신규 분리된 모바일 뷰 임포트함
 import {
   LayoutDashboard,
   Activity,
@@ -19,14 +25,36 @@ const emptySubscribe = () => () => {};
 
 /**
  * [Page] 운영자가 실험 모드에 따라 피실험자를 연결하고 모니터링하는 대시보드 정의함
+ * 진입점에서 환경을 감지하여 모바일인 경우 참여 유도 인터페이스로 전환 수행함
  */
 const LabPage = () => {
+  // 클라이언트 사이드 마운트 여부 확인 수행함
   const isClient = useSyncExternalStore(
     emptySubscribe,
     () => true,
     () => false
   );
+
+  const [isMobile, setIsMobile] = useState(false);
   const [isQRVisible, setIsQRVisible] = useState(false);
+
+  /**
+   * 브라우저 환경 및 화면 너비를 감지하여 모바일 모드 여부 결정함
+   * Window Resize 이벤트를 구독하여 실시간 대응함
+   */
+  useEffect(() => {
+    if (!isClient) return;
+
+    const checkEnvironment = () => {
+      const isSmallScreen = window.innerWidth < 768;
+      const isMobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      setIsMobile(isSmallScreen || isMobileUA);
+    };
+
+    checkEnvironment();
+    window.addEventListener('resize', checkEnvironment);
+    return () => window.removeEventListener('resize', checkEnvironment);
+  }, [isClient]);
 
   /**
    * 현재 실험 설정 로드함
@@ -35,7 +63,6 @@ const LabPage = () => {
 
   /**
    * 설정된 목표 인원수를 기반으로 페어링 로직 구동함
-   * 미사용 status 변수 제거 수행함
    */
   const {
     pairingCode,
@@ -60,10 +87,20 @@ const LabPage = () => {
     }
   }, [subject1Signal, subject2Signal, currentConfig.targetCount]);
 
+  /**
+   * 서버 사이드 렌더링 시 하이드레이션 오류 방지를 위해 빈 화면 반환함
+   */
   if (!isClient) return <div className="min-h-screen bg-slate-950" />;
 
   /**
-   * 상태에 따른 제어 버튼 렌더링 수행함
+   * [진입점 검사] 모바일 환경인 경우 실험 참여 유도 뷰로 즉시 전환함
+   */
+  if (isMobile) {
+    return <MobileLabView />;
+  }
+
+  /**
+   * 상태에 따른 제어 버튼 렌더링 함수 정의함
    */
   const renderControlButton = () => {
     if (isAllPaired) {
