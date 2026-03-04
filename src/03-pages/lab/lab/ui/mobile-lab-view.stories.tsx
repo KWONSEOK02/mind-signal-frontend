@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj } from '@storybook/react';
 import MobileLabView from './mobile-lab-view';
 
 /**
@@ -9,7 +9,7 @@ const meta: Meta<typeof MobileLabView> = {
   component: MobileLabView,
   parameters: {
     layout: 'fullscreen',
-    // 모바일 전용 뷰 확인을 위해 기본 뷰포트 고정함
+    // 모바일 전용 뷰 확인을 위해 기본 뷰포트 고정 수행함
     viewport: {
       defaultViewport: 'mobile1',
     },
@@ -26,7 +26,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: '모바일 환경에서 실험실 페이지 접속 시 최초로 노출되는 화면임.',
+        story:
+          '모바일 환경에서 실험실 페이지 접속 시 최초로 노출되는 참여 유도 화면임.',
       },
     },
   },

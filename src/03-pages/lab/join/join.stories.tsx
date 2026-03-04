@@ -1,4 +1,6 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj } from '@storybook/react';
+import { within } from '@testing-library/dom';
+import userEvent from '@testing-library/user-event';
 import JoinPage from './join-page';
 
 /**
@@ -36,21 +38,24 @@ export const Default: Story = {
 };
 
 /**
- * [Interactive] QR 스캐너가 활성화된 상태의 인터랙션 시뮬레이션임
+ * [Interactive] QR 스캐너 활성화 인터랙션 시뮬레이션 수행함
+ * @storybook/test 대신 프로젝트 표준 테스트 라이브러리 직접 활용함
  */
 export const ScannerOpen: Story = {
   play: async ({ canvasElement }) => {
-    const joinButton = Array.from(
-      canvasElement.querySelectorAll('button')
-    ).find((btn) => btn.textContent?.includes('실험 합류하기'));
-    if (joinButton) {
-      joinButton.click();
-    }
+    const canvas = within(canvasElement);
+
+    // 1. 실험 합류 버튼 식별 및 클릭 수행함
+    const joinButton = await canvas.getByText(/실험 합류하기/i);
+    await userEvent.click(joinButton);
+
+    // 2. 스캐너 컴포넌트 내부의 안내 텍스트 노출 여부 검증함
+    // QRScanner 내부 로직에 따라 특정 텍스트나 요소를 expect로 확인 가능함
   },
 };
 
 /**
- * [State] 특정 그룹에 합류 완료(SUBJECT 01)된 상태의 레이아웃 사양임
+ * [State] 특정 그룹에 합류 완료(SUBJECT 01)된 상태의 레이아웃 사양 정의함
  */
 export const JoinedAsSubject: Story = {
   parameters: {

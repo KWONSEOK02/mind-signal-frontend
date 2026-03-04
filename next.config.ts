@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   experimental: {
+    // AGENTS.md 2.1 규칙에 명시된 패키지 임포트 최적화 설정 사용함
     optimizePackageImports: ['lucide-react'],
   },
   images: {

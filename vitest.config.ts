@@ -9,13 +9,8 @@ import { playwright } from '@vitest/browser-playwright';
 export default defineConfig({
   plugins: [
     react(),
-    // 프로젝트 경로 별칭(@) 인식을 위한 플러그인 사용함
     tsconfigPaths()
   ],
-  /**
-   * [오류 해결] 브라우저 환경에서 Node.js 전역 변수 모킹함
-   * Next.js 및 Storybook 내부의 process.env 참조 에러 방지함
-   */
   define: {
     'process.env': {},
   },
@@ -31,13 +26,14 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./.storybook/vitest.setup.ts'],
   },
-  /**
-   * AGENTS 1.3: 빌드 타임 최적화 및 워터폴 방지 설정함
-   */
+  ssr: {
+    noExternal: [
+      '@storybook/nextjs-vite'
+    ]
+  },
   optimizeDeps: {
     include: [
       'lucide-react',
-      'next/navigation',
       'react-qr-barcode-scanner',
       'qrcode.react',
       'zod',
@@ -46,16 +42,15 @@ export default defineConfig({
       'react',
       'react-dom',
       'react/jsx-runtime',
-      '@storybook/nextjs-vite',
       '@tanstack/react-query',
-      'zustand'
+      'zustand',
+      // [Fix] 테스트 실행 시 재번들링 경고 방지를 위해 추가함
+      '@storybook/react'
     ],
-    /**
-     * 모듈 해석 오류 방지를 위해 특정 경로 제외함
-     */
     exclude: [
       'sb-original/image-context',
-      'next/dist/client/components/redirect-status-code'
+      'next/navigation',
+      '@storybook/nextjs-vite'
     ]
   },
   resolve: {

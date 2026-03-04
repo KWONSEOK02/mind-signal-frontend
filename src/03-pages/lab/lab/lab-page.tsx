@@ -10,7 +10,9 @@ import { useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
-import MobileLabView from './ui/mobile-lab-view'; // 신규 분리된 모바일 뷰 임포트함
+import MobileLabView from './ui/mobile-lab-view';
+
+// next.config.ts의 optimizePackageImports 설정으로 인해 성능 저하 없이 편리한 임포트 사용함
 import {
   LayoutDashboard,
   Activity,
@@ -121,8 +123,14 @@ const LabPage = () => {
     return (
       <button
         onClick={() => {
-          startPairing();
-          setIsQRVisible(true);
+          if (isQRVisible) {
+            // QR 닫기 시 세션 리소스를 완전히 해제하여 잔여 데이터 제거함
+            resetStatus();
+            setIsQRVisible(false);
+          } else {
+            startPairing();
+            setIsQRVisible(true);
+          }
         }}
         className="group relative inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-indigo-500/20"
       >
@@ -159,7 +167,11 @@ const LabPage = () => {
             {renderControlButton()}
             <div className="h-10 w-[1px] bg-white/10 mx-2" />
             <button
-              onClick={resetStatus}
+              onClick={() => {
+                // 설정 버튼 클릭 시 세션 리셋과 QR 닫기를 병행하여 UI 동기화함
+                resetStatus();
+                setIsQRVisible(false);
+              }}
               className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors"
             >
               <Settings size={20} />

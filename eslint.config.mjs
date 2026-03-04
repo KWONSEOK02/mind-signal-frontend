@@ -16,7 +16,22 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
-  ...storybook.configs["flat/recommended"]
+  ...storybook.configs["flat/recommended"],
+
+  /**
+   * [Override] 스토리 파일 전용 린트 예외 규칙 정의함
+   * Vitest 브라우저 모드 호환성을 위해 @storybook/react 직접 임포트 허용함
+   */
+  {
+    files: ["**/*.stories.{ts,tsx,mdx}"],
+    rules: {
+      // 프레임워크 패키지 대신 렌더러 패키지 직접 사용 허용함
+      "storybook/no-renderer-packages": "off",
+      // 버전 충돌 방지를 위해 개별 테스팅 라이브러리 사용 허용함
+      "storybook/use-storybook-testing-library": "off",
+      "storybook/use-storybook-expect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
