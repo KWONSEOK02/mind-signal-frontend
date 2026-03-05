@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import type { Meta, StoryObj } from '@storybook/react';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
@@ -7,14 +8,24 @@ import { expect } from 'storybook/test';
 /**
  * [Story] 운영자 관점의 그룹 기반 실험 대시보드 사양 정의함
  */
+=======
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import LabPage from './lab-page';
+
+>>>>>>> main
 const meta: Meta<typeof LabPage> = {
   title: '03-pages/Lab/LabPage',
   component: LabPage,
   parameters: {
+<<<<<<< HEAD
     layout: 'fullscreen',
     nextjs: {
       appDirectory: true,
     },
+=======
+    // 관제 센터 UI 확인을 위해 전체 화면으로 렌더링함
+    layout: 'fullscreen',
+>>>>>>> main
   },
 };
 
@@ -22,6 +33,7 @@ export default meta;
 type Story = StoryObj<typeof LabPage>;
 
 export const Default: Story = {};
+<<<<<<< HEAD
 
 /**
  * [Interactive] QR 생성 후 닫기 버튼을 눌러 세션을 리셋하는 시나리오임
@@ -47,3 +59,5 @@ export const QRResetInteraction: Story = {
     await expect(canvas.getByText(/Subject 01 연결 QR 생성/i)).toBeDefined();
   },
 };
+=======
+>>>>>>> main
