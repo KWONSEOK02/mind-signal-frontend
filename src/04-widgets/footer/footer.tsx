@@ -25,7 +25,7 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
 
   return (
     <footer
-      className={`transition-colors duration-500 border-t pt-24 pb-12 mt-20 ${
+      className={`transition-colors duration-500 border-t pt-24 pb-12 ${
         isDark ? 'bg-slate-950 border-white/5' : 'bg-white border-slate-200'
       }`}
     >
