@@ -5,16 +5,14 @@ import React, {
   useContext,
   useState,
   useEffect,
-  useMemo,
   useCallback,
 } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { authApi } from '@/07-shared/api/auth';
 import { PageType } from '@/07-shared/types';
 
 interface UIContextType {
   theme: 'dark' | 'light';
-  currentPage: PageType;
   isLoggedIn: boolean;
   userName: string;
   isAuthModalOpen: boolean;
@@ -33,12 +31,6 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const currentPage = useMemo(
-    () => (searchParams?.get('page') as PageType) || 'home',
-    [searchParams]
-  );
 
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -58,7 +50,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         localStorage.removeItem('token');
       } catch {
-        // [Fix] 사용하지 않는 에러 변수 제거함
+        // 에러 무시함
       }
       setIsLoggedIn(false);
       setUserName('');
@@ -66,7 +58,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   /**
-   * [Fix] 비동기 즉시 실행 함수를 사용하여 동기적 setState 경고 해결함
+   * 비동기 즉시 실행 함수를 사용하여 동기적 setState 경고 해결함
    * 렌더링 흐름을 방해하지 않고 사이드 이펙트로 세션 복구 수행함
    */
   useEffect(() => {
@@ -83,20 +75,21 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({
   const openAuthModal = useCallback(() => setIsAuthModalOpen(true), []);
   const closeAuthModal = useCallback(() => setIsAuthModalOpen(false), []);
 
+  /**
+   * 쿼리 파라미터 조작 대신 Next.js App Router 기반의 실제 경로 이동 수행함
+   */
   const handlePageChange = useCallback(
     (page: PageType) => {
-      const params = new URLSearchParams(searchParams?.toString());
-      params.set('page', page);
-      router.push(`/?${params.toString()}`);
+      const path = page === 'home' ? '/' : `/${page}`;
+      router.push(path);
     },
-    [router, searchParams]
+    [router]
   );
 
   return (
     <UIContext.Provider
       value={{
         theme,
-        currentPage,
         isLoggedIn,
         userName,
         isAuthModalOpen,
@@ -119,3 +112,5 @@ export const useUI = () => {
   if (!context) throw new Error('useUI는 UIProvider 내부에서 사용해야 함');
   return context;
 };
+
+export default UIProvider;
