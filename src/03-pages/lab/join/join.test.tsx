@@ -110,7 +110,7 @@ describe('JoinPage 그룹 매핑 기반 UI 테스트 수행함', () => {
 
     const scanButton = screen.getByText(/Scan Success/i);
     fireEvent.click(scanButton);
-    fireEvent.click(scanButton); // 두 번째 클릭 (무시되어야 함)
+    fireEvent.click(scanButton); // 두 번째 클릭 (Ref 가드에 의해 무시되어야 함)
 
     await waitFor(() => {
       expect(mockRequestPairing).toHaveBeenCalledTimes(1);
@@ -118,7 +118,8 @@ describe('JoinPage 그룹 매핑 기반 UI 테스트 수행함', () => {
     });
   });
 
-  it('페어링 만료 상태일 때 에러 문구가 정상적으로 표시되어야 함', () => {
+  it('페어링 만료 상태일 때 에러 문구와 다시 시도하기 버튼이 정상적으로 표시되어야 함', () => {
+    const mockResetStatus = vi.fn();
     vi.mocked(usePairing).mockReturnValue({
       status: SESSION_STATUS.EXPIRED,
       subjectIndex: null,
@@ -130,17 +131,24 @@ describe('JoinPage 그룹 매핑 기반 UI 테스트 수행함', () => {
       isAllPaired: false,
       startPairing: vi.fn(),
       requestPairing: vi.fn(),
-      resetStatus: vi.fn(),
+      resetStatus: mockResetStatus,
     });
 
     render(<JoinPage />);
     expect(
       screen.getByText(/세션이 만료되었거나 유효하지 않은 실험 정보임/i)
     ).toBeDefined();
+
+    const retryButton = screen.getByText(/다시 시도하기/i);
+    expect(retryButton).toBeDefined();
+
+    // 다시 시도하기 버튼 클릭 시 상태 초기화 함수가 호출되는지 검증함
+    fireEvent.click(retryButton);
+    expect(mockResetStatus).toHaveBeenCalledTimes(1);
   });
 
-  it('페어링 완료 상태일 때 피실험자 번호(SUBJECT 01)가 표시되어야 함', () => {
-    // PAIRED 상태를 상수로 모사하여 검증 수행함
+  it('페어링 완료 상태일 때 피실험자 번호(SUBJECT 01)가 표시되고, 다른 그룹 참여 시 상태가 초기화되어야 함', () => {
+    const mockResetStatus = vi.fn();
     vi.mocked(usePairing).mockReturnValue({
       status: SESSION_STATUS.PAIRED,
       subjectIndex: 1,
@@ -152,11 +160,16 @@ describe('JoinPage 그룹 매핑 기반 UI 테스트 수행함', () => {
       isAllPaired: false,
       startPairing: vi.fn(),
       requestPairing: vi.fn(),
-      resetStatus: vi.fn(),
+      resetStatus: mockResetStatus,
     });
 
     render(<JoinPage />);
     expect(screen.getByText(/SUBJECT/i)).toBeDefined();
     expect(screen.getByText(/01/i)).toBeDefined();
+
+    // 다른 그룹에 참여하기 버튼 클릭 검증 (handleRetry 호출 확인)
+    const changeGroupButton = screen.getByText(/다른 그룹에 참여하기/i);
+    fireEvent.click(changeGroupButton);
+    expect(mockResetStatus).toHaveBeenCalledTimes(1);
   });
 });

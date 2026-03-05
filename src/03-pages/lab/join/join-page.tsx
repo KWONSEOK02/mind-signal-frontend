@@ -1,15 +1,22 @@
 'use client';
 
-import React, { useSyncExternalStore, useState, useRef } from 'react';
+import React, {
+  useSyncExternalStore,
+  useState,
+  useRef,
+  useEffect,
+} from 'react';
+import { useSearchParams } from 'next/navigation'; // 추가됨: URL 파라미터 감지용
 import { QRScanner, usePairing } from '@/05-features/sessions';
 import { SignalMeasurer, useSignal } from '@/05-features/signals';
-import { SESSION_STATUS, extractToken } from '@/07-shared'; // extractToken 유틸리티 임포트 추가함
+import { SESSION_STATUS, extractToken } from '@/07-shared';
 import {
   Smartphone,
   Link as LinkIcon,
   CheckCircle2,
   AlertCircle,
-} from 'lucide-react'; // AlertCircle 아이콘 추가함
+  RefreshCw, // 추가됨: 재시도 버튼 아이콘
+} from 'lucide-react';
 
 const emptySubscribe = () => () => {};
 
@@ -22,6 +29,8 @@ const JoinPage = () => {
     () => true,
     () => false
   );
+
+  const searchParams = useSearchParams();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // 중복 스캔 방지를 위한 상태 추적 변수 선언함
@@ -35,6 +44,31 @@ const JoinPage = () => {
 
   const { isMeasuring, lastSentTime, startMeasurement, stopMeasurement } =
     useSignal(groupId, subjectIndex);
+
+  /**
+   * URL 기반 자동 페어링 로직 수행함 (새로 추가된 누락 복구 기능)
+   */
+  useEffect(() => {
+    if (!isClient) return;
+
+    const rawCode = searchParams?.get('code');
+    const token = rawCode ? extractToken(rawCode) : null;
+
+    if (token && token !== lastProcessedCode.current) {
+      lastProcessedCode.current = token;
+      resetStatus();
+      requestPairing(token);
+    }
+  }, [searchParams, isClient, requestPairing, resetStatus]);
+
+  /**
+   * 재시도 및 중복 가드 초기화 로직 수행함 (새로 추가된 기능)
+   */
+  const handleRetry = () => {
+    lastProcessedCode.current = null;
+    resetStatus();
+    setIsScannerOpen(false);
+  };
 
   /**
    * QR 스캔 성공 시 토큰 추출 및 중복 호출 방지 로직 수행함
@@ -52,7 +86,7 @@ const JoinPage = () => {
     if (result.success) {
       setIsScannerOpen(false);
     } else {
-      // 실패 시 재스캔이 가능하도록 참조값 초기화 수행함
+      // 실패 시 즉각적인 재스캔이 가능하도록 참조값 초기화 수행함
       lastProcessedCode.current = null;
       setIsScannerOpen(false);
     }
@@ -83,13 +117,23 @@ const JoinPage = () => {
               {/* 에러 및 만료 상태 피드백 UI 제공함 */}
               {(status === SESSION_STATUS.EXPIRED ||
                 status === SESSION_STATUS.ERROR) && (
-                <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
-                  <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                  <p className="text-sm font-medium">
-                    {status === SESSION_STATUS.EXPIRED
-                      ? '세션이 만료되었거나 유효하지 않은 실험 정보임. 운영자에게 새로운 QR 코드를 요청하기 바람.'
-                      : '네트워크 또는 서버 오류가 발생함. 잠시 후 다시 시도하기 바람.'}
-                  </p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+                    <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium">
+                      {status === SESSION_STATUS.EXPIRED
+                        ? '세션이 만료되었거나 유효하지 않은 실험 정보임. 운영자에게 새로운 QR 코드를 요청하기 바람.'
+                        : '네트워크 또는 서버 오류가 발생함. 잠시 후 다시 시도하기 바람.'}
+                    </p>
+                  </div>
+                  {/* 추가됨: 스마트 재시도 버튼 */}
+                  <button
+                    onClick={handleRetry}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition-colors"
+                  >
+                    <RefreshCw size={16} />
+                    다시 시도하기
+                  </button>
                 </div>
               )}
 
@@ -151,7 +195,7 @@ const JoinPage = () => {
               />
 
               <button
-                onClick={resetStatus}
+                onClick={handleRetry} // 다른 그룹 참여 시에도 Ref를 깔끔하게 지우기 위해 handleRetry로 교체함
                 className="w-full py-4 text-xs font-bold text-slate-500 hover:text-white transition-colors uppercase tracking-widest"
               >
                 다른 그룹에 참여하기
