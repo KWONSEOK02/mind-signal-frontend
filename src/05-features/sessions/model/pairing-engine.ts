@@ -1,4 +1,5 @@
 import { sessionApi, PairingSessionStatus, PairingData } from '@/07-shared'; // PairingData 임포트 추가함
+import { AxiosError } from 'axios'; // 에러 처리를 위한 AxiosError 임포트 추가함
 
 /**
  * [Model] 단일 피실험자 페어링 단계를 수행하는 독립 엔진 정의함
@@ -48,7 +49,17 @@ export class PairingStep {
             this.clear();
           }
         } catch (pollError) {
-          console.error('폴링 오류 발생함:', pollError);
+          // 401 및 410 에러 발생 시 세션 만료 상태로 즉시 전환 및 자원 해제 수행함
+          const axiosError = pollError as AxiosError;
+          if (
+            axiosError.response?.status === 401 ||
+            axiosError.response?.status === 410
+          ) {
+            onStatusUpdate('EXPIRED');
+            this.clear();
+          } else {
+            console.error('폴링 오류 발생함:', pollError);
+          }
         }
       }, 3000);
 

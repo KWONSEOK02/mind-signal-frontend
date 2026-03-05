@@ -10,7 +10,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,md}\"",
     "test": "vitest run",
-    "test:watch": "vitest",
+    "test:watch": "vitest --ui --coverage",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useSyncExternalStore, useState } from 'react';
+import React, { useSyncExternalStore, useState, useRef } from 'react';
 import { QRScanner, usePairing } from '@/05-features/sessions';
 import { SignalMeasurer, useSignal } from '@/05-features/signals';
-import { SESSION_STATUS } from '@/07-shared'; // 상수 임포트 수행함
-import { Smartphone, Link as LinkIcon, CheckCircle2 } from 'lucide-react';
+import { SESSION_STATUS, extractToken } from '@/07-shared'; // extractToken 유틸리티 임포트 추가함
+import {
+  Smartphone,
+  Link as LinkIcon,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-react'; // AlertCircle 아이콘 추가함
 
 const emptySubscribe = () => () => {};
 
@@ -19,6 +24,9 @@ const JoinPage = () => {
   );
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
+  // 중복 스캔 방지를 위한 상태 추적 변수 선언함
+  const lastProcessedCode = useRef<string | null>(null);
+
   /**
    * 그룹 합류 및 상태 관리 수행함 (피실험자는 단일 대상이므로 인자 생략함)
    */
@@ -27,6 +35,28 @@ const JoinPage = () => {
 
   const { isMeasuring, lastSentTime, startMeasurement, stopMeasurement } =
     useSignal(groupId, subjectIndex);
+
+  /**
+   * QR 스캔 성공 시 토큰 추출 및 중복 호출 방지 로직 수행함
+   */
+  const handleScanSuccess = async (rawCode: string) => {
+    const token = extractToken(rawCode);
+    if (!token) return;
+
+    // 동일한 토큰에 대한 중복 요청 차단함
+    if (lastProcessedCode.current === token) return;
+    lastProcessedCode.current = token;
+
+    const result = await requestPairing(token);
+
+    if (result.success) {
+      setIsScannerOpen(false);
+    } else {
+      // 실패 시 재스캔이 가능하도록 참조값 초기화 수행함
+      lastProcessedCode.current = null;
+      setIsScannerOpen(false);
+    }
+  };
 
   if (!isClient) return <div className="min-h-screen bg-slate-950" />;
 
@@ -50,6 +80,19 @@ const JoinPage = () => {
         <section className="space-y-6">
           {status !== SESSION_STATUS.PAIRED ? (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {/* 에러 및 만료 상태 피드백 UI 제공함 */}
+              {(status === SESSION_STATUS.EXPIRED ||
+                status === SESSION_STATUS.ERROR) && (
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+                  <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                  <p className="text-sm font-medium">
+                    {status === SESSION_STATUS.EXPIRED
+                      ? '세션이 만료되었거나 유효하지 않은 실험 정보임. 운영자에게 새로운 QR 코드를 요청하기 바람.'
+                      : '네트워크 또는 서버 오류가 발생함. 잠시 후 다시 시도하기 바람.'}
+                  </p>
+                </div>
+              )}
+
               {!isScannerOpen ? (
                 <button
                   onClick={() => setIsScannerOpen(true)}
@@ -65,10 +108,7 @@ const JoinPage = () => {
               ) : (
                 <div className="animate-in zoom-in duration-300">
                   <QRScanner
-                    onScanSuccess={(code: string) => {
-                      requestPairing(code);
-                      setIsScannerOpen(false);
-                    }}
+                    onScanSuccess={handleScanSuccess}
                     onClose={() => setIsScannerOpen(false)}
                   />
                 </div>

@@ -10,3 +10,4 @@ export { default as authApi } from './api/auth';
  */
 export * from './constants';
 export * from './types';
+export * from './utils';

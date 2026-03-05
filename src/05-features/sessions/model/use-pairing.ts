@@ -32,6 +32,7 @@ const usePairing = (targetSubjectCount: number = 2) => {
         .execute(
           (newStatus) => {
             if (newStatus === SESSION_STATUS.PAIRED) {
+              // 최신 상태를 참조하기 위해 functional update 방식 사용함
               setPairedSubjects((prev) => {
                 const nextIndex = prev.length + 1;
                 const newList = [...prev, nextIndex];
@@ -77,8 +78,10 @@ const usePairing = (targetSubjectCount: number = 2) => {
       return { success: true };
     } catch (error) {
       const axiosError = error as AxiosError;
+      // 410(소멸) 및 401(만료/미인증) 에러 모두 EXPIRED 상태로 매핑하여 처리함
       const errorStatus: PairingSessionStatus =
-        axiosError.response?.status === 410
+        axiosError.response?.status === 410 ||
+        axiosError.response?.status === 401
           ? SESSION_STATUS.EXPIRED
           : SESSION_STATUS.ERROR;
 

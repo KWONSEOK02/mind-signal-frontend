@@ -66,3 +66,18 @@ export const JoinedAsSubject: Story = {
     },
   },
 };
+
+/**
+ * [State] 세션 만료 및 에러 발생 상태의 레이아웃 사양 정의함
+ */
+export const ExpiredStatus: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '유효하지 않은 QR 코드를 스캔했거나 세션이 만료되어 에러 문구가 노출된 상태임.',
+      },
+    },
+    // Storybook 환경에서 모킹을 주입하여 상태를 렌더링하도록 설정할 수 있음
+  },
+};
