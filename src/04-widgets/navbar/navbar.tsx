@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Sun,
   Moon,
@@ -8,6 +8,7 @@ import {
   Calendar,
   Activity,
   LogOut,
+  X,
 } from 'lucide-react';
 import { PageType } from '@/07-shared/types';
 
@@ -32,10 +33,13 @@ const Navbar: React.FC<NavbarProps> = ({
   userName, // 추가
   openAuthModal,
 }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // 모바일 메뉴 개폐 상태 관리함
+
   // 페이지 이동과 동시에 스크롤을 맨 위로 올리는 함수 추가
   const handleNavClick = (pageId: PageType) => {
     setCurrentPage(pageId);
     window.scrollTo(0, 0); // 즉시 맨 위로 이동
+    setIsMobileMenuOpen(false); // 모바일 메뉴 닫기 수행함
   };
 
   const navItems: { name: string; id: PageType }[] = [
@@ -52,8 +56,9 @@ const Navbar: React.FC<NavbarProps> = ({
   const handleLogout = () => {
     localStorage.removeItem('token'); // 토큰 삭제
     setIsLoggedIn(false);
+    setIsMobileMenuOpen(false);
     setCurrentPage('home');
-    window.location.reload(); // 세션 초기화를 위해 새로고침 추천
+    window.location.reload(); // 세션 초기화를 위해 새로고침 수행함
   };
 
   return (
@@ -155,10 +160,91 @@ const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        <button className="md:hidden p-2 text-slate-500">
-          <Menu size={24} />
+        {/* 모바일 햄버거 버튼: 토글 이벤트 연결함 */}
+        <button
+          className="md:hidden p-2 text-slate-500 hover:text-indigo-500 transition-colors"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
+
+      {/* 모바일 드롭다운 메뉴 영역 구성함 */}
+      {isMobileMenuOpen && (
+        <div
+          className={`md:hidden border-t mt-4 px-6 py-8 animate-in slide-in-from-top-2 duration-200 ${
+            theme === 'dark'
+              ? 'bg-slate-950/95 border-white/10'
+              : 'bg-white/95 border-slate-200'
+          }`}
+        >
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavClick(item.id)}
+                  className={`text-left text-base font-bold transition-all ${
+                    currentPage === item.id
+                      ? 'text-indigo-500'
+                      : theme === 'dark'
+                        ? 'text-slate-300'
+                        : 'text-slate-700'
+                  }`}
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="h-px w-full bg-white/10" />
+
+            <div className="flex flex-col gap-5">
+              <button
+                onClick={() => {
+                  toggleTheme();
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`flex items-center gap-3 text-sm font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}
+              >
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                모드 전환
+              </button>
+
+              {!isLoggedIn ? (
+                <button
+                  onClick={() => {
+                    openAuthModal();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 text-sm font-black text-indigo-500"
+                >
+                  <LogIn size={18} />
+                  로그인 / 가입
+                </button>
+              ) : (
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 text-sm font-black text-rose-500"
+                >
+                  <LogOut size={18} />
+                  로그아웃
+                </button>
+              )}
+
+              <a
+                href={GOOGLE_FORM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-4 bg-indigo-600 text-white rounded-xl text-sm font-black shadow-lg"
+              >
+                <Calendar size={16} />
+                예약하기
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
