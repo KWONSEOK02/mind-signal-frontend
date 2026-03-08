@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
-import {
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import Image from 'next/image';
 
 interface IntroProps {

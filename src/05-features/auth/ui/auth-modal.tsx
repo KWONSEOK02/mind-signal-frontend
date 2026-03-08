@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react'; //useEffect 추가(모달 상태 초기화 문제 해결)
-import { authApi, AuthResponse } from '@/07-shared/api/auth';
+import React, { useState, useEffect } from 'react';
+import { authApi, AuthResponse } from '@/07-shared/api'; // 프로젝트 배럴 파일 컨벤션 준수함
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,6 +10,9 @@ interface AuthModalProps {
   theme: 'light' | 'dark';
 }
 
+/**
+ * [Feature] 사용자 인증(로그인/회원가입) 및 외부 계정 연동 기능을 제공하는 모달 컴포넌트임
+ */
 const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
@@ -19,26 +22,31 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(''); // 성공 메시지용 상태 추가
+  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    passwordConfirm: '', //비밀번호 확인 상태 추가
+    passwordConfirm: '', // 비밀번호 확인 필드 추가함
     name: '',
   });
 
-  //모달의 열림/닫힘 상태가 바뀔 때 실행.
+  /**
+   * 모달 노출 상태 변경 시 폼 데이터 및 에러 상태 초기화 수행함
+   */
   useEffect(() => {
     if (isOpen) {
-      // 모달이 새로 열릴 때마다 항상 '로그인' 화면이 먼저 나오도록 초기화.
       setIsLogin(true);
       setError('');
-      setFormData({ email: '', password: '', passwordConfirm: '', name: '' }); //비밀번호 확인 부분도 같이 초기화하도록 수정
+      setSuccess('');
+      setFormData({ email: '', password: '', passwordConfirm: '', name: '' });
     }
-  }, [isOpen]); // isOpen 값이 변경될 때마다 이 함수 실행.
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
+  /**
+   * 인증 폼 제출 핸들러 정의함
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -47,7 +55,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       if (isLogin) {
-        // 로그인: { data } 로 쓰면 response.data 대신 바로 data를 쓸 수 있어 편함.
+        // 1. 로그인 프로세스 수행함
         const { data } = (await authApi.login(formData)) as {
           data: AuthResponse;
         };
@@ -58,29 +66,26 @@ const AuthModal: React.FC<AuthModalProps> = ({
           onClose();
         }
       } else {
-        //가입 API 쏘기 전에 비밀번호 두 개가 똑같은지 먼저 검사
+        // 2. 회원가입 프로세스 전 유효성 검사 수행함
         if (formData.password !== formData.passwordConfirm) {
           setError('비밀번호가 일치하지 않습니다.');
           setIsLoading(false);
           return;
         }
 
-        // 회원가입: ...formData를 쓰면 이메일, 비번, 이름을 한 번에 보낼 수 있음
+        // 3. 회원가입 API 요청 수행함
         await authApi.signup({
           ...formData,
-          //기존에 강제로 넣던 formData.password 대신, formData 안에 있는 passwordConfirm이 넘어감
           loginType: 'local',
         });
 
-        setIsLogin(true); // 가입 성공하면 로그인 화면으로 이동
+        setIsLogin(true);
         setSuccess('회원가입이 완료되었습니다. 로그인을 진행해주세요.');
-        setFormData((prev) => ({ ...prev, password: '', passwordConfirm: '' })); //성공 시 비번이랑 비번확인 칸 둘 다 지워짐.
+        setFormData((prev) => ({ ...prev, password: '', passwordConfirm: '' }));
       }
     } catch (err: unknown) {
-      //Swagger에 적어둔 "이미 가입된 이메일" 같은 메시지를 그대로 보여줌.
       const axiosError = err as { response?: { data?: { message?: string } } };
       const serverMessage = axiosError.response?.data?.message;
-
       setError(serverMessage || '요청 처리에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
@@ -94,7 +99,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
     });
   };
 
-  // 라이트 모드에서도 테두리가 잘 보이도록 설정된 스타일
   const inputStyle = `w-full p-3 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
     theme === 'dark'
       ? 'border-white/10 bg-white/5 text-white'
@@ -116,7 +120,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         }`}
       >
         <div className="p-8">
-          <div className="flex justify-between items-center mb-8">
+          <header className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-2xl font-black tracking-tight mb-1">
                 {isLogin ? '반갑습니다!' : '시작하기'}
@@ -131,7 +135,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   : '새로운 계정을 생성하세요.'}
               </p>
             </div>
-          </div>
+          </header>
+
           {success && (
             <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-500 text-sm font-bold text-center">
               {success}
@@ -144,7 +149,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* handleSubmit을 form에 연결 */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <input
@@ -175,6 +179,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
               className={inputStyle}
               required
             />
+            {!isLogin && (
+              <input
+                type="password"
+                name="passwordConfirm"
+                placeholder="비밀번호 확인"
+                value={formData.passwordConfirm}
+                onChange={handleChange}
+                className={inputStyle}
+                required
+              />
+            )}
 
             {/*회원가입(!isLogin)일 때만 나타나는 비밀번호 확인 칸 추가 */}
             {!isLogin && (
@@ -198,15 +213,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </button>
           </form>
 
-          {/* 여기서부터 추가된 외부 로그인 UI 영역 (로그인 화면일 때만 표시) */}
+          {/* 팀원이 추가한 외부 로그인 UI 영역 반영함 */}
           {isLogin && (
             <div className="mt-8">
-              {/* 구분선 및 문구 */}
               <div className="relative flex items-center justify-center mb-6">
                 <div className="absolute inset-0 flex items-center">
                   <div
                     className={`w-full border-t ${theme === 'dark' ? 'border-white/10' : 'border-slate-200'}`}
-                  ></div>
+                  />
                 </div>
                 <div
                   className={`relative px-4 text-xs font-bold ${theme === 'dark' ? 'bg-slate-900 text-slate-400' : 'bg-white text-slate-500'}`}
@@ -214,15 +228,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   외부 계정으로 로그인하기
                 </div>
               </div>
-
-              {/* 동그란 구글, 카카오 버튼들 */}
               <div className="flex justify-center gap-4">
-                {/* 구글 로그인 버튼 */}
                 <button
                   type="button"
                   className="flex items-center justify-center w-12 h-12 rounded-full bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors cursor-pointer"
                 >
-                  {/* 구글 공식 SVG 아이콘 */}
                   <svg
                     viewBox="0 0 24 24"
                     width="24"
@@ -247,13 +257,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     />
                   </svg>
                 </button>
-
-                {/* 카카오 로그인 버튼 */}
                 <button
                   type="button"
                   className="flex items-center justify-center w-12 h-12 rounded-full bg-[#FEE500] hover:bg-[#FDD800] transition-colors cursor-pointer"
                 >
-                  {/* 카카오 공식 SVG 아이콘 (갈색) */}
                   <svg
                     viewBox="0 0 24 24"
                     width="24"
@@ -269,13 +276,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
           )}
-          {/* 여기까지 외부 로그인 영역 */}
 
-          <div className="mt-8 text-center select-none">
+          <footer className="mt-8 text-center select-none">
             <div
-              className={`text-xs font-bold ${
-                theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-              }`}
+              className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}
             >
               {isLogin ? (
                 <p className="cursor-default">
@@ -290,7 +294,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                         password: '',
                         passwordConfirm: '',
                         name: '',
-                      }); // 로그인->회원가입으로 전환할 때 폼 데이터 초기화 (passwordConfirm 포함)
+                      });
                     }}
                     className="text-indigo-500 ml-1 cursor-pointer hover:underline decoration-2 underline-offset-4"
                   >
@@ -310,7 +314,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                         password: '',
                         passwordConfirm: '',
                         name: '',
-                      }); // 회원가입->로그인으로 전환할 때 폼 데이터 초기화 (passwordConfirm 포함)
+                      });
                     }}
                     className="text-indigo-500 ml-1 cursor-pointer hover:underline decoration-2 underline-offset-4"
                   >
@@ -319,7 +323,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 </p>
               )}
             </div>
-          </div>
+          </footer>
         </div>
       </div>
     </div>
