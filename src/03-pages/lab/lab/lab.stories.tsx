@@ -25,9 +25,34 @@ type Story = StoryObj<typeof LabPage>;
 export const Default: Story = {};
 
 /**
- * [Interactive] QR 생성 후 닫기 버튼을 눌러 세션을 리셋하는 시나리오임
- * [Fix] TypeError 방지를 위해 expect 직접 임포트 제거함
- * vitest run 환경에서는 globals: true 설정에 의해 전역 expect 참조 수행함
+ * [Interactive] BTI 모드 (1인) 화면 렌더링 확인용 스토리 추가함
+ * play 함수를 통해 진입 시 톱니바퀴 메뉴를 열어 모드를 전환하도록 자동화함
+ */
+export const BtiMode: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // 1. 설정(톱니바퀴) 버튼을 찾아 클릭하여 드롭다운 활성화함
+    const allButtons = canvas.getAllByRole('button');
+    const settingsBtn = allButtons.find((btn: HTMLElement) =>
+      btn.querySelector('svg.lucide-settings')
+    );
+    if (settingsBtn) {
+      await userEvent.click(settingsBtn);
+    }
+
+    // 2. 드롭다운 내 BTI 모드 (1인) 버튼을 클릭하여 모드 전환함
+    const btiModeBtn = await canvas.findByText(/BTI 모드 \(1인\)/i);
+    await userEvent.click(btiModeBtn);
+
+    // 3. UI가 BTI 모드(1인 전용)로 변경되었는지 단언함
+    await expect(canvas.getByText(/Brain-Targeted/i)).toBeInTheDocument();
+  },
+};
+
+/**
+ * [Interactive] QR 생성 후 모드 변경을 통해 세션을 리셋하는 시나리오임
+ * 기존 톱니바퀴 단일 클릭에서 '메뉴 열기 -> 모드 재선택'으로 로직 동기화함
  */
 export const QRResetInteraction: Story = {
   play: async ({ canvasElement }) => {
@@ -37,16 +62,30 @@ export const QRResetInteraction: Story = {
     const createBtn = await canvas.findByText(/Subject 01 연결 QR 생성/i);
     await userEvent.click(createBtn);
 
-    // 2. 닫기 버튼 노출 대기 및 클릭 수행함
+    // 2. QR 닫기 버튼으로 1차 닫기 검증 (직접 닫기)
     const closeBtn = await canvas.findByText(/닫기/i);
     await userEvent.click(closeBtn);
 
-    /**
-     * [Assertion] 전역 환경에서 제공되는 expect 객체 사용하여 상태 초기화 검증함
-     * 스토리북 UI에서는 setup 파일의 shim이 동작하고, Vitest 실행 시에는 실제 매처가 동작함
-     */
-    const resetBtn = await canvas.findByText(/Subject 01 연결 QR 생성/i);
-    await expect(resetBtn).toBeDefined();
+    // 3. 다시 QR 열기 수행함
+    await userEvent.click(await canvas.findByText(/Subject 01 연결 QR 생성/i));
+
+    // 4. 설정(톱니) 버튼 식별하여 클릭 수행함 (드롭다운 활성화)
+    const allButtons = canvas.getAllByRole('button');
+    const settingsBtn = allButtons.find((btn: HTMLElement) =>
+      btn.querySelector('svg.lucide-settings')
+    );
+    if (settingsBtn) {
+      await userEvent.click(settingsBtn);
+    }
+
+    // 5. 드롭다운 내 DUAL 모드 재선택하여 초기화 유도함
+    const dualModeBtn = await canvas.findByText(/DUAL 모드 \(2인\)/i);
+    await userEvent.click(dualModeBtn);
+
+    // 6. 모드 변경 로직에 의해 QR 대기 화면이 사라지고 초기 버튼으로 복구되었는지 확인함
+    await expect(
+      canvas.getByText(/Subject 01 연결 QR 생성/i)
+    ).toBeInTheDocument();
   },
 };
 
@@ -64,16 +103,23 @@ export const ExperimentReady: Story = {
             status: 'success',
             data: {
               groupId: 'TEST_GROUP',
+              subjectIndex: 1, // 테스트 환경 호환을 위한 임의 인덱스 할당함
               pairingToken: 'ABCDEF',
               expiresAt: new Date(Date.now() + 300000).toISOString(),
             },
           });
         }),
-        // 세션 상태 확인 API에서 항상 '연결됨' 상태 반환하도록 모킹함
+        // 세션 상태 확인 API에서 모두 연결된 배열을 반환하도록 모킹함
         http.get(/.*status.*/, () => {
           return HttpResponse.json({
             status: 'success',
-            data: { guestJoined: true },
+            data: {
+              groupId: 'TEST_GROUP',
+              sessions: [
+                { subjectIndex: 1, status: 'PAIRED', guestJoined: true },
+                { subjectIndex: 2, status: 'PAIRED', guestJoined: true },
+              ],
+            },
           });
         }),
       ],
@@ -86,20 +132,14 @@ export const ExperimentReady: Story = {
     const createBtn = await canvas.findByText(/Subject 01 연결 QR 생성/i);
     await userEvent.click(createBtn);
 
-    // 2. 모킹된 API 응답을 통해 Subject 02 대기 화면으로 전환되는지 확인 수행함
-    // 폴링(3초) 대기 시간을 넉넉히 고려하여 timeout을 10000ms로 증가함
-    await canvas.findByText(
-      /STEP 2: SUBJECT 02 WAITING/i,
-      {},
-      { timeout: 10000 }
-    );
-
-    // 3. 두 번째 연결까지 완료되어 최종적으로 '실험 시작' 버튼이 노출되는지 확인 수행함
+    // 2. 모킹된 API 응답을 통해 최종 실험 시작 버튼이 노출되는지 검증함
+    // 폴링 주기 및 상태 갱신을 위해 넉넉한 시간 부여함
     const startBtn = await canvas.findByRole(
       'button',
       { name: /실험 시작/i },
-      { timeout: 10000 }
+      { timeout: 5000 }
     );
-    await expect(startBtn).toBeDefined();
+
+    await expect(startBtn).toBeInTheDocument();
   },
 };
