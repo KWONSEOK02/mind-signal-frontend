@@ -22,46 +22,68 @@ const usePairing = (targetSubjectCount: number = 2) => {
 
   /**
    * [OPERATOR] 다음 피실험자 페어링 단계 시작함
+   * 기존 groupId 존재 시 재사용하여 동일 그룹 내 세션 생성 수행함
    */
   const startPairing = useCallback(async () => {
+    // 목표 인원 달성 시 실행 차단함
     if (pairedSubjects.length >= targetSubjectCount) return;
 
     setStatus(SESSION_STATUS.CREATED);
+    setPairingCode(null); // 추가: 새로운 API 통신을 대기하는 동안 이전 QR 코드가 노출되는 것을 방지함
     try {
+      // pairing-engine을 통해 API 호출 및 상태 전이 관리 수행함
       await engineRef.current
         .execute(
           (newStatus) => {
             if (newStatus === SESSION_STATUS.PAIRED) {
-              // 최신 상태를 참조하기 위해 functional update 방식 사용함
               setPairedSubjects((prev) => {
                 const nextIndex = prev.length + 1;
-                const newList = [...prev, nextIndex];
-                if (newList.length >= targetSubjectCount) {
-                  setStatus(SESSION_STATUS.PAIRED);
-                } else {
-                  setStatus(SESSION_STATUS.CREATED);
-                }
-                return newList;
+                return [...prev, nextIndex];
               });
             } else {
               setStatus(newStatus);
             }
           },
-          (time) => setTimeLeft(time)
+          (time) => setTimeLeft(time),
+          groupId // 보존된 groupId 전달함
         )
         .then((data) => {
-          setGroupId(data.groupId);
+          // 최초 생성된 그룹 ID 보존 수행함
+          if (!groupId) {
+            setGroupId(data.groupId);
+          }
           setPairingCode(data.pairingToken);
           setRole('OPERATOR');
+          setStatus(SESSION_STATUS.CREATED);
         });
     } catch {
       setStatus(SESSION_STATUS.ERROR);
     }
-  }, [targetSubjectCount, pairedSubjects.length]);
+  }, [targetSubjectCount, pairedSubjects.length, groupId]);
 
   /**
-   * [SUBJECT] 토큰을 사용하여 그룹 세션에 합류 수행함
-   * 확장된 PairingData 타입을 통해 subjectIndex를 안전하게 할당함
+   * 참가자 완료 상태 감지하여 자동 다음 단계 전환 수행함
+   * 동기적 setState로 인한 Cascading Renders 린트 에러 방지를 위해 비동기 처리함
+   */
+  useEffect(() => {
+    if (pairedSubjects.length > 0) {
+      // setTimeout을 사용하여 렌더링 사이클 충돌을 회피함
+      const timer = setTimeout(() => {
+        if (pairedSubjects.length < targetSubjectCount) {
+          // 미달 시 다음 참가자 페어링 자동 트리거함
+          startPairing();
+        } else {
+          // 완료 시 최종 상태 업데이트함
+          setStatus(SESSION_STATUS.PAIRED);
+        }
+      }, 0);
+
+      return () => clearTimeout(timer);
+    }
+  }, [pairedSubjects.length, targetSubjectCount, startPairing]);
+
+  /**
+   * [SUBJECT] 토큰 기반 세션 합류 로직 정의함
    */
   const requestPairing = useCallback(async (token: string) => {
     setStatus(SESSION_STATUS.IDLE);
@@ -70,7 +92,6 @@ const usePairing = (targetSubjectCount: number = 2) => {
       const { data } = response.data;
 
       setGroupId(data.groupId);
-      // PairingData 인터페이스 수정으로 인해 더 이상 타입 에러 발생하지 않음
       setSubjectIndex(data.subjectIndex ?? 1);
       setRole('SUBJECT');
       setStatus(SESSION_STATUS.PAIRED);
@@ -78,7 +99,6 @@ const usePairing = (targetSubjectCount: number = 2) => {
       return { success: true };
     } catch (error) {
       const axiosError = error as AxiosError;
-      // 410(소멸) 및 401(만료/미인증) 에러 모두 EXPIRED 상태로 매핑하여 처리함
       const errorStatus: PairingSessionStatus =
         axiosError.response?.status === 410 ||
         axiosError.response?.status === 401
@@ -92,7 +112,7 @@ const usePairing = (targetSubjectCount: number = 2) => {
   }, []);
 
   /**
-   * 모든 페어링 상태 및 리소스 초기화 수행함
+   * 세션 상태 및 관련 리소스 초기화 수행함
    */
   const resetStatus = useCallback(() => {
     engineRef.current.clear();
@@ -105,7 +125,7 @@ const usePairing = (targetSubjectCount: number = 2) => {
   }, []);
 
   /**
-   * 컴포넌트 언마운트 시 리소스 해제 수행함
+   * 컴포넌트 언마운트 시 엔진 리소스 해제함
    */
   useEffect(() => {
     const currentEngine = engineRef.current;

@@ -21,14 +21,17 @@ export class PairingStep {
   /**
    * 단일 페어링 프로세스 실행함
    * onStatusUpdate 콜백의 data 타입을 PairingData로 명시하여 any 제거함
+   * 다중 세션 그룹화를 위해 groupId를 선택적 인자로 추가하여 연동함
    */
   async execute(
     onStatusUpdate: (status: PairingSessionStatus, data?: PairingData) => void,
-    onTimeUpdate: (timeLeft: number) => void
+    onTimeUpdate: (timeLeft: number) => void,
+    groupId?: string | null
   ) {
     this.clear();
     try {
-      const response = await sessionApi.createdPairing();
+      // 전달받은 groupId가 존재하면 API 호출 시 포함하여 기존 그룹 재사용함
+      const response = await sessionApi.createdPairing(groupId || undefined);
       const { data } = response.data;
 
       const expiry = new Date(data.expiresAt).getTime();

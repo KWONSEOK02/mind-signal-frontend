@@ -186,11 +186,13 @@ const LabPage = () => {
                 STEP {pairedSubjects.length + 1}: SUBJECT 0
                 {pairedSubjects.length + 1} WAITING
               </p>
+              {/* 수정된 부분: 하위 컴포넌트에 subjectIndex 주입 완료함 */}
               <QRGenerator
                 value={pairingCode || 'SESSION-LOADING...'}
                 timeLeft={timeLeft}
                 onRefresh={startPairing}
                 isDark={true}
+                subjectIndex={pairedSubjects.length + 1}
               />
             </div>
           </section>

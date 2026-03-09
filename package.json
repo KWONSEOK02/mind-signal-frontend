@@ -56,6 +56,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "eslint-plugin-storybook": "^10.2.6",
+    "msw": "^2.12.10",
+    "msw-storybook-addon": "^2.0.6",
     "next-router-mock": "^1.0.5",
     "playwright": "^1.58.1",
     "prettier": "^3.8.1",
@@ -65,5 +67,10 @@
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.0.18"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

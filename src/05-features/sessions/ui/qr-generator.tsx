@@ -9,6 +9,7 @@ interface QRGeneratorProps {
   timeLeft: number; // 남은 시간(초) 데이터 사용함
   onRefresh: () => void; // 재발급 요청 함수 사용함
   isDark?: boolean; // 테마별 스타일 분기 사용함
+  subjectIndex?: number; // 현재 연결을 대기 중인 참가자 순번 추가함
 }
 
 /**
@@ -19,6 +20,7 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
   timeLeft,
   onRefresh,
   isDark = true,
+  subjectIndex,
 }) => {
   // 60초 미만 시 위험 상태 판단 로직 수행함
   const isExpiringSoon = timeLeft < 60;
@@ -54,7 +56,10 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
           <p
             className={`text-[11px] font-bold leading-tight ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
           >
-            기기로 QR 코드를 스캔하세요
+            {/* subjectIndex 존재 여부에 따라 동적 안내 텍스트 렌더링 수행함 */}
+            {subjectIndex
+              ? `${subjectIndex}번 피실험자 기기 연결 대기 중`
+              : '기기로 QR 코드를 스캔하세요'}
           </p>
           <p className="text-[9px] opacity-40 font-mono tracking-tight break-all mt-0.5 px-1 uppercase">
             {value.split('=')[1] || value}
@@ -68,16 +73,11 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
         className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-bold text-[11px] transition-all active:scale-95
           ${isDark ? 'bg-indigo-600/90 hover:bg-indigo-500 text-white' : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm'}`}
       >
-        <RefreshCw size={14} />새 코드 발급
+        <RefreshCw size={14} className={timeLeft === 0 ? 'animate-spin' : ''} />
+        새 코드 발급
       </button>
-
-      {/* 보안 안내: 레이아웃 간섭을 최소화하도록 폰트 크기 하향 조정 수행함 */}
-      <p className="text-[8px] opacity-30 uppercase tracking-tighter text-center leading-none">
-        Pairing expires in 300s for security.
-      </p>
     </div>
   );
 };
 
-// FSD Barrel File 규격 준수를 위해 기본 내보내기 포함함
 export default QRGenerator;
