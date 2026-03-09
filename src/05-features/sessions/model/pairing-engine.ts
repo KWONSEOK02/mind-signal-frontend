@@ -1,5 +1,25 @@
-import { sessionApi, PairingSessionStatus, PairingData } from '@/07-shared'; // PairingData 임포트 추가함
-import { AxiosError } from 'axios'; // 에러 처리를 위한 AxiosError 임포트 추가함
+import { sessionApi, PairingSessionStatus, PairingData } from '@/07-shared';
+import { AxiosError, AxiosResponse } from 'axios';
+
+/**
+ * 로컬 타입 정의 수행함 (API 타입 갱신 지연 및 타입 추론 오류 방지 목적)
+ */
+interface SessionStatusItem {
+  subjectIndex: number;
+  status: string;
+  guestJoined: boolean;
+}
+
+interface GroupPollData {
+  groupId: string;
+  sessions: SessionStatusItem[];
+}
+
+interface GroupPollResponse {
+  status: string;
+  data: GroupPollData;
+  message?: string;
+}
 
 /**
  * [Model] 단일 피실험자 페어링 단계를 수행하는 독립 엔진 정의함
@@ -20,7 +40,7 @@ export class PairingStep {
 
   /**
    * 단일 페어링 프로세스 실행함
-   * onStatusUpdate 콜백의 data 타입을 PairingData로 명시하여 any 제거함
+   * onStatusUpdate 콜백의 data 타입을 PairingData로 명시함
    * 다중 세션 그룹화를 위해 groupId를 선택적 인자로 추가하여 연동함
    */
   async execute(
@@ -46,8 +66,17 @@ export class PairingStep {
 
       this.pollingId = setInterval(async () => {
         try {
-          const pollRes = await sessionApi.checkSessionStatus(data.groupId);
-          if (pollRes.data.data.guestJoined) {
+          // 타입 단언을 통해 sessions 배열의 존재를 컴파일러에 강제 인식시킴
+          const pollRes = (await sessionApi.checkSessionStatus(
+            data.groupId
+          )) as unknown as AxiosResponse<GroupPollResponse>;
+
+          // 로컬 인터페이스를 사용하여 s 파라미터의 암묵적 any 타입 에러 방지함
+          const currentSession = pollRes.data.data.sessions.find(
+            (s: SessionStatusItem) => s.subjectIndex === data.subjectIndex
+          );
+
+          if (currentSession && currentSession.guestJoined) {
             onStatusUpdate('PAIRED', data);
             this.clear();
           }

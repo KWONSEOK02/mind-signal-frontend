@@ -6,7 +6,7 @@ import { composeStories } from '@storybook/react';
 import * as stories from './lab.stories';
 import { sessionApi } from '@/07-shared/api';
 import { AxiosResponse } from 'axios';
-import { PairingResponse } from '@/07-shared/api/session';
+import { PairingResponse, GroupStatusResponse } from '@/07-shared/api/session';
 
 /**
  * [Story] 스토리북 설정을 테스트 환경에 결합 수행함
@@ -79,24 +79,33 @@ describe('다중 페어링 상태 전이 및 완료 통합 테스트 수행함',
     vi.useFakeTimers();
 
     // API 기본 응답 모킹 수행함 (any 타입 제거 및 unknown을 거친 구체적 타입 단언 적용함)
-    vi.spyOn(sessionApi, 'createdPairing').mockResolvedValue({
-      data: {
-        status: 'success',
-        data: {
-          groupId: 'TEST_GROUP',
-          pairingToken: 'ABCDEF',
-          expiresAt: new Date(Date.now() + 300000).toISOString(),
-        },
-      },
-    } as unknown as AxiosResponse<PairingResponse>);
+    vi.spyOn(sessionApi, 'createdPairing').mockImplementation(
+      (groupId?: string) => {
+        return Promise.resolve({
+          data: {
+            status: 'success',
+            data: {
+              groupId: 'TEST_GROUP',
+              // groupId 인자가 있으면 기존 그룹에 추가되는 2번 참가자, 없으면 1번 참가자로 모킹함
+              subjectIndex: groupId ? 2 : 1,
+              pairingToken: 'ABCDEF',
+              expiresAt: new Date(Date.now() + 300000).toISOString(),
+            },
+          },
+        } as unknown as AxiosResponse<PairingResponse>);
+      }
+    );
 
     // 초기에는 아무도 접속하지 않은 상태로 모킹함
     vi.spyOn(sessionApi, 'checkSessionStatus').mockResolvedValue({
       data: {
         status: 'success',
-        data: { guestJoined: false },
+        data: {
+          groupId: 'TEST_GROUP',
+          sessions: [],
+        },
       },
-    } as unknown as AxiosResponse<PairingResponse>);
+    } as unknown as AxiosResponse<GroupStatusResponse>);
   });
 
   afterEach(() => {
@@ -123,9 +132,12 @@ describe('다중 페어링 상태 전이 및 완료 통합 테스트 수행함',
     vi.spyOn(sessionApi, 'checkSessionStatus').mockResolvedValueOnce({
       data: {
         status: 'success',
-        data: { guestJoined: true },
+        data: {
+          groupId: 'TEST_GROUP',
+          sessions: [{ subjectIndex: 1, status: 'PAIRED', guestJoined: true }],
+        },
       },
-    } as unknown as AxiosResponse<PairingResponse>);
+    } as unknown as AxiosResponse<GroupStatusResponse>);
 
     // 3. 폴링 주기(3초) 및 상태 업데이트(비동기 setTimeout) 진행함
     await act(async () => {
@@ -150,9 +162,12 @@ describe('다중 페어링 상태 전이 및 완료 통합 테스트 수행함',
     vi.spyOn(sessionApi, 'checkSessionStatus').mockResolvedValueOnce({
       data: {
         status: 'success',
-        data: { guestJoined: true },
+        data: {
+          groupId: 'TEST_GROUP',
+          sessions: [{ subjectIndex: 1, status: 'PAIRED', guestJoined: true }],
+        },
       },
-    } as unknown as AxiosResponse<PairingResponse>);
+    } as unknown as AxiosResponse<GroupStatusResponse>);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3500);
@@ -161,13 +176,19 @@ describe('다중 페어링 상태 전이 및 완료 통합 테스트 수행함',
     // 2번 참가자 화면 전환 검증함
     expect(screen.getByText(/STEP 2: SUBJECT 02 WAITING/i)).toBeDefined();
 
-    // 3. 2번 참가자 연결 완료 모킹 및 시간 경과함
+    // 3. 2번 참가자까지 연결 완료 모킹 및 시간 경과함
     vi.spyOn(sessionApi, 'checkSessionStatus').mockResolvedValueOnce({
       data: {
         status: 'success',
-        data: { guestJoined: true },
+        data: {
+          groupId: 'TEST_GROUP',
+          sessions: [
+            { subjectIndex: 1, status: 'PAIRED', guestJoined: true },
+            { subjectIndex: 2, status: 'PAIRED', guestJoined: true },
+          ],
+        },
       },
-    } as unknown as AxiosResponse<PairingResponse>);
+    } as unknown as AxiosResponse<GroupStatusResponse>);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3500);
