@@ -52,10 +52,11 @@ const useSignal = (groupId: string | null, subjectIndex: number | null) => {
    */
   const startMeasurement = useCallback(() => {
     if (isMeasuring) return;
+    if (!getCorrelationId()) return; // null guard
     setIsMeasuring(true);
     // 1초 간격으로 서버에 지표 전송함
     intervalRef.current = setInterval(captureAndSend, 1000);
-  }, [isMeasuring, captureAndSend]);
+  }, [isMeasuring, captureAndSend, getCorrelationId]);
 
   /**
    * 측정 중지 및 타이머 해제 수행함
