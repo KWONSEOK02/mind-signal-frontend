@@ -27,15 +27,16 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
 
   return (
     <div
-      className={`flex flex-col items-center gap-4 p-5 rounded-3xl border-2 border-dashed w-full max-w-[260px] mx-auto transition-all
-      ${isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-200 shadow-lg'}`}
+      className={`flex flex-col items-center gap-4 p-5 rounded-3xl border-2 border-dashed w-full max-w-[300px] mx-auto transition-all
+      ${isDark ? 'bg-slate-950/60 border-slate-700/50' : 'bg-white border-slate-200 shadow-lg'}`}
     >
-      <div className="p-3 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-slate-100">
+      {/* QR 래퍼: 모니터 난반사 최소화를 위해 어두운 ring 테두리 적용함 */}
+      <div className="p-3 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-slate-100 ring-4 ring-slate-900/60">
         <QRCodeSVG
           value={value}
-          size={140}
-          level="M"
-          includeMargin={false} // 부모 패딩 활용 위해 비활성화함
+          size={240}
+          level="H"
+          includeMargin={true} // QR 스캔 여백 확보를 위해 활성화함
         />
       </div>
 

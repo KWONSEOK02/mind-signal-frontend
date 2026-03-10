@@ -11,6 +11,9 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,md}\"",
     "test": "vitest run",
     "test:watch": "vitest --ui --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -22,6 +25,7 @@
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
     "html2canvas": "^1.4.1",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "qrcode.react": "^4.2.0",
@@ -35,6 +39,7 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.0",
+    "@playwright/test": "^1.58.2",
     "@storybook/addon-a11y": "^10.2.6",
     "@storybook/addon-docs": "^10.2.6",
     "@storybook/addon-onboarding": "^10.2.6",
