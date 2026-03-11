@@ -42,7 +42,7 @@ const JoinPage = () => {
   const { status, groupId, subjectIndex, sessionId, requestPairing, resetStatus } =
     usePairing();
 
-  const { isMeasuring, lastReceivedTime, startMeasurement, stopMeasurement } =
+  const { isMeasuring, lastReceivedTime, elapsedSeconds, startMeasurement, stopMeasurement } =
     useSignal(sessionId ?? null);
 
   /**
@@ -192,6 +192,7 @@ const JoinPage = () => {
                 onStart={startMeasurement}
                 onStop={stopMeasurement}
                 lastSentTime={lastReceivedTime}
+                elapsedSeconds={elapsedSeconds}
               />
 
               <button
