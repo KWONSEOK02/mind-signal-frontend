@@ -24,6 +24,7 @@ export default defineConfig({
       headless: true,
     },
     globals: true,
+    exclude: ['e2e/**', 'node_modules/**'],
     setupFiles: ['./.storybook/vitest.setup.ts'],
   },
   ssr: {
