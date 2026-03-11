@@ -24,8 +24,10 @@ const ClientLayoutContent = ({ children }: { children: React.ReactNode }) => {
   }, [pathname]);
 
   return (
-    <>
-      {/* 조건부 렌더링 제거하여 항상 Navbar를 표시함 */}
+    // 웹페이지 배경색
+    <div
+      className={`flex flex-col min-h-screen transition-colors duration-500 ${ui.theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}
+    >
       <Navbar
         theme={ui.theme}
         toggleTheme={ui.toggleTheme}
@@ -37,10 +39,9 @@ const ClientLayoutContent = ({ children }: { children: React.ReactNode }) => {
         openAuthModal={ui.openAuthModal}
       />
 
-      {/* 항상 상단 여백(pt-20)을 확보하여 Navbar와 콘텐츠 겹침 방지함 */}
-      <main className="min-h-screen pt-20">{children}</main>
+      {/* 네브바에 내용이 가려지지 않게 pt-20(여백)은 그대로 둠. */}
+      <main className="flex-grow pt-20">{children}</main>
 
-      {/* 조건부 렌더링 제거하여 항상 하단 위젯들을 표시함 */}
       <Footer theme={ui.theme} setCurrentPage={ui.handlePageChange} />
       <ChatAssistant theme={ui.theme} />
 
@@ -53,7 +54,7 @@ const ClientLayoutContent = ({ children }: { children: React.ReactNode }) => {
         }}
         theme={ui.theme}
       />
-    </>
+    </div>
   );
 };
 

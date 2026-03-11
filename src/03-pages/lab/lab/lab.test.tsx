@@ -2,6 +2,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import mockRouter from 'next-router-mock';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+// UIProvider 임포트 추가
+import { UIProvider } from '@/app/providers/ui-context';
+
 /**
  * [Fix] RedirectStatusCode 관련 SyntaxError 해결을 위해 임포트 소스 변경함
  * @storybook/nextjs-vite 대신 @storybook/react의 composeStories 사용하여
@@ -33,7 +36,12 @@ describe('LabPage 정밀 라우팅 및 인터랙션 통합 테스트 수행함',
 
   it('스토리에 정의된 QR 리셋 인터랙션이 정상 동작해야 함', async () => {
     // 렌더링 수행함
-    const { container } = render(<QRResetInteraction />);
+    // render 부분을 UIProvider로 감싸줌
+    const { container } = render(
+      <UIProvider>
+        <QRResetInteraction />
+      </UIProvider>
+    );
 
     /**
      * [Logic] 스토리의 play 함수 실행하여 QR 생성 및 닫기 시나리오 검증함
@@ -49,7 +57,12 @@ describe('LabPage 정밀 라우팅 및 인터랙션 통합 테스트 수행함',
 
   it('설정(톱니) 버튼 클릭 시 QR UI가 닫히고 라우터 상태가 유지되어야 함', async () => {
     const user = userEvent.setup();
-    render(<QRResetInteraction />);
+    //UIProvider로 감싸줌
+    render(
+      <UIProvider>
+        <QRResetInteraction />
+      </UIProvider>
+    );
 
     // 1. QR 생성 버튼 클릭하여 UI 활성화함
     const createBtn = screen.getByText(/Subject 01 연결 QR 생성/i);
