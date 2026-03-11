@@ -15,43 +15,27 @@ export interface EmotivMetrics {
 }
 
 /**
- * 뇌파 데이터 전송을 위한 페이로드 구조 정의함
+ * 측정 시작 서버 응답 규격 정의함
  */
-export interface SignalPayload {
-  correlationId: string; // [groupId]_[subjectIndex] 형식의 식별자임
-  metrics: EmotivMetrics;
-}
-
-/**
- * 서버 응답 규격 정의함
- */
-export interface SignalResponse {
+export interface MeasurementResponse {
   status: 'success' | 'fail';
   message?: string;
-  data?: unknown;
+  measuredAt?: string;
 }
 
 /**
- * 실시간 뇌파 신호 전송 관련 API 모음임
+ * EEG 실시간 측정 관련 API 모음임
+ * 최초 1회 HTTP POST로 Python 엔진 spawn 및 Redis 구독 트리거함
  */
-const signalApi = {
+const measurementApi = {
   /**
-   * 식별자(correlationId)를 기반으로 실시간 뇌파 데이터를 서버로 전송 수행함
+   * 세션 ID 기반으로 EEG 스트림 측정 시작 요청 수행함
+   * 성공 시 백엔드가 Python 엔진을 spawn하고 Socket.io로 eeg-live 이벤트 전송 시작함
    */
-  sendSignal: (
-    correlationId: string,
-    metrics: EmotivMetrics
-  ): Promise<AxiosResponse<SignalResponse>> =>
-    api.post<SignalResponse>('/signals/realtime', {
-      correlationId,
-      metrics,
-    }),
-
-  /**
-   * 특정 상관 식별자의 실시간 신호 상태 확인 수행함
-   */
-  getSignalStatus: (correlationId: string) =>
-    api.get<SignalResponse>(`/signals/status/${correlationId}`),
+  startMeasurement: (sessionId: string): Promise<AxiosResponse<MeasurementResponse>> =>
+    api.post<MeasurementResponse>(
+      `/measurements/sessions/${sessionId}/eeg/stream:start`
+    ),
 };
 
-export default signalApi;
+export default measurementApi;

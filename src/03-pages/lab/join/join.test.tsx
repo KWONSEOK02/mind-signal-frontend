@@ -16,6 +16,8 @@ vi.mock('@/05-features/sessions', () => ({
     role: 'SUBJECT',
     pairedSubjects: [], // 신규 필드 모킹 추가함
     isAllPaired: false,
+    sessions: [],
+    sessionId: null,
     requestPairing: vi.fn().mockResolvedValue({ success: true }),
     resetStatus: vi.fn(),
   })),
@@ -36,11 +38,11 @@ vi.mock('@/05-features/sessions', () => ({
  * [Feature] 신호 처리 훅 모의 처리 수행함
  */
 vi.mock('@/05-features/signals', () => ({
-  useSignal: (groupId: string | null, index: number | null) => {
-    const isValidSubject = groupId !== null && index !== null;
+  useSignal: (sessionId: string | null) => {
     return {
       isMeasuring: false,
-      lastSentTime: isValidSubject ? new Date().toISOString() : null,
+      currentMetrics: null,
+      lastReceivedTime: sessionId !== null ? new Date().toISOString() : null,
       startMeasurement: vi.fn(),
       stopMeasurement: vi.fn(),
     };
@@ -100,6 +102,8 @@ describe('JoinPage 그룹 매핑 기반 UI 테스트 수행함', () => {
       timeLeft: 300,
       pairedSubjects: [],
       isAllPaired: false,
+      sessions: [],
+      sessionId: null,
       startPairing: vi.fn(),
       requestPairing: mockRequestPairing,
       resetStatus: vi.fn(),
@@ -129,6 +133,8 @@ describe('JoinPage 그룹 매핑 기반 UI 테스트 수행함', () => {
       timeLeft: 300,
       pairedSubjects: [],
       isAllPaired: false,
+      sessions: [],
+      sessionId: null,
       startPairing: vi.fn(),
       requestPairing: vi.fn(),
       resetStatus: mockResetStatus,
@@ -158,6 +164,8 @@ describe('JoinPage 그룹 매핑 기반 UI 테스트 수행함', () => {
       timeLeft: 300,
       pairedSubjects: [1],
       isAllPaired: false,
+      sessions: [],
+      sessionId: 'session-id-123',
       startPairing: vi.fn(),
       requestPairing: vi.fn(),
       resetStatus: mockResetStatus,
