@@ -191,19 +191,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
               />
             )}
 
-            {/*회원가입(!isLogin)일 때만 나타나는 비밀번호 확인 칸 추가 */}
-            {!isLogin && (
-              <input
-                type="password"
-                name="passwordConfirm"
-                placeholder="비밀번호 확인"
-                value={formData.passwordConfirm}
-                onChange={handleChange}
-                className={inputStyle}
-                required
-              />
-            )}
-
             <button
               type="submit"
               disabled={isLoading}
@@ -213,7 +200,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </button>
           </form>
 
-          {/* 팀원이 추가한 외부 로그인 UI 영역 반영함 */}
+          {/* 외부 로그인 UI 영역 반영함 */}
           {isLogin && (
             <div className="mt-8">
               <div className="relative flex items-center justify-center mb-6">

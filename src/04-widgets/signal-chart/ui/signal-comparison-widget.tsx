@@ -24,7 +24,7 @@ const SignalPlaceholder = ({
   label: string;
   isDark: boolean;
 }) => (
-  // ⭐ 배경색과 테두리를 테마에 맞게 변경
+  //  배경색과 테두리를 테마에 맞게 변경
   <div
     className={`flex flex-col items-center justify-center h-[300px] rounded-[2rem] border border-dashed relative overflow-hidden group transition-colors duration-500 ${
       isDark
@@ -36,7 +36,7 @@ const SignalPlaceholder = ({
       className={`absolute inset-0 animate-pulse ${isDark ? 'bg-indigo-500/5' : 'bg-indigo-500/10'}`}
     />
     <div className="relative flex flex-col items-center gap-4">
-      {/* ⭐ 아이콘 박스 색상 변경 */}
+      {/* 아이콘 박스 색상 변경 */}
       <div
         className={`p-4 rounded-full border transition-transform duration-500 group-hover:scale-110 ${
           isDark
@@ -47,7 +47,7 @@ const SignalPlaceholder = ({
         <MonitorDot size={32} className="animate-bounce" />
       </div>
       <div className="text-center space-y-1">
-        {/* ⭐ 라벨 글자색 변경 */}
+        {/* 라벨 글자색 변경 */}
         <p
           className={`text-sm font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
         >
@@ -66,7 +66,7 @@ const SignalComparisonWidget = ({
   subject1Metrics,
   subject2Metrics,
 }: SignalComparisonWidgetProps) => {
-  // ⭐ 전역 UI 상태에서 theme 가져와서 isDark 판단
+  // 전역 UI 상태에서 theme 가져와서 isDark 판단
   const { theme } = useUI();
   const isDark = theme === 'dark';
 
@@ -76,7 +76,7 @@ const SignalComparisonWidget = ({
       <div className="space-y-4">
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            {/* ⭐ 아이콘 배경색 변경 */}
+            {/* 아이콘 배경색 변경 */}
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
                 isDark
@@ -86,7 +86,7 @@ const SignalComparisonWidget = ({
             >
               <User size={16} />
             </div>
-            {/* ⭐ [핵심] Subject 글자색 수정! */}
+            {/* Subject 글자색 수정 */}
             <span
               className={`text-sm font-black uppercase tracking-tighter transition-colors ${
                 isDark ? 'text-white' : 'text-slate-900'
@@ -104,7 +104,7 @@ const SignalComparisonWidget = ({
         </div>
 
         {subject1Metrics ? (
-          // ⭐ 차트 배경 박스 테마 적용
+          //  차트 배경 박스 테마 적용
           <div
             className={`p-6 rounded-[2.5rem] border backdrop-blur-sm transition-all duration-500 ${
               isDark
@@ -123,7 +123,7 @@ const SignalComparisonWidget = ({
       <div className="space-y-4">
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            {/* ⭐ 아이콘 배경색 변경 */}
+            {/* 아이콘 배경색 변경 */}
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
                 isDark
@@ -133,7 +133,7 @@ const SignalComparisonWidget = ({
             >
               <User size={16} />
             </div>
-            {/* ⭐ [핵심] Subject 글자색 수정! */}
+            {/* Subject 글자색 수정 */}
             <span
               className={`text-sm font-black uppercase tracking-tighter transition-colors ${
                 isDark ? 'text-white' : 'text-slate-900'
@@ -151,7 +151,7 @@ const SignalComparisonWidget = ({
         </div>
 
         {subject2Metrics ? (
-          // ⭐ 차트 배경 박스 테마 적용
+          // 차트 배경 박스 테마 적용
           <div
             className={`p-6 rounded-[2.5rem] border backdrop-blur-sm transition-all duration-500 ${
               isDark

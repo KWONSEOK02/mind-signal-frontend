@@ -58,7 +58,7 @@ const Expand: React.FC<ExpandProps> = ({ theme }) => {
         </p>
       </div>
 
-      <div className="flex justify-center gap-4 flex-wrap">
+      <div className="flex justify-center gap-4 flex-wrap ">
         {[
           {
             id: 'study' as TabType,
@@ -78,7 +78,7 @@ const Expand: React.FC<ExpandProps> = ({ theme }) => {
               setActiveTab(tab.id);
               setIsSubmitted(false);
             }}
-            className={`px-8 py-4 rounded-2xl border-2 font-black transition-all flex items-center gap-3 ${
+            className={`px-8 py-4 rounded-2xl border-2 font-black transition-all flex items-center gap-3 cursor-pointer ${
               activeTab === tab.id
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-600/20'
                 : `glass text-slate-500 ${isDark ? 'border-white/5 hover:border-white/10' : 'border-slate-100 hover:border-slate-200'}`
@@ -140,14 +140,14 @@ const Expand: React.FC<ExpandProps> = ({ theme }) => {
                   />
                   <button
                     type="submit"
-                    className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2"
+                    className="bg-indigo-600 text-white cursor-pointer px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2"
                   >
                     <Bell size={16} /> 신청
                   </button>
                 </div>
               </form>
             ) : (
-              <div className="text-emerald-500 font-black flex flex-col items-center gap-2">
+              <div className="text-emerald-500 font-black flex flex-col items-center gap-2 ">
                 <CheckCircle2 /> 신청 완료!
               </div>
             )}

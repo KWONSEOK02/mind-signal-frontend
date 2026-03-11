@@ -123,7 +123,7 @@ const LabPage = () => {
       return (
         <button
           onClick={handleStartExperiment}
-          className="group relative inline-flex items-center gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20"
+          className="group relative inline-flex items-center cursor-pointer gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20"
         >
           <Play size={20} fill="currentColor" />
           <span>실험 시작</span>
@@ -146,7 +146,7 @@ const LabPage = () => {
             setIsQRVisible(true);
           }
         }}
-        className="group relative inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-indigo-500/20"
+        className="group relative inline-flex items-center cursor-pointer gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-indigo-500/20"
       >
         {isQRVisible ? <X size={20} /> : <PlusCircle size={20} />}
         <span>{isQRVisible ? '닫기' : buttonText}</span>
@@ -155,12 +155,12 @@ const LabPage = () => {
   };
 
   return (
-    // ⭐ 1. 최상단 main 배경색을 투명하게(transparent) 하거나 테마에 맞게 변경
+    //  1. 최상단 main 배경색을 투명하게(transparent) 하거나 테마에 맞게 변경
     <main
       className={`min-h-screen pt-24 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
     >
       <div className="max-w-[1600px] mx-auto space-y-10">
-        {/* ⭐ 2. 헤더 밑줄 색상 변경*/}
+        {/*  2. 헤더 밑줄 색상 변경*/}
         <header
           className={`flex flex-col md:flex-row md:items-end justify-between gap-6 border-b pb-10 ${isDark ? 'border-white/5' : 'border-slate-200'}`}
         >
@@ -172,7 +172,7 @@ const LabPage = () => {
               </span>
             </div>
 
-            {/* ⭐ 3. 메인 타이틀 글자색 변경*/}
+            {/*  3. 메인 타이틀 글자색 변경*/}
             <h1
               className={`text-4xl md:text-5xl font-black tracking-tighter italic ${isDark ? 'text-white' : 'text-slate-900'}`}
             >
@@ -183,7 +183,7 @@ const LabPage = () => {
               {currentConfig.title.split(' ')[2]}
             </h1>
 
-            {/*} ⭐ 4. 설명글 글자색 변경*/}
+            {/*}  4. 설명글 글자색 변경*/}
             <p
               className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
             >
@@ -197,13 +197,13 @@ const LabPage = () => {
               className={`h-10 w-[1px] mx-2 ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}
             />
 
-            {/*⭐ 5. 설정(톱니바퀴) 버튼 색상 변경*/}
+            {/* 5. 설정(톱니바퀴) 버튼 색상 변경*/}
             <button
               onClick={() => {
                 resetStatus();
                 setIsQRVisible(false);
               }}
-              className={`p-3 rounded-xl border transition-colors ${
+              className={`p-3 rounded-xl border transition-colors cursor-pointer ${
                 isDark
                   ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                   : 'bg-white border-slate-200 text-slate-500 hover:text-indigo-600 shadow-sm'
@@ -216,7 +216,7 @@ const LabPage = () => {
 
         {isQRVisible && !isAllPaired && (
           <section className="animate-in fade-in zoom-in duration-500">
-            {/*} ⭐ 6. QR코드 박스 배경/테두리 변경*/}
+            {/*}  6. QR코드 박스 배경/테두리 변경*/}
             <div
               className={`p-8 rounded-[2.5rem] border backdrop-blur-sm flex flex-col items-center gap-6 ${
                 isDark
@@ -234,7 +234,7 @@ const LabPage = () => {
                 value={pairingCode || 'SESSION-LOADING...'}
                 timeLeft={timeLeft}
                 onRefresh={startPairing}
-                isDark={isDark} // ⭐ QR코드 자체 테마도 isDark 변수에 연동!
+                isDark={isDark} // QR코드 자체 테마도 isDark 변수에 연동
               />
             </div>
           </section>
@@ -253,7 +253,7 @@ const LabPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-6">
           <div className="lg:col-span-2">
-            {/*⭐ 7. Live Connection Status 박스 배경/테두리 변경*/}
+            {/* 7. Live Connection Status 박스 배경/테두리 변경*/}
             <div
               className={`p-8 rounded-[2rem] border space-y-4 ${
                 isDark
@@ -291,7 +291,7 @@ const LabPage = () => {
                         <CheckCircle2 size={14} className="text-indigo-500" />
                       )}
                     </div>
-                    {/*⭐ 9. 연결 상태 텍스트 색상 변경*/}
+                    {/* 9. 연결 상태 텍스트 색상 변경*/}
                     <p
                       className={`text-lg font-black ${
                         pairedSubjects.includes(num)
@@ -315,7 +315,7 @@ const LabPage = () => {
             </div>
           </div>
 
-          {/* ⭐ 10. System Phase(우측 하단) 박스 배경/테두리 변경*/}
+          {/*  10. System Phase(우측 하단) 박스 배경/테두리 변경*/}
           <div
             className={`p-8 rounded-[2rem] border relative overflow-hidden group ${
               isDark
@@ -332,7 +332,7 @@ const LabPage = () => {
                 <div
                   className={`w-2 h-2 rounded-full ${isAllPaired ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}
                 />
-                {/*⭐ 11. System Phase 텍스트 변경*/}
+                {/* 11. System Phase 텍스트 변경*/}
                 <span
                   className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-900'}`}
                 >

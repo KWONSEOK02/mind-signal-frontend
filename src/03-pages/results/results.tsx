@@ -143,13 +143,13 @@ const Results: React.FC<ResultsProps> = ({
         <div className="flex gap-3">
           <button
             onClick={handleShare}
-            className={`p-4 glass border rounded-2xl transition-all ${isDark ? 'border-white/10 text-slate-400 hover:text-white' : 'border-indigo-100 text-slate-500 hover:text-indigo-600'}`}
+            className={`p-4 glass border rounded-2xl transition-all cursor-pointer ${isDark ? 'border-white/10 text-slate-400 hover:text-white' : 'border-indigo-100 text-slate-500 hover:text-indigo-600'}`}
           >
             <Share2 size={20} />
           </button>
           <button
             onClick={handleDownload}
-            className="flex items-center justify-center p-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
+            className="flex items-center justify-center cursor-pointer p-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
           >
             <Download size={22} />
           </button>
@@ -319,10 +319,10 @@ const Results: React.FC<ResultsProps> = ({
       <section className="flex justify-center pt-20 pb-10">
         <button
           onClick={() => setCurrentPage('home')} // 실제로 사용하여 경고 해결
-          className={`px-10 py-4 rounded-2xl font-black text-lg transition-all border ${
+          className={`group px-10 py-5 glass border rounded-3xl font-black text-lg flex items-center gap-3 cursor-pointer transition-all duration-300 ${
             isDark
-              ? 'glass border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
-              : 'bg-white border-indigo-100 text-slate-500 hover:text-indigo-600 shadow-sm'
+              ? 'border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-transparent'
+              : 'border-indigo-100 text-slate-700 hover:bg-indigo-100 hover:border-transparent hover:shadow-lg shadow-indigo-500/5'
           }`}
         >
           ← 메인으로 돌아가기
