@@ -33,6 +33,7 @@
     "react-dom": "19.2.3",
     "react-qr-barcode-scanner": "^2.1.23",
     "recharts": "^3.7.0",
+    "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.3.5",
     "zustand": "^5.0.9"

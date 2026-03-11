@@ -35,27 +35,27 @@ const SignalRealtimeChart: React.FC<SignalRealtimeChartProps> = ({
     ? [
         {
           name: 'Engagement',
-          value: Number((metrics.engagement * 100).toFixed(1)),
+          value: Number((metrics.engagement * 100).toFixed(1)) || 0,
         },
         {
           name: 'Interest',
-          value: Number((metrics.interest * 100).toFixed(1)),
+          value: Number((metrics.interest * 100).toFixed(1)) || 0,
         },
         {
           name: 'Excitement',
-          value: Number((metrics.excitement * 100).toFixed(1)),
+          value: Number((metrics.excitement * 100).toFixed(1)) || 0,
         },
         {
           name: 'Stress',
-          value: Number((metrics.stress * 100).toFixed(1)),
+          value: Number((metrics.stress * 100).toFixed(1)) || 0,
         },
         {
           name: 'Relaxation',
-          value: Number((metrics.relaxation * 100).toFixed(1)),
+          value: Number((metrics.relaxation * 100).toFixed(1)) || 0,
         },
         {
           name: 'Focus',
-          value: Number((metrics.focus * 100).toFixed(1)),
+          value: Number((metrics.focus * 100).toFixed(1)) || 0,
         },
       ]
     : [];

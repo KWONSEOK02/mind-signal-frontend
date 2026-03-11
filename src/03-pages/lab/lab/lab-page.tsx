@@ -75,12 +75,13 @@ const LabPage = () => {
     timeLeft,
     pairedSubjects,
     isAllPaired,
+    sessions,
     startPairing,
     resetStatus,
   } = usePairing(currentConfig.targetCount);
 
-  const subject1Signal = useSignal(groupId, 1);
-  const subject2Signal = useSignal(groupId, 2);
+  const subject1Signal = useSignal(sessions[0]?.id ?? null);
+  const subject2Signal = useSignal(sessions[1]?.id ?? null);
 
   /**
    * 모든 활성화된 피실험자의 데이터 측정 시작 수행함

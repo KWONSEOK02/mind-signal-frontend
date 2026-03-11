@@ -1,145 +1,160 @@
 /**
- * Bug D — subjectIndex null causes captureAndSend to silently no-op
+ * useSignal 훅 단위 테스트 수행함
  *
- * use-signal.ts line 20:
- *   if (!groupId || subjectIndex === null) return null;
- *
- * When subjectIndex is null, getCorrelationId() returns null.
- * captureAndSend() checks for this (line 29):
- *   if (!correlationId) return;
- *
- * The hook then returns early without sending anything.
- * The UI may still show isMeasuring=true and the interval ticks every second,
- * but signalApi.sendSignal is never called — data is silently dropped.
+ * 마이그레이션 후 동작:
+ * - sessionId 기반으로 측정 시작함
+ * - HTTP POST 1회 트리거 후 Socket.io eeg-live 이벤트로 데이터 수신함
+ * - sessionId가 null이면 측정 시작 불가 처리함
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import useSignal from './use-signal';
 
-// Mock the signal API module so no real HTTP requests are made
+// measurementApi mock 처리함
 vi.mock('@/07-shared/api', () => ({
-  signalApi: {
-    sendSignal: vi.fn().mockResolvedValue({}),
+  measurementApi: {
+    startMeasurement: vi.fn().mockResolvedValue({ data: { status: 'success' } }),
   },
-  // EmotivMetrics is only a type, no runtime value needed
 }));
 
-// Import after mocking so we get the mocked version
-import { signalApi } from '@/07-shared/api';
+// socket-client mock 처리함
+const mockSocketOn = vi.fn();
+const mockSocketOff = vi.fn();
+const mockSocket = {
+  on: mockSocketOn,
+  off: mockSocketOff,
+};
+vi.mock('@/07-shared/lib/socket-client', () => ({
+  getSocket: vi.fn(() => mockSocket),
+}));
 
-describe('Bug D: captureAndSend silently no-ops when subjectIndex is null', () => {
+// config mock 처리함
+vi.mock('@/07-shared/config/config', () => ({
+  config: {
+    api: {
+      baseUrl: 'https://test-backend.example.com/api',
+      socketUrl: 'https://test-backend.example.com',
+    },
+  },
+}));
+
+import { measurementApi } from '@/07-shared/api';
+
+describe('useSignal — sessionId 기반 측정 제어 테스트 수행함', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  it('CONFIRMS BUG: sendSignal is never called when subjectIndex is null', async () => {
-    const { result } = renderHook(() => useSignal('group-abc', null));
+  it('sessionId가 null이면 startMeasurement 호출 시 API 미호출 처리함', async () => {
+    const { result } = renderHook(() => useSignal(null));
 
-    act(() => {
-      result.current.startMeasurement();
-    });
-
-    // Advance 3 seconds — three interval ticks should have fired
     await act(async () => {
-      vi.advanceTimersByTime(3000);
+      await result.current.startMeasurement();
     });
 
-    // Despite the interval running, sendSignal must never have been called
-    expect(signalApi.sendSignal).not.toHaveBeenCalled();
+    expect(measurementApi.startMeasurement).not.toHaveBeenCalled();
+    expect(result.current.isMeasuring).toBe(false);
   });
 
-  it('CONFIRMS BUG: isMeasuring becomes true even though no data is sent', async () => {
-    const { result } = renderHook(() => useSignal('group-abc', null));
+  it('유효한 sessionId로 startMeasurement 호출 시 API 1회 호출 처리함', async () => {
+    const { result } = renderHook(() => useSignal('session-abc-123'));
 
-    act(() => {
-      result.current.startMeasurement();
+    await act(async () => {
+      await result.current.startMeasurement();
     });
 
-    // The hook sets isMeasuring=true (misleading to the user)
+    expect(measurementApi.startMeasurement).toHaveBeenCalledTimes(1);
+    expect(measurementApi.startMeasurement).toHaveBeenCalledWith('session-abc-123');
     expect(result.current.isMeasuring).toBe(true);
-
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    // Still no data sent
-    expect(signalApi.sendSignal).not.toHaveBeenCalled();
   });
 
-  it('CONFIRMS BUG: currentMetrics stays null — confirming nothing was captured', async () => {
-    const { result } = renderHook(() => useSignal('group-abc', null));
-
-    act(() => {
-      result.current.startMeasurement();
-    });
+  it('startMeasurement 성공 후 eeg-live 소켓 리스너 등록 처리함', async () => {
+    const { result } = renderHook(() => useSignal('session-abc-123'));
 
     await act(async () => {
-      vi.advanceTimersByTime(5000);
+      await result.current.startMeasurement();
+    });
+
+    expect(mockSocketOn).toHaveBeenCalledWith('eeg-live', expect.any(Function));
+  });
+
+  it('eeg-live 이벤트 수신 시 sessionId 일치하면 currentMetrics 업데이트 처리함', async () => {
+    const { result } = renderHook(() => useSignal('session-abc-123'));
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    // 등록된 핸들러 추출 후 직접 호출하여 수신 시뮬레이션함
+    const registeredHandler = mockSocketOn.mock.calls[0][1];
+    const mockMetrics = {
+      engagement: 0.8,
+      interest: 0.7,
+      excitement: 0.6,
+      stress: 0.3,
+      relaxation: 0.5,
+      focus: 0.9,
+    };
+
+    act(() => {
+      registeredHandler({ sessionId: 'session-abc-123', data: mockMetrics });
+    });
+
+    expect(result.current.currentMetrics).toEqual(mockMetrics);
+    expect(result.current.lastReceivedTime).not.toBeNull();
+  });
+
+  it('eeg-live 이벤트 수신 시 sessionId 불일치하면 currentMetrics 미업데이트 처리함', async () => {
+    const { result } = renderHook(() => useSignal('session-abc-123'));
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    const registeredHandler = mockSocketOn.mock.calls[0][1];
+
+    act(() => {
+      // 다른 sessionId로 전송된 이벤트 수신 시뮬레이션함
+      registeredHandler({
+        sessionId: 'session-other-456',
+        data: { engagement: 0.9, interest: 0.9, excitement: 0.9, stress: 0.9, relaxation: 0.9, focus: 0.9 },
+      });
     });
 
     expect(result.current.currentMetrics).toBeNull();
-    expect(result.current.lastSentTime).toBeNull();
   });
 
-  it('sendSignal IS called when both groupId and subjectIndex are valid', async () => {
-    const { result } = renderHook(() => useSignal('group-abc', 0));
+  it('stopMeasurement 호출 시 isMeasuring false 전환 및 소켓 리스너 해제 처리함', async () => {
+    const { result } = renderHook(() => useSignal('session-abc-123'));
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
 
     act(() => {
-      result.current.startMeasurement();
+      result.current.stopMeasurement();
+    });
+
+    expect(result.current.isMeasuring).toBe(false);
+    expect(mockSocketOff).toHaveBeenCalledWith('eeg-live', expect.any(Function));
+  });
+
+  it('이미 측정 중일 때 startMeasurement 재호출 시 API 중복 호출 방지 처리함', async () => {
+    const { result } = renderHook(() => useSignal('session-abc-123'));
+
+    await act(async () => {
+      await result.current.startMeasurement();
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(1000);
+      await result.current.startMeasurement(); // 두 번째 호출
     });
 
-    expect(signalApi.sendSignal).toHaveBeenCalledTimes(1);
-    expect(signalApi.sendSignal).toHaveBeenCalledWith(
-      'group-abc_0',
-      expect.objectContaining({
-        engagement: expect.any(Number),
-        focus: expect.any(Number),
-      }),
-    );
-  });
-
-  it('sendSignal is also NOT called when groupId is null', async () => {
-    const { result } = renderHook(() => useSignal(null, 0));
-
-    act(() => {
-      result.current.startMeasurement();
-    });
-
-    await act(async () => {
-      vi.advanceTimersByTime(2000);
-    });
-
-    expect(signalApi.sendSignal).not.toHaveBeenCalled();
-  });
-
-  it('documents the required fix', () => {
-    /**
-     * The root cause is that subjectIndex can be null when the session
-     * pairing has not yet assigned a subject index. Two possible fixes:
-     *
-     * Option 1 — Guard at the call site (use-signal.ts):
-     *   Do not call startMeasurement() until subjectIndex is a valid number.
-     *   Disable the "Start" button while subjectIndex === null.
-     *
-     * Option 2 — Guard in the hook (use-signal.ts):
-     *   Inside startMeasurement(), check getCorrelationId() first and throw
-     *   or return false so the caller knows the measurement did not start.
-     *     if (!getCorrelationId()) return false;
-     *     setIsMeasuring(true);
-     *     ...
-     *
-     * Either way, isMeasuring must NOT be set to true when data cannot be sent.
-     */
-    expect(true).toBe(true);
+    expect(measurementApi.startMeasurement).toHaveBeenCalledTimes(1);
   });
 });

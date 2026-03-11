@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { UserRole, PairingSessionStatus, SESSION_STATUS } from '@/07-shared';
+import { UserRole, PairingSessionStatus, PairingData, SESSION_STATUS } from '@/07-shared';
 import { sessionApi } from '@/07-shared/api';
 import { AxiosError } from 'axios';
 import { PairingStep } from './pairing-engine';
@@ -17,6 +17,10 @@ const usePairing = (targetSubjectCount: number = 2) => {
   const [subjectIndex, setSubjectIndex] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(300);
   const [pairedSubjects, setPairedSubjects] = useState<number[]>([]);
+  // Operator용: 페어링 완료된 세션 PairingData 배열 보관함
+  const [sessions, setSessions] = useState<PairingData[]>([]);
+  // Subject용: 합류한 세션의 ID 보관함
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const engineRef = useRef<PairingStep>(new PairingStep());
 
@@ -34,8 +38,12 @@ const usePairing = (targetSubjectCount: number = 2) => {
       // pairing-engine을 통해 API 호출 및 상태 전이 관리 수행함
       await engineRef.current
         .execute(
-          (newStatus) => {
+          (newStatus, data) => {
             if (newStatus === SESSION_STATUS.PAIRED) {
+              // PAIRED 전환 시 PairingData가 있으면 sessions 배열에 추가함
+              if (data) {
+                setSessions((prev) => [...prev, data]);
+              }
               setPairedSubjects((prev) => {
                 const nextIndex = prev.length + 1;
                 return [...prev, nextIndex];
@@ -93,6 +101,7 @@ const usePairing = (targetSubjectCount: number = 2) => {
 
       setGroupId(data.groupId);
       setSubjectIndex(data.subjectIndex ?? 1);
+      setSessionId(data.id);
       setRole('SUBJECT');
       setStatus(SESSION_STATUS.PAIRED);
 
@@ -120,7 +129,9 @@ const usePairing = (targetSubjectCount: number = 2) => {
     setGroupId(null);
     setPairingCode(null);
     setPairedSubjects([]);
+    setSessions([]);
     setSubjectIndex(null);
+    setSessionId(null);
     setTimeLeft(300);
   }, []);
 
@@ -141,6 +152,8 @@ const usePairing = (targetSubjectCount: number = 2) => {
     timeLeft,
     pairedSubjects,
     isAllPaired: pairedSubjects.length >= targetSubjectCount,
+    sessions,
+    sessionId,
     startPairing,
     requestPairing,
     resetStatus,
