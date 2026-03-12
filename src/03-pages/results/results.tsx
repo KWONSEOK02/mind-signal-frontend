@@ -127,7 +127,7 @@ const Results: React.FC<ResultsProps> = ({
       >
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-[10px] font-black uppercase text-indigo-400 tracking-widest">
-            Experiment Report #2026-0415
+            Experiment Report
           </div>
           <h2
             className={`text-5xl font-black tracking-tighter italic uppercase ${isDark ? 'text-white' : 'text-slate-900'}`}

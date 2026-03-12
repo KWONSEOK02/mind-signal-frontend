@@ -34,10 +34,10 @@ const Inquiry: React.FC<InquiryProps> = ({ theme }) => {
   return (
     <div className="max-w-7xl mx-auto px-6">
       <div
-        className={`glass rounded-[40px] p-10 md:p-20 flex flex-col md:flex-row gap-16 border transition-all ${
+        className={`rounded-[40px] p-10 md:p-20 flex flex-col md:flex-row gap-16 border transition-all ${
           theme === 'dark'
-            ? 'border-white/5 shadow-2xl'
-            : 'border-slate-100 shadow-xl'
+            ? 'glass border-white/5 shadow-2xl'
+            : 'bg-white border-slate-200'
         }`}
       >
         <div className="flex-1 space-y-10">
@@ -52,7 +52,9 @@ const Inquiry: React.FC<InquiryProps> = ({ theme }) => {
               Contact Center
             </div>
             <h2
-              className={`text-4xl md:text-5xl font-black tracking-tight transition-colors ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}
+              className={`text-4xl md:text-5xl font-black tracking-tight transition-colors ${
+                theme === 'dark' ? 'text-white' : 'text-slate-900'
+              }`}
             >
               문의하기
             </h2>
@@ -88,10 +90,10 @@ const Inquiry: React.FC<InquiryProps> = ({ theme }) => {
             ].map((item, idx) => (
               <div key={idx} className="flex items-center gap-6 group">
                 <div
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center border group-hover:scale-110 transition-all shadow-sm ${
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center border group-hover:scale-110 transition-all ${
                     theme === 'dark'
-                      ? `${item.bg} ${item.color} border-white/5`
-                      : `${item.bg} ${item.color} border-transparent`
+                      ? `${item.bg} ${item.color} border-white/5 shadow-sm`
+                      : `${item.bg} ${item.color} border-slate-100`
                   }`}
                 >
                   {item.icon}
@@ -101,7 +103,9 @@ const Inquiry: React.FC<InquiryProps> = ({ theme }) => {
                     {item.label}
                   </div>
                   <div
-                    className={`text-lg font-bold transition-colors ${theme === 'dark' ? 'text-slate-200' : 'text-slate-900'}`}
+                    className={`text-lg font-bold transition-colors ${
+                      theme === 'dark' ? 'text-slate-200' : 'text-slate-900'
+                    }`}
                   >
                     {item.value}
                   </div>
@@ -117,7 +121,7 @@ const Inquiry: React.FC<InquiryProps> = ({ theme }) => {
             className={`p-8 md:p-10 rounded-3xl space-y-6 border transition-all ${
               theme === 'dark'
                 ? 'bg-white/5 border-white/10'
-                : 'bg-slate-50/50 border-slate-200'
+                : 'bg-slate-50 border-slate-200'
             }`}
           >
             <div className="space-y-2">
@@ -131,10 +135,10 @@ const Inquiry: React.FC<InquiryProps> = ({ theme }) => {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="이름을 입력해 주세요."
-                className={`w-full border rounded-xl px-5 py-4 focus:border-indigo-500 transition-all ${
+                className={`w-full border rounded-xl px-5 py-4 focus:border-indigo-500 transition-all outline-none ${
                   theme === 'dark'
                     ? 'bg-slate-900/50 border-white/10 text-white'
-                    : 'bg-white/50 border-slate-200 text-slate-900'
+                    : 'bg-white border-slate-200 text-slate-900'
                 }`}
               />
             </div>
@@ -149,16 +153,18 @@ const Inquiry: React.FC<InquiryProps> = ({ theme }) => {
                 onChange={handleChange}
                 rows={5}
                 placeholder="궁금하신 내용을 남겨주세요."
-                className={`w-full border rounded-xl px-5 py-4 focus:border-indigo-500 transition-all resize-none ${
+                className={`w-full border rounded-xl px-5 py-4 focus:border-indigo-500 transition-all outline-none resize-none ${
                   theme === 'dark'
                     ? 'bg-slate-900/50 border-white/10 text-white'
-                    : 'bg-white/50 border-slate-200 text-slate-900'
+                    : 'bg-white border-slate-200 text-slate-900'
                 }`}
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-indigo-500/20"
+              className={`w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black cursor-pointer py-5 rounded-xl transition-all flex items-center justify-center gap-3 ${
+                theme === 'dark' ? 'shadow-lg shadow-indigo-500/20' : ''
+              }`}
             >
               <span>메시지 보내기</span> <Send size={18} />
             </button>
