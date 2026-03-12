@@ -39,6 +39,9 @@ const LabPage = () => {
 
   const [isMobile, setIsMobile] = useState(false);
   const [isQRVisible, setIsQRVisible] = useState(false);
+  // 모드 상태 및 드롭다운 토글 상태 관리 추가함
+  const [mode, setMode] = useState<'DUAL' | 'BTI'>('DUAL');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   /**
    * 브라우저 환경 및 화면 너비를 감지하여 모바일 모드 여부 결정함
@@ -59,9 +62,9 @@ const LabPage = () => {
   }, [isClient]);
 
   /**
-   * 현재 실험 설정 로드함
+   * 상태 기반으로 현재 실험 설정 동적 로드함
    */
-  const currentConfig = EXPERIMENT_CONFIG.DUAL;
+  const currentConfig = EXPERIMENT_CONFIG[mode];
 
   /**
    * 설정된 목표 인원수를 기반으로 페어링 로직 구동함
@@ -72,12 +75,13 @@ const LabPage = () => {
     timeLeft,
     pairedSubjects,
     isAllPaired,
+    sessions,
     startPairing,
     resetStatus,
   } = usePairing(currentConfig.targetCount);
 
-  const subject1Signal = useSignal(groupId, 1);
-  const subject2Signal = useSignal(groupId, 2);
+  const subject1Signal = useSignal(sessions[0]?.id ?? null);
+  const subject2Signal = useSignal(sessions[1]?.id ?? null);
 
   /**
    * 모든 활성화된 피실험자의 데이터 측정 시작 수행함
@@ -88,6 +92,19 @@ const LabPage = () => {
       subject2Signal.startMeasurement();
     }
   }, [subject1Signal, subject2Signal, currentConfig.targetCount]);
+
+  /**
+   * 실험 모드 변경 시 세션 초기화 및 UI 닫기 일괄 처리함
+   */
+  const handleModeChange = useCallback(
+    (newMode: 'DUAL' | 'BTI') => {
+      setMode(newMode);
+      resetStatus();
+      setIsQRVisible(false);
+      setIsSettingsOpen(false);
+    },
+    [resetStatus]
+  );
 
   /**
    * 서버 사이드 렌더링 시 하이드레이션 오류 방지를 위해 빈 화면 반환함
@@ -166,16 +183,46 @@ const LabPage = () => {
           <div className="flex items-center gap-4">
             {renderControlButton()}
             <div className="h-10 w-[1px] bg-white/10 mx-2" />
-            <button
-              onClick={() => {
-                // 설정 버튼 클릭 시 세션 리셋과 QR 닫기를 병행하여 UI 동기화함
-                resetStatus();
-                setIsQRVisible(false);
-              }}
-              className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors"
-            >
-              <Settings size={20} />
-            </button>
+            {/* 설정 버튼 및 드롭다운 메뉴 컨테이너 위치함 */}
+            <div className="relative">
+              <button
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors"
+              >
+                <Settings size={20} />
+              </button>
+              {isSettingsOpen && (
+                <>
+                  {/* 드롭다운 외부 영역 클릭 시 메뉴를 닫기 위한 투명 백드롭 적용함 */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsSettingsOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-3 w-48 p-2 rounded-xl bg-slate-800 border border-slate-700 shadow-xl z-50 flex flex-col gap-1">
+                    <button
+                      onClick={() => handleModeChange('DUAL')}
+                      className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
+                        mode === 'DUAL'
+                          ? 'bg-indigo-500/20 text-indigo-400'
+                          : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      DUAL 모드 (2인)
+                    </button>
+                    <button
+                      onClick={() => handleModeChange('BTI')}
+                      className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
+                        mode === 'BTI'
+                          ? 'bg-indigo-500/20 text-indigo-400'
+                          : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      BTI 모드 (1인)
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 
@@ -191,6 +238,7 @@ const LabPage = () => {
                 timeLeft={timeLeft}
                 onRefresh={startPairing}
                 isDark={true}
+                subjectIndex={pairedSubjects.length + 1}
               />
             </div>
           </section>

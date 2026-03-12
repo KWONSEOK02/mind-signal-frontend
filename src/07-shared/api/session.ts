@@ -11,6 +11,32 @@ export interface PairingResponse {
 }
 
 /**
+ * 그룹 내 개별 세션 상태 인터페이스 정의함
+ */
+export interface GroupSessionStatus {
+  subjectIndex: number;
+  status: string;
+  guestJoined: boolean;
+}
+
+/**
+ * 그룹 상태 조회 응답 데이터 규격 정의함
+ */
+export interface GroupStatusData {
+  groupId: string;
+  sessions: GroupSessionStatus[];
+}
+
+/**
+ * 그룹 상태 조회 API 전체 응답 규격 정의함
+ */
+export interface GroupStatusResponse {
+  status: 'success' | 'fail';
+  data: GroupStatusData;
+  message?: string;
+}
+
+/**
  * 그룹 기반 페어링 및 세션 관리 API 모음 정의함
  */
 const sessionApi = {
@@ -30,7 +56,7 @@ const sessionApi = {
    * 그룹 내 참가자 입장 여부 및 실시간 상태 조회 수행함
    */
   checkSessionStatus: (groupId: string) =>
-    api.get<PairingResponse>(`/sessions/group/${groupId}/status`),
+    api.get<GroupStatusResponse>(`/sessions/group/${groupId}/status`),
 };
 
 export default sessionApi;

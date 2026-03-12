@@ -24,6 +24,7 @@ export default defineConfig({
       headless: true,
     },
     globals: true,
+    exclude: ['e2e/**', 'node_modules/**'],
     setupFiles: ['./.storybook/vitest.setup.ts'],
   },
   ssr: {
@@ -35,6 +36,7 @@ export default defineConfig({
     include: [
       'lucide-react',
       'react-qr-barcode-scanner',
+      'html5-qrcode',
       'qrcode.react',
       'zod',
       'recharts',
@@ -50,7 +52,9 @@ export default defineConfig({
     exclude: [
       'sb-original/image-context',
       'next/navigation',
-      '@storybook/nextjs-vite'
+      '@storybook/nextjs-vite',
+      'playwright-core',
+      'chromium-bidi'
     ]
   },
   resolve: {

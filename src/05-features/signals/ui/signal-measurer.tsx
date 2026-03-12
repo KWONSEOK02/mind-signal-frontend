@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Play, Square, Activity, Clock } from 'lucide-react';
+import { Play, Square, Activity, Clock, Timer } from 'lucide-react';
 
 /**
  * 컴포넌트 Props 인터페이스 정의함
@@ -12,6 +12,7 @@ interface SignalMeasurerProps {
   onStart: () => void;
   onStop: () => void;
   lastSentTime: string | null; // 타입을 number에서 string으로 변경함
+  elapsedSeconds: number; // 측정 경과 시간(초) 데이터 사용함
 }
 
 /**
@@ -22,6 +23,7 @@ const SignalMeasurer: React.FC<SignalMeasurerProps> = ({
   onStart,
   onStop,
   lastSentTime,
+  elapsedSeconds,
 }) => {
   return (
     <div className="p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-sm space-y-8">
@@ -70,15 +72,25 @@ const SignalMeasurer: React.FC<SignalMeasurerProps> = ({
             </span>
           </button>
         ) : (
-          <button
-            onClick={onStop}
-            className="group flex items-center justify-center gap-3 py-6 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 rounded-2xl font-black transition-all duration-300 active:scale-[0.98]"
-          >
-            <Square size={20} fill="currentColor" />
-            <span className="uppercase tracking-widest text-sm">
-              측정 중지하기
-            </span>
-          </button>
+          <>
+            {/* 측정 경과 시간 타이머 표시함 */}
+            <div className="flex items-center gap-1.5 font-mono text-lg font-black tracking-tighter text-indigo-500">
+              <Timer size={16} />
+              <span>
+                {Math.floor(elapsedSeconds / 60).toString().padStart(2, '0')}:
+                {(elapsedSeconds % 60).toString().padStart(2, '0')}
+              </span>
+            </div>
+            <button
+              onClick={onStop}
+              className="group flex items-center justify-center gap-3 py-6 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 rounded-2xl font-black transition-all duration-300 active:scale-[0.98]"
+            >
+              <Square size={20} fill="currentColor" />
+              <span className="uppercase tracking-widest text-sm">
+                측정 중지하기
+              </span>
+            </button>
+          </>
         )}
       </div>
 

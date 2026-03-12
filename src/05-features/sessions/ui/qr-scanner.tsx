@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import BarcodeScanner from 'react-qr-barcode-scanner';
+import React, { useEffect, useRef, useState } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { Camera, AlertCircle, RefreshCw, X } from 'lucide-react';
 
 interface QRScannerProps {
@@ -11,7 +11,8 @@ interface QRScannerProps {
 }
 
 /**
- * [Client] QR 코드를 스캔하여 세션에 참여하는 UI 컴포넌트
+ * [Client] QR 코드를 스캔하여 세션에 참여하는 UI 컴포넌트.
+ * Html5Qrcode 라이브러리 기반으로 카메라 접근 및 QR 인식 수행함.
  */
 const QRScanner: React.FC<QRScannerProps> = ({
   onScanSuccess,
@@ -20,47 +21,70 @@ const QRScanner: React.FC<QRScannerProps> = ({
 }) => {
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * 스캔 결과 처리 함수 사용함
-   * 라이브러리의 (arg0: unknown, arg1?: Result) 시그니처와 강제 일치시킴
-   */
-  const handleUpdate = (
-    err: unknown,
-    result?: { getText: () => string } | null
-  ) => {
-    // 1. 스캔 성공 시 결과 전달 로직 수행함
-    if (result && typeof result.getText === 'function') {
-      onScanSuccess(result.getText());
-      return;
-    }
+  // Html5Qrcode 인스턴스 보관용 ref 사용함
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
 
-    // 2. 에러 발생 시 처리 로직 수행함
-    if (err) {
-      if (err instanceof Error) {
-        // 단순 미검출 에러는 무시하여 스캔을 지속함
-        // 라이브러리 특성상 코드가 인식되지 않으면 매 프레임 해당 에러를 반환함
-        if (err.message.includes('No MultiFormat Readers')) {
-          return;
-        }
+  useEffect(() => {
+    // Strict Mode 이중 마운트 및 언마운트 후 콜백 실행 방지 플래그 사용함
+    let cancelled = false;
 
-        // 카메라 권한 미승인 등 실제 장애 상황만 에러로 처리함
-        if (err.name === 'NotAllowedError' || err.name === 'NotFoundError') {
-          setError('카메라 접근 권한이 필요하거나 장치를 찾을 수 없음');
+    // DOM id 기반으로 Html5Qrcode 인스턴스 생성함
+    const html5QrCode = new Html5Qrcode('qr-reader');
+    html5QrCodeRef.current = html5QrCode;
+
+    // start() Promise 보관하여 cleanup 경쟁 조건(race condition) 방지함
+    // start()가 pending 중 언마운트 시 cleanup이 완료 후 자원 해제 수행함
+    const startPromise = html5QrCode
+      .start(
+        { facingMode: 'environment' },
+        { fps: 20, qrbox: { width: 220, height: 220 } },
+        (decodedText: string) => {
+          // 언마운트 이후 콜백 실행 방지 플래그 확인함
+          if (!cancelled) onScanSuccess(decodedText);
+        },
+        (_error: string) => {
+          // 미검출 프레임 에러는 정상 동작이므로 무시함
+        },
+      )
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        // 카메라 권한 거부 및 장치 미발견 에러 처리함
+        if (err instanceof Error) {
+          if (err.name === 'NotAllowedError') {
+            setError('카메라 접근 권한이 필요함. 브라우저 설정에서 허용해주세요.');
+          } else if (err.name === 'NotFoundError') {
+            setError('카메라 장치를 찾을 수 없음. 카메라 연결 상태를 확인해주세요.');
+          } else {
+            setError(err.message);
+          }
         } else {
-          setError(err.message);
+          setError('알 수 없는 카메라 에러 발생함');
         }
-      } else if (
-        typeof err === 'string' &&
-        !err.includes('No MultiFormat Readers')
-      ) {
-        setError('알 수 없는 카메라 에러 발생함');
-      }
-    }
-  };
+      });
+
+    // cleanup: start() 완료 후 순차적 자원 해제 수행함 (경쟁 조건 방지)
+    return () => {
+      cancelled = true;
+      startPromise
+        .then(() => {
+          if (html5QrCode.isScanning) return html5QrCode.stop();
+        })
+        .then(() => html5QrCode.clear())
+        .catch(() => {
+          // stop 실패 시에도 clear 수행하여 DOM 정리함
+          try {
+            html5QrCode.clear();
+          } catch {
+            // clear 실패 시 무시함
+          }
+        });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
-      className={`relative flex flex-col items-center gap-6 p-6 rounded-3xl border-2 
+      className={`relative flex flex-col items-center gap-6 p-6 rounded-3xl border-2
       ${isDark ? 'bg-slate-900 border-indigo-500/30' : 'bg-white border-slate-200 shadow-2xl'}`}
     >
       {/* 상단 헤더 영역 정의함 */}
@@ -85,11 +109,9 @@ const QRScanner: React.FC<QRScannerProps> = ({
       <div className="relative w-full max-w-[300px] aspect-square rounded-2xl overflow-hidden bg-black shadow-2xl border-4 border-indigo-600">
         {!error ? (
           <>
-            <BarcodeScanner
-              width="100%"
-              height="100%"
-              onUpdate={handleUpdate}
-            />
+            {/* Html5Qrcode가 마운트할 DOM 컨테이너 사용함. id 필수 */}
+            <div id="qr-reader" className="w-full h-full" />
+
             {/* 스캔 진행 상태 시각화 애니메이션 사용함 */}
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute top-1/2 left-0 w-full h-0.5 bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.8)] animate-scan-line" />

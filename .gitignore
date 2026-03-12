@@ -13,6 +13,9 @@
 **/__screenshots__/
 src/**/__screenshots__/**
 
+# Claude Code 로컬 설정 (개인 환경에 종속됨)
+.claude/
+
 # misc
 *.pem
 
