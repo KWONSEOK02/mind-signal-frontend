@@ -76,7 +76,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
         nextSparkCountdown = Math.random() * 150 + 50;
       }
 
-      currentY = centerY + Math.sin(Date.now() * 0.003) * 2;
+      currentY = centerY;
       return currentY;
     };
 
