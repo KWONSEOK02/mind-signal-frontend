@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import {
-  HelpCircle,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import Image from 'next/image';
-import Inquiry from '@/03-pages/inquiry/inquiry';
 
 interface IntroProps {
   theme: 'light' | 'dark';
@@ -234,9 +229,6 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
             </div>
           ))}
         </div>
-      </div>
-      <div className="pt-20">
-        <Inquiry theme={theme} />
       </div>
     </div>
   );

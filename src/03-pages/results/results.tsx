@@ -86,20 +86,20 @@ const Results: React.FC<ResultsProps> = ({
 
   if (!isLoggedIn) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-48 flex flex-col items-center justify-center text-center space-y-8 animate-in fade-in zoom-in duration-700">
+      <div className="max-w-7xl mx-auto px-6 py-48 flex flex-col items-center justify-center text-center space-y-12 animate-in fade-in zoom-in duration-700">
         <div
           className={`w-24 h-24 ${isDark ? 'bg-indigo-600/10 border-indigo-500/20' : 'bg-indigo-50 border-indigo-200'} rounded-full flex items-center justify-center text-indigo-500 border-2 shadow-[0_0_50px_rgba(99,102,241,0.2)]`}
         >
           <Lock size={48} />
         </div>
-        <div className="space-y-4">
+        <div className="space-y-6">
           <h2
             className={`text-5xl font-black tracking-tighter italic uppercase ${isDark ? 'text-white' : 'text-slate-900'}`}
           >
             Neural Privacy
           </h2>
           <p
-            className={`text-xl font-bold max-w-lg ${isDark ? 'text-slate-500' : 'text-slate-600'}`}
+            className={`text-xl font-semibold max-w-2xl mx-auto ${isDark ? 'text-slate-500' : 'text-slate-600'}`}
           >
             실험 데이터는 개인정보 보호를 위해 비공개 처리되어 있습니다.
             <br />
@@ -108,7 +108,7 @@ const Results: React.FC<ResultsProps> = ({
         </div>
         <button
           onClick={openAuthModal}
-          className="px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black text-xl flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20"
+          className="cursor-pointer px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black text-xl flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20"
         >
           <LogIn size={20} /> 로그인 하고 결과 보기
         </button>
