@@ -1,5 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { UserRole, PairingSessionStatus, PairingData, SESSION_STATUS } from '@/07-shared';
+import {
+  UserRole,
+  PairingSessionStatus,
+  PairingData,
+  SESSION_STATUS,
+} from '@/07-shared';
 import { sessionApi } from '@/07-shared/api';
 import { AxiosError } from 'axios';
 import { PairingStep } from './pairing-engine';

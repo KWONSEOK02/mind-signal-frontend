@@ -3,3 +3,4 @@
  */
 export * from './session-status';
 export * from './experiment';
+export * from './oauth';

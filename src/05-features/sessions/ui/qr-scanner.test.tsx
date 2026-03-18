@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import QRScanner from './qr-scanner';
 
@@ -18,7 +24,7 @@ const { mockStart, mockStop, mockClear, isScanningRef } = vi.hoisted(() => ({
  */
 vi.mock('html5-qrcode', () => ({
   Html5Qrcode: vi.fn().mockImplementation(function (
-    this: Record<string, unknown>,
+    this: Record<string, unknown>
   ) {
     this.start = mockStart;
     this.stop = mockStop;
@@ -53,14 +59,16 @@ describe('QRScanner 컴포넌트 테스트 수행함', () => {
   });
 
   it('마운트 시 올바른 설정으로 start()가 호출되어야 함', async () => {
-    render(<QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />);
+    render(
+      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />
+    );
 
     await waitFor(() => {
       expect(mockStart).toHaveBeenCalledWith(
         { facingMode: 'environment' },
         { fps: 20, qrbox: { width: 220, height: 220 } },
         expect.any(Function),
-        expect.any(Function),
+        expect.any(Function)
       );
     });
   });
@@ -69,12 +77,18 @@ describe('QRScanner 컴포넌트 테스트 수행함', () => {
     const decodedText = 'https://example.com/join?token=TEST-TOKEN';
 
     mockStart.mockImplementation(
-      async (_config: unknown, _options: unknown, successCallback: (text: string) => void) => {
+      async (
+        _config: unknown,
+        _options: unknown,
+        successCallback: (text: string) => void
+      ) => {
         successCallback(decodedText);
-      },
+      }
     );
 
-    render(<QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />);
+    render(
+      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />
+    );
 
     await waitFor(() => {
       expect(mockOnScanSuccess).toHaveBeenCalledWith(decodedText);
@@ -87,7 +101,9 @@ describe('QRScanner 컴포넌트 테스트 수행함', () => {
     });
     mockStart.mockRejectedValue(error);
 
-    render(<QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />);
+    render(
+      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />
+    );
 
     await waitFor(() => {
       expect(screen.getByText(/카메라 접근 권한이 필요함/)).toBeDefined();
@@ -100,7 +116,9 @@ describe('QRScanner 컴포넌트 테스트 수행함', () => {
     });
     mockStart.mockRejectedValue(error);
 
-    render(<QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />);
+    render(
+      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />
+    );
 
     await waitFor(() => {
       expect(screen.getByText(/카메라 장치를 찾을 수 없음/)).toBeDefined();
@@ -108,7 +126,9 @@ describe('QRScanner 컴포넌트 테스트 수행함', () => {
   });
 
   it('닫기 버튼 클릭 시 onClose가 호출되어야 함', () => {
-    render(<QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />);
+    render(
+      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />
+    );
 
     fireEvent.click(screen.getByLabelText('Close scanner'));
 
@@ -119,7 +139,7 @@ describe('QRScanner 컴포넌트 테스트 수행함', () => {
     isScanningRef.current = true;
 
     const { unmount } = render(
-      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />,
+      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />
     );
 
     await waitFor(() => expect(mockStart).toHaveBeenCalled());
@@ -136,7 +156,7 @@ describe('QRScanner 컴포넌트 테스트 수행함', () => {
     isScanningRef.current = false;
 
     const { unmount } = render(
-      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />,
+      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />
     );
 
     await waitFor(() => expect(mockStart).toHaveBeenCalled());
@@ -153,13 +173,17 @@ describe('QRScanner 컴포넌트 테스트 수행함', () => {
     // start() 호출 시 successCallback을 캡처하되 즉시 실행하지 않음
     let capturedSuccessCallback: ((text: string) => void) | null = null;
     mockStart.mockImplementation(
-      async (_config: unknown, _options: unknown, successCallback: (text: string) => void) => {
+      async (
+        _config: unknown,
+        _options: unknown,
+        successCallback: (text: string) => void
+      ) => {
         capturedSuccessCallback = successCallback;
-      },
+      }
     );
 
     const { unmount } = render(
-      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />,
+      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />
     );
 
     await waitFor(() => expect(capturedSuccessCallback).not.toBeNull());
@@ -182,11 +206,11 @@ describe('QRScanner 컴포넌트 테스트 수행함', () => {
     mockStart.mockReturnValue(
       new Promise<void>((resolve) => {
         resolveStart = resolve;
-      }),
+      })
     );
 
     const { unmount } = render(
-      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />,
+      <QRScanner onScanSuccess={mockOnScanSuccess} onClose={mockOnClose} />
     );
 
     // start()가 pending 상태에서 언마운트 수행함

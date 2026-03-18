@@ -44,16 +44,20 @@ const QRScanner: React.FC<QRScannerProps> = ({
         },
         (_error: string) => {
           // 미검출 프레임 에러는 정상 동작이므로 무시함
-        },
+        }
       )
       .catch((err: unknown) => {
         if (cancelled) return;
         // 카메라 권한 거부 및 장치 미발견 에러 처리함
         if (err instanceof Error) {
           if (err.name === 'NotAllowedError') {
-            setError('카메라 접근 권한이 필요함. 브라우저 설정에서 허용해주세요.');
+            setError(
+              '카메라 접근 권한이 필요함. 브라우저 설정에서 허용해주세요.'
+            );
           } else if (err.name === 'NotFoundError') {
-            setError('카메라 장치를 찾을 수 없음. 카메라 연결 상태를 확인해주세요.');
+            setError(
+              '카메라 장치를 찾을 수 없음. 카메라 연결 상태를 확인해주세요.'
+            );
           } else {
             setError(err.message);
           }

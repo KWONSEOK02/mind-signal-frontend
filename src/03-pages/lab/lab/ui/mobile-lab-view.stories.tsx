@@ -172,9 +172,7 @@ export const ContentVerification: Story = {
     await expect(
       canvas.getByText(/모바일 기기를 연동하여/i)
     ).toBeInTheDocument();
-    await expect(
-      canvas.getByText(/실험 데이터를 전송함/i)
-    ).toBeInTheDocument();
+    await expect(canvas.getByText(/실험 데이터를 전송함/i)).toBeInTheDocument();
 
     // CTA 버튼 레이블 렌더링 확인함
     await expect(
