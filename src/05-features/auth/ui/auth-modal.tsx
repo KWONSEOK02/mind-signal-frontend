@@ -2,6 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { authApi, AuthResponse } from '@/07-shared/api'; // 프로젝트 배럴 파일 컨벤션 준수함
+import {
+  redirectToOAuth,
+  redirectToKakaoWithSdk,
+  isKakaoInAppBrowser,
+} from '../lib/social-auth';
+import { initKakaoSdk } from '../lib/kakao-sdk';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -29,6 +35,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
     passwordConfirm: '', // 비밀번호 확인 필드 추가함
     name: '',
   });
+
+  /**
+   * 컴포넌트 마운트 시 Kakao JS SDK 초기화 수행함
+   */
+  useEffect(() => {
+    initKakaoSdk();
+  }, []);
 
   /**
    * 모달 노출 상태 변경 시 폼 데이터 및 에러 상태 초기화 수행함
@@ -218,7 +231,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
               <div className="flex justify-center gap-4">
                 <button
                   type="button"
-                  className="flex items-center justify-center w-12 h-12 rounded-full bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors cursor-pointer"
+                  onClick={() => redirectToOAuth('google')}
+                  aria-label="Google 계정으로 로그인"
+                  className="flex items-center justify-center w-12 h-12 rounded-full bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -246,7 +261,16 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 </button>
                 <button
                   type="button"
-                  className="flex items-center justify-center w-12 h-12 rounded-full bg-[#FEE500] hover:bg-[#FDD800] transition-colors cursor-pointer"
+                  onClick={() => {
+                    // 카카오톡 인앱 브라우저 여부에 따라 SDK 또는 raw OAuth 사용함
+                    if (isKakaoInAppBrowser()) {
+                      redirectToKakaoWithSdk();
+                    } else {
+                      redirectToOAuth('kakao');
+                    }
+                  }}
+                  aria-label="카카오 계정으로 로그인"
+                  className="flex items-center justify-center w-12 h-12 rounded-full bg-[#FEE500] hover:bg-[#FDD800] transition-all active:scale-95 cursor-pointer"
                 >
                   <svg
                     viewBox="0 0 24 24"

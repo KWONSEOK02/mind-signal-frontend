@@ -26,6 +26,15 @@ const envSchema = z.object({
 
   /** 소켓 서버 연결 주소 */
   NEXT_PUBLIC_SOCKET_URL: z.string().url().optional(),
+
+  /** Google OAuth 클라이언트 ID (로컬 개발 환경에서는 미설정 허용) */
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().optional().default(''),
+
+  /** Kakao OAuth 클라이언트 ID (로컬 개발 환경에서는 미설정 허용) */
+  NEXT_PUBLIC_KAKAO_CLIENT_ID: z.string().optional().default(''),
+
+  /** Kakao JS SDK 앱 키 (로컬 개발 환경에서는 미설정 허용) */
+  NEXT_PUBLIC_KAKAO_JS_KEY: z.string().optional().default(''),
 });
 
 /**
@@ -38,6 +47,9 @@ const parsedEnv = envSchema.safeParse({
   NEXT_PUBLIC_PAIRING_TIMEOUT: process.env.NEXT_PUBLIC_PAIRING_TIMEOUT,
   NEXT_PUBLIC_SOCKET_URL:
     process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL,
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+  NEXT_PUBLIC_KAKAO_CLIENT_ID: process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID,
+  NEXT_PUBLIC_KAKAO_JS_KEY: process.env.NEXT_PUBLIC_KAKAO_JS_KEY,
 });
 
 if (!parsedEnv.success) {
@@ -64,6 +76,17 @@ export const config = {
   session: {
     pairingTimeout: env.NEXT_PUBLIC_PAIRING_TIMEOUT,
     expiryMs: env.NEXT_PUBLIC_PAIRING_TIMEOUT * 1000,
+  },
+
+  /** Google 관련 설정 */
+  google: {
+    clientId: env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+  },
+
+  /** Kakao 관련 설정 */
+  kakao: {
+    clientId: env.NEXT_PUBLIC_KAKAO_CLIENT_ID,
+    jsKey: env.NEXT_PUBLIC_KAKAO_JS_KEY,
   },
 
   /** 앱 메타데이터 설정 */

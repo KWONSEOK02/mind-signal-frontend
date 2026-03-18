@@ -4,7 +4,7 @@
 export { default as api } from './base';
 export { default as authApi } from './auth';
 export { default as sessionApi } from './session';
-export { default as signalApi } from './signal';
+export { default as measurementApi } from './signal';
 
 // 타입 export 수행함
 export * from './auth';
