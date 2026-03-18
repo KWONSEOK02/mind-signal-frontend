@@ -124,7 +124,11 @@ export const ScannerOpen: Story = {
     const canvas = within(canvasElement);
 
     // 1. 초기 "실험 합류하기" 버튼을 찾아 클릭하여 스캐너를 활성화함
-    const joinButton = await canvas.findByText(/실험 합류하기/i, {}, { timeout: 3000 });
+    const joinButton = await canvas.findByText(
+      /실험 합류하기/i,
+      {},
+      { timeout: 3000 }
+    );
     await userEvent.click(joinButton);
 
     // 2. 스캐너가 마운트된 후 버튼이 사라졌는지 확인하여 상태 전환을 검증함
@@ -171,11 +175,19 @@ export const JoinedAsSubject01: Story = {
     const canvas = within(canvasElement);
 
     // 자동 페어링이 완료되면 "SUBJECT 01" 텍스트가 노출됨 (비동기 상태 갱신 대기함)
-    const subjectLabel = await canvas.findByText(/SUBJECT\s+01/i, {}, { timeout: 5000 });
+    const subjectLabel = await canvas.findByText(
+      /SUBJECT\s+01/i,
+      {},
+      { timeout: 5000 }
+    );
     await expect(subjectLabel).toBeInTheDocument();
 
     // "다른 그룹에 참여하기" 재설정 버튼도 함께 노출되는지 확인함
-    const leaveButton = await canvas.findByText(/다른 그룹에 참여하기/i, {}, { timeout: 3000 });
+    const leaveButton = await canvas.findByText(
+      /다른 그룹에 참여하기/i,
+      {},
+      { timeout: 3000 }
+    );
     await expect(leaveButton).toBeInTheDocument();
   },
 };
@@ -216,11 +228,19 @@ export const JoinedAsSubject02: Story = {
     const canvas = within(canvasElement);
 
     // SUBJECT 02 카드가 노출될 때까지 대기함
-    const subjectLabel = await canvas.findByText(/SUBJECT\s+02/i, {}, { timeout: 5000 });
+    const subjectLabel = await canvas.findByText(
+      /SUBJECT\s+02/i,
+      {},
+      { timeout: 5000 }
+    );
     await expect(subjectLabel).toBeInTheDocument();
 
     // 그룹 ID 배지가 렌더링되었는지 확인함
-    const groupIdBadge = await canvas.findByText(/GROUP-TEST-02/i, {}, { timeout: 3000 });
+    const groupIdBadge = await canvas.findByText(
+      /GROUP-TEST-02/i,
+      {},
+      { timeout: 3000 }
+    );
     await expect(groupIdBadge).toBeInTheDocument();
   },
 };
@@ -266,15 +286,27 @@ export const MeasuringActive: Story = {
     await canvas.findByText(/SUBJECT/i, {}, { timeout: 5000 });
 
     // 2. "측정 시작하기" 버튼을 클릭하여 측정 상태로 전환함
-    const startButton = await canvas.findByText(/측정 시작하기/i, {}, { timeout: 3000 });
+    const startButton = await canvas.findByText(
+      /측정 시작하기/i,
+      {},
+      { timeout: 3000 }
+    );
     await userEvent.click(startButton);
 
     // 3. 측정 중 상태에서 "측정 중지하기" 버튼이 노출되는지 검증함
-    const stopButton = await canvas.findByText(/측정 중지하기/i, {}, { timeout: 3000 });
+    const stopButton = await canvas.findByText(
+      /측정 중지하기/i,
+      {},
+      { timeout: 3000 }
+    );
     await expect(stopButton).toBeInTheDocument();
 
     // 4. 신호 스트리밍 상태 표시 텍스트("Streaming Data...") 확인함
-    const streamingLabel = await canvas.findByText(/Streaming Data/i, {}, { timeout: 3000 });
+    const streamingLabel = await canvas.findByText(
+      /Streaming Data/i,
+      {},
+      { timeout: 3000 }
+    );
     await expect(streamingLabel).toBeInTheDocument();
   },
 };
@@ -301,7 +333,10 @@ export const ExpiredStatus: Story = {
     msw: {
       handlers: [
         http.post(/.*sessions.*pair.*/, () =>
-          HttpResponse.json({ status: 'fail', message: 'Session expired' }, { status: 410 })
+          HttpResponse.json(
+            { status: 'fail', message: 'Session expired' },
+            { status: 410 }
+          )
         ),
       ],
     },
@@ -325,7 +360,11 @@ export const ExpiredStatus: Story = {
     await expect(expiredMessage).toBeInTheDocument();
 
     // "다시 시도하기" 재시도 버튼이 에러 카드 하단에 함께 노출됨을 확인함
-    const retryButton = await canvas.findByText(/다시 시도하기/i, {}, { timeout: 3000 });
+    const retryButton = await canvas.findByText(
+      /다시 시도하기/i,
+      {},
+      { timeout: 3000 }
+    );
     await expect(retryButton).toBeInTheDocument();
   },
 };
@@ -352,7 +391,10 @@ export const NetworkError: Story = {
     msw: {
       handlers: [
         http.post(/.*sessions.*pair.*/, () =>
-          HttpResponse.json({ status: 'fail', message: 'Internal server error' }, { status: 500 })
+          HttpResponse.json(
+            { status: 'fail', message: 'Internal server error' },
+            { status: 500 }
+          )
         ),
       ],
     },
@@ -376,7 +418,11 @@ export const NetworkError: Story = {
     await expect(errorMessage).toBeInTheDocument();
 
     // 재시도 버튼 존재 여부를 함께 검증함
-    const retryButton = await canvas.findByText(/다시 시도하기/i, {}, { timeout: 3000 });
+    const retryButton = await canvas.findByText(
+      /다시 시도하기/i,
+      {},
+      { timeout: 3000 }
+    );
     await expect(retryButton).toBeInTheDocument();
   },
 };
@@ -427,11 +473,19 @@ export const URLAutoJoin: Story = {
     await canvas.findByText(/SUBJECT/i, {}, { timeout: 5000 });
 
     // "Connection Verified" 뱃지가 표시되어 연결이 성공적으로 완료되었음을 확인함
-    const verifiedBadge = await canvas.findByText(/Connection Verified/i, {}, { timeout: 3000 });
+    const verifiedBadge = await canvas.findByText(
+      /Connection Verified/i,
+      {},
+      { timeout: 3000 }
+    );
     await expect(verifiedBadge).toBeInTheDocument();
 
     // "측정 시작하기" 버튼이 노출되어 즉시 측정 가능한 상태임을 검증함
-    const startButton = await canvas.findByText(/측정 시작하기/i, {}, { timeout: 3000 });
+    const startButton = await canvas.findByText(
+      /측정 시작하기/i,
+      {},
+      { timeout: 3000 }
+    );
     await expect(startButton).toBeInTheDocument();
   },
 };

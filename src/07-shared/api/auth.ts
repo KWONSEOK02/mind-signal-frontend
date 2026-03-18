@@ -25,6 +25,18 @@ export const authApi = {
   login: (data: LoginRequest) => api.post<AuthResponse>('/auth/login', data),
   signup: (data: SignupRequest) => api.post<AuthResponse>('/auth/signup', data),
   getMe: () => api.get('/user/me'),
+  // 소셜 로그인 API 호출 (PKCE codeVerifier 및 redirectUri 포함)
+  socialLogin: (
+    provider: string,
+    code: string,
+    codeVerifier: string,
+    redirectUri?: string
+  ) =>
+    api.post<AuthResponse>(`/auth/social/${provider}`, {
+      code,
+      codeVerifier,
+      ...(redirectUri && { redirectUri }),
+    }),
 };
 
 export default authApi;

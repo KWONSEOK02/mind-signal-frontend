@@ -39,11 +39,22 @@ const JoinPage = () => {
   /**
    * 그룹 합류 및 상태 관리 수행함 (피실험자는 단일 대상이므로 인자 생략함)
    */
-  const { status, groupId, subjectIndex, sessionId, requestPairing, resetStatus } =
-    usePairing();
+  const {
+    status,
+    groupId,
+    subjectIndex,
+    sessionId,
+    requestPairing,
+    resetStatus,
+  } = usePairing();
 
-  const { isMeasuring, lastReceivedTime, elapsedSeconds, startMeasurement, stopMeasurement } =
-    useSignal(sessionId ?? null);
+  const {
+    isMeasuring,
+    lastReceivedTime,
+    elapsedSeconds,
+    startMeasurement,
+    stopMeasurement,
+  } = useSignal(sessionId ?? null);
 
   /**
    * URL 기반 자동 페어링 로직 수행함 (새로 추가된 누락 복구 기능)

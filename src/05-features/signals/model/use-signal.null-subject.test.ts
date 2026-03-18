@@ -14,7 +14,9 @@ import useSignal from './use-signal';
 // measurementApi mock 처리함
 vi.mock('@/07-shared/api', () => ({
   measurementApi: {
-    startMeasurement: vi.fn().mockResolvedValue({ data: { status: 'success' } }),
+    startMeasurement: vi
+      .fn()
+      .mockResolvedValue({ data: { status: 'success' } }),
   },
 }));
 
@@ -69,7 +71,9 @@ describe('useSignal — sessionId 기반 측정 제어 테스트 수행함', () 
     });
 
     expect(measurementApi.startMeasurement).toHaveBeenCalledTimes(1);
-    expect(measurementApi.startMeasurement).toHaveBeenCalledWith('session-abc-123');
+    expect(measurementApi.startMeasurement).toHaveBeenCalledWith(
+      'session-abc-123'
+    );
     expect(result.current.isMeasuring).toBe(true);
   });
 
@@ -122,7 +126,14 @@ describe('useSignal — sessionId 기반 측정 제어 테스트 수행함', () 
       // 다른 sessionId로 전송된 이벤트 수신 시뮬레이션함
       registeredHandler({
         sessionId: 'session-other-456',
-        data: { engagement: 0.9, interest: 0.9, excitement: 0.9, stress: 0.9, relaxation: 0.9, focus: 0.9 },
+        data: {
+          engagement: 0.9,
+          interest: 0.9,
+          excitement: 0.9,
+          stress: 0.9,
+          relaxation: 0.9,
+          focus: 0.9,
+        },
       });
     });
 
@@ -141,7 +152,10 @@ describe('useSignal — sessionId 기반 측정 제어 테스트 수행함', () 
     });
 
     expect(result.current.isMeasuring).toBe(false);
-    expect(mockSocketOff).toHaveBeenCalledWith('eeg-live', expect.any(Function));
+    expect(mockSocketOff).toHaveBeenCalledWith(
+      'eeg-live',
+      expect.any(Function)
+    );
   });
 
   it('이미 측정 중일 때 startMeasurement 재호출 시 API 중복 호출 방지 처리함', async () => {

@@ -77,8 +77,10 @@ const SignalMeasurer: React.FC<SignalMeasurerProps> = ({
             <div className="flex items-center gap-1.5 font-mono text-lg font-black tracking-tighter text-indigo-500">
               <Timer size={16} />
               <span>
-                {Math.floor(elapsedSeconds / 60).toString().padStart(2, '0')}:
-                {(elapsedSeconds % 60).toString().padStart(2, '0')}
+                {Math.floor(elapsedSeconds / 60)
+                  .toString()
+                  .padStart(2, '0')}
+                :{(elapsedSeconds % 60).toString().padStart(2, '0')}
               </span>
             </div>
             <button

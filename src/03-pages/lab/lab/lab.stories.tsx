@@ -64,7 +64,9 @@ const createDualSessionHandlerSet = (groupId: string) => {
       },
     });
   });
-  const reset = () => { callCount = 0; };
+  const reset = () => {
+    callCount = 0;
+  };
   return { handler, reset };
 };
 
@@ -168,7 +170,10 @@ export const BtiMode: Story = {
     const settingsBtn = allButtons.find((btn: HTMLElement) =>
       btn.querySelector('svg.lucide-settings')
     );
-    if (!settingsBtn) throw new Error('Settings button not found: svg.lucide-settings 버튼을 찾을 수 없음');
+    if (!settingsBtn)
+      throw new Error(
+        'Settings button not found: svg.lucide-settings 버튼을 찾을 수 없음'
+      );
     await userEvent.click(settingsBtn);
 
     // 2. 드롭다운 내 BTI 모드 옵션 클릭하여 전환 수행함
@@ -270,7 +275,12 @@ export const QRVisible: Story = {
  */
 export const Subject1Connected: Story = {
   // 스토리 실행 전 callCount를 0으로 리셋하여 이전 스토리와 격리함
-  loaders: [async () => { subject1ConnectedHandlers.reset(); return {}; }],
+  loaders: [
+    async () => {
+      subject1ConnectedHandlers.reset();
+      return {};
+    },
+  ],
   parameters: {
     docs: {
       description: {
@@ -338,7 +348,12 @@ export const Subject1Connected: Story = {
  */
 export const ExperimentReady: Story = {
   // 스토리 실행 전 callCount를 0으로 리셋하여 이전 스토리와 격리함
-  loaders: [async () => { experimentReadyHandlers.reset(); return {}; }],
+  loaders: [
+    async () => {
+      experimentReadyHandlers.reset();
+      return {};
+    },
+  ],
   parameters: {
     docs: {
       description: {
@@ -407,7 +422,12 @@ export const ExperimentReady: Story = {
  */
 export const ExperimentRunning: Story = {
   // 스토리 실행 전 callCount를 0으로 리셋하여 이전 스토리와 격리함
-  loaders: [async () => { experimentRunningHandlers.reset(); return {}; }],
+  loaders: [
+    async () => {
+      experimentRunningHandlers.reset();
+      return {};
+    },
+  ],
   parameters: {
     docs: {
       description: {
@@ -457,7 +477,9 @@ export const ExperimentRunning: Story = {
 
     // 3. 클릭 후에도 버튼이 여전히 존재하는지 확인함
     //    (startMeasurement 호출만 수행하며 버튼 제거 로직은 컴포넌트에 없음)
-    await expect(canvas.getByRole('button', { name: /실험 시작/i })).toBeInTheDocument();
+    await expect(
+      canvas.getByRole('button', { name: /실험 시작/i })
+    ).toBeInTheDocument();
   },
 };
 
@@ -605,7 +627,10 @@ export const BtiExperimentReady: Story = {
     const settingsBtn = allButtons.find((btn: HTMLElement) =>
       btn.querySelector('svg.lucide-settings')
     );
-    if (!settingsBtn) throw new Error('Settings button not found: svg.lucide-settings 버튼을 찾을 수 없음');
+    if (!settingsBtn)
+      throw new Error(
+        'Settings button not found: svg.lucide-settings 버튼을 찾을 수 없음'
+      );
     await userEvent.click(settingsBtn);
 
     // 2. BTI 모드 (1인) 선택하여 모드 전환 수행함
