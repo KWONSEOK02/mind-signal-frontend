@@ -37,7 +37,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
       if (canvas.parentElement) {
         canvas.width = canvas.parentElement.offsetWidth;
         canvas.height = canvas.parentElement.offsetHeight;
-        currentY = canvas.height / 2;
+        currentY = canvas.height / 2 - 130;
         points = [];
       }
     };
@@ -46,7 +46,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
     resize();
 
     const generateNextY = () => {
-      const centerY = canvas.height / 2;
+      const centerY = canvas.height / 2 - 130;
 
       if (sparkTargets.length > 0) {
         const target = centerY + sparkTargets[0];
@@ -167,7 +167,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
           </div>
         </div>
 
-        <div className="relative mb-12 select-none flex flex-col items-center">
+        <div className="relative mb-12 sm:mb-16 select-none flex flex-col items-center">
           <h1 className="flex flex-col items-center cursor-default leading-[0.85]">
             <span
               className={`text-7xl md:text-[140px] font-black tracking-[-0.05em] ${
@@ -183,7 +183,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
           </h1>
         </div>
 
-        <div className="max-w-3xl space-y-10 mb-16">
+        <div className="max-w-3xl space-y-3 sm:space-y-10 mb-8 sm:mb-16">
           <h2
             className={`text-xl md:text-3xl font-black italic tracking-tight uppercase cursor-default select-none ${
               isDark ? 'text-indigo-400' : 'text-indigo-600'
@@ -197,8 +197,8 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
             }`}
           >
             <p>
-              실시간 뇌파 동조화 분석을 통해 당신과 상대의 숨겨진 뇌파 매칭률을
-              확인하세요!
+              실시간 뇌파 동조화 분석을 통해 당신과 상대의 <br />
+              숨겨진 뇌파 매칭률을 확인하세요!
             </p>
           </div>
         </div>
