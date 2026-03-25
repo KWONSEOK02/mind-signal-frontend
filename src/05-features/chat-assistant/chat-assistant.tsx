@@ -45,9 +45,10 @@ const ChatAssistant: React.FC<{ theme: 'light' | 'dark' }> = (
   };
 
   return (
-    <div className="fixed bottom-8 right-8 z-[100]">
+    //모바일은 bottom-4, right-4 / 큰 화면은 sm: 적용
+    <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100]">
       {isOpen ? (
-        <div className="w-[380px] h-[550px] bg-gray-900 rounded-[32px] border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
+        <div className="w-[calc(100vw-2rem)] sm:w-[380px] h-[70vh] sm:h-[550px] bg-gray-900 rounded-[32px] border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
           <div className="p-6 bg-indigo-600 flex items-center justify-between text-white">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">

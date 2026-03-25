@@ -160,7 +160,9 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
                 isDark ? 'text-indigo-400' : 'text-indigo-600'
               }`}
             >
-              상명대학교 휴먼AI공학전공 팀 휴로(Heuro) 졸업 프로젝트
+              상명대학교 휴먼AI공학전공
+              <br />
+              Team_Heuro 졸업 프로젝트
             </span>
           </div>
         </div>
@@ -187,7 +189,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
               isDark ? 'text-indigo-400' : 'text-indigo-600'
             }`}
           >
-            뇌파 동조화 기반 우정 테스트, 커플 궁합 테스트
+            뇌파 동조화 기반 우정 및 커플 궁합 테스트
           </h2>
           <div
             className={`space-y-4 font-bold text-base md:text-xl leading-relaxed cursor-default select-none ${
@@ -204,7 +206,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           <button
             onClick={() => handleNavigation('intro')}
-            className={`group px-10 py-5 glass border rounded-3xl font-black text-lg flex items-center gap-3 cursor-pointer transition-all duration-300 ${
+            className={`group px-10 py-5 glass border rounded-3xl font-black text-lg flex items-center justify-center gap-3 cursor-pointer transition-all duration-300 ${
               isDark
                 ? 'border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-transparent'
                 : 'border-indigo-100 text-slate-700 hover:bg-indigo-100 hover:border-transparent hover:shadow-lg shadow-indigo-500/5'
@@ -223,11 +225,11 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             <span className="relative z-10 flex items-center gap-4">
+              실험실 입장
               <FlaskConical
                 size={24}
                 className="group-hover:rotate-12 transition-transform duration-300"
               />
-              실험실 입장
             </span>
             <div className="absolute inset-0 border-2 border-white/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>

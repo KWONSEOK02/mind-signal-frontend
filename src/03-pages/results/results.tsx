@@ -28,13 +28,21 @@ const Results: React.FC<ResultsProps> = ({
   const partnerName = '김철수';
 
   const syncLevels = [
-    { range: '0 - 20%', label: '서먹서먹한 사이', color: 'text-slate-500' },
-    { range: '20 - 40%', label: '개성이 뚜렷한 사이', color: 'text-amber-500' },
-    { range: '40 - 60%', label: '편안한 친구 사이', color: 'text-blue-500' },
-    { range: '60 - 80%', label: '환상의 티키타카', color: 'text-emerald-500' },
+    { range: '0 - 20%', label: '"서먹서먹한 사이"', color: 'text-slate-500' },
+    {
+      range: '20 - 40%',
+      label: '"개성이 뚜렷한 사이"',
+      color: 'text-amber-500',
+    },
+    { range: '40 - 60%', label: '"편안한 친구 사이"', color: 'text-blue-500' },
+    {
+      range: '60 - 80%',
+      label: '"환상의 티키타카"',
+      color: 'text-emerald-500',
+    },
     {
       range: '80 - 100%',
-      label: '이심전심 소울메이트',
+      label: '"이심전심 소울메이트"',
       color: 'text-indigo-500',
     },
   ];
@@ -86,7 +94,7 @@ const Results: React.FC<ResultsProps> = ({
 
   if (!isLoggedIn) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-48 flex flex-col items-center justify-center text-center space-y-12 animate-in fade-in zoom-in duration-700">
+      <div className="max-w-7xl mx-auto px-6 py-24 sm:py-48 flex flex-col items-center justify-center text-center space-y-12 animate-in fade-in zoom-in duration-700">
         <div
           className={`w-24 h-24 ${isDark ? 'bg-indigo-600/10 border-indigo-500/20' : 'bg-indigo-50 border-indigo-200'} rounded-full flex items-center justify-center text-indigo-500 border-2 shadow-[0_0_50px_rgba(99,102,241,0.2)]`}
         >
@@ -94,7 +102,7 @@ const Results: React.FC<ResultsProps> = ({
         </div>
         <div className="space-y-6">
           <h2
-            className={`text-5xl font-black tracking-tighter italic uppercase ${isDark ? 'text-white' : 'text-slate-900'}`}
+            className={`text-5xl font-black tracking-tighter uppercase ${isDark ? 'text-white' : 'text-slate-900'}`}
           >
             Neural Privacy
           </h2>
@@ -119,27 +127,29 @@ const Results: React.FC<ResultsProps> = ({
   return (
     <div
       ref={reportRef}
-      className="max-w-5xl mx-auto px-6 py-20 space-y-24 animate-in fade-in duration-1000 bg-transparent"
+      className="max-w-5xl mx-auto px-6 pt-20 pb-20 sm:py-20 space-y-24 animate-in fade-in duration-1000 bg-transparent"
     >
       {/* 리포트 헤더 */}
       <div
-        className={`flex flex-col md:flex-row justify-between items-end gap-6 border-b pb-10 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
+        className={`flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b pb-10 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
       >
-        <div className="space-y-2">
+        {/* 모바일은 text-left, 웹 화면은 md:text-center 적용 */}
+        <div className="space-y-2 text-left md:text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-[10px] font-black uppercase text-indigo-400 tracking-widest">
             Experiment Report
           </div>
           <h2
-            className={`text-5xl font-black tracking-tighter italic uppercase ${isDark ? 'text-white' : 'text-slate-900'}`}
+            className={`text-3xl sm:text-5xl font-black tracking-tighter uppercase ${isDark ? 'text-white' : 'text-slate-900'}`}
           >
             심층 분석 리포트
           </h2>
           <p
-            className={`font-bold italic ${isDark ? 'text-slate-500' : 'text-slate-600'}`}
+            className={`text-sm sm:text-base font-bold ${isDark ? 'text-slate-500' : 'text-slate-600'}`}
           >
             실시간 뇌파 동조화 분석 기반 정밀 결과 보고서
           </p>
         </div>
+
         <div className="flex gap-3">
           <button
             onClick={handleShare}
@@ -159,11 +169,11 @@ const Results: React.FC<ResultsProps> = ({
       {/* 분석 섹션 01 */}
       <section className="space-y-12">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black italic shadow-lg shadow-indigo-600/20">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-600/20">
             01
           </div>
           <h3
-            className={`text-2xl font-black italic uppercase tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
+            className={`text-base sm:text-2xl font-black uppercase tracking-tighter sm:tracking-tight whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}
           >
             뇌파 동조율 분석 (Neural Sync)
           </h3>
@@ -263,14 +273,12 @@ const Results: React.FC<ResultsProps> = ({
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-1">
                   Total Sync
                 </span>
-                <span className="text-7xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-indigo-600 to-purple-600">
+                <span className="text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-indigo-600 to-purple-600">
                   {userScore.toFixed(0)}%
                 </span>
               </div>
             </div>
-            <h4
-              className={`text-2xl font-black italic uppercase ${isDark ? 'text-white' : 'text-slate-900'}`}
-            >
+            <h4 className="text-2xl font-black uppercase bg-[linear-gradient(to_right,#6672F4_0%,#00DA90_100%)] bg-clip-text text-transparent">
               {currentLevel.label}
             </h4>
           </div>
@@ -280,11 +288,11 @@ const Results: React.FC<ResultsProps> = ({
       {/* 분석 섹션 02 */}
       <section className="space-y-8 scroll-mt-32">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center text-white font-black italic shadow-lg shadow-purple-600/20">
+          <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-purple-600/20">
             02
           </div>
           <h3
-            className={`text-2xl font-black italic uppercase tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
+            className={`text-base sm:text-2xl font-black uppercase tracking-tighter sm:tracking-tight whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}
           >
             재미로 보는 뇌BTI (Neural Profile)
           </h3>
@@ -297,11 +305,11 @@ const Results: React.FC<ResultsProps> = ({
             <div className="space-y-10">
               <div className="space-y-6">
                 <h4
-                  className={`text-6xl font-black italic tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}
+                  className={`text-6xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}
                 >
                   ENFJ-A
                 </h4>
-                <h5 className="text-2xl font-black text-indigo-400 italic">
+                <h5 className="text-2xl font-black text-indigo-400">
                   &quot;동조화 리더형 (Neural Synchronizer)&quot;
                 </h5>
                 <p
