@@ -1,9 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-/** 챗봇 FAB 컨테이너 로케이터 (fixed bottom-right) */
-const chatContainer = (page: ReturnType<typeof test['info']> extends never ? never : any) =>
-  page.locator('.fixed.bottom-4.right-4, .fixed.sm\\:bottom-8.sm\\:right-8');
-
 test.describe('챗봇 (ChatAssistant)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');

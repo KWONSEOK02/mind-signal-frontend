@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "coverage/**",
+    // MSW 자동 생성 파일
+    "public/mockServiceWorker.js",
   ]),
   ...storybook.configs["flat/recommended"],
 
