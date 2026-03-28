@@ -214,20 +214,49 @@ const LabPage = () => {
               className={`h-10 w-[1px] mx-2 ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}
             />
 
-            {/* 설정(톱니바퀴) 버튼 — isDark 테마 대응 */}
-            <button
-              onClick={() => {
-                resetStatus();
-                setIsQRVisible(false);
-              }}
-              className={`p-3 rounded-xl border transition-colors cursor-pointer ${
-                isDark
-                  ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                  : 'bg-white border-slate-200 text-slate-500 hover:text-indigo-600 shadow-sm'
-              }`}
-            >
-              <Settings size={20} />
-            </button>
+            {/* 설정 버튼 및 드롭다운 메뉴 컨테이너 — isDark 테마 대응 */}
+            <div className="relative">
+              <button
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className={`p-3 rounded-xl border transition-colors cursor-pointer ${
+                  isDark
+                    ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                    : 'bg-white border-slate-200 text-slate-500 hover:text-indigo-600 shadow-sm'
+                }`}
+              >
+                <Settings size={20} />
+              </button>
+              {isSettingsOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsSettingsOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-3 w-48 p-2 rounded-xl bg-slate-800 border border-slate-700 shadow-xl z-50 flex flex-col gap-1">
+                    <button
+                      onClick={() => handleModeChange('DUAL')}
+                      className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
+                        mode === 'DUAL'
+                          ? 'bg-indigo-500/20 text-indigo-400'
+                          : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      DUAL 모드 (2인)
+                    </button>
+                    <button
+                      onClick={() => handleModeChange('BTI')}
+                      className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
+                        mode === 'BTI'
+                          ? 'bg-indigo-500/20 text-indigo-400'
+                          : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      BTI 모드 (1인)
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 

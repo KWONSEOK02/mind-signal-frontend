@@ -57,7 +57,7 @@ describe('LabPage 정밀 라우팅 및 인터랙션 통합 테스트 수행함',
     expect(screen.getByText(/Subject 01 연결 QR 생성/i)).toBeDefined();
   });
 
-  it('설정 버튼 클릭 시 QR UI가 닫히고 라우터 상태가 유지되어야 함', async () => {
+  it('설정 메뉴에서 모드 변경 시 QR UI가 닫히고 라우터 상태가 유지되어야 함', async () => {
     const user = userEvent.setup();
     render(
       <UIProvider>
@@ -70,7 +70,7 @@ describe('LabPage 정밀 라우팅 및 인터랙션 통합 테스트 수행함',
     await user.click(createBtn);
     expect(screen.getByText(/STEP 1: SUBJECT 01 WAITING/i)).toBeDefined();
 
-    // 2. 설정(톱니) 버튼 식별하여 클릭 수행함 (리셋 + QR 닫기)
+    // 2. 설정(톱니) 버튼 식별하여 클릭 수행함 (드롭다운 메뉴 열기)
     const allButtons = screen.getAllByRole('button');
     const settingsBtn = allButtons.find((btn: HTMLElement) =>
       btn.querySelector('svg.lucide-settings')
@@ -79,9 +79,13 @@ describe('LabPage 정밀 라우팅 및 인터랙션 통합 테스트 수행함',
       await user.click(settingsBtn);
     }
 
-    // 3. 설정 버튼 클릭 시 QR UI가 닫혔는지 검증함
+    // 3. 드롭다운 메뉴에 나타난 'DUAL 모드 (2인)' 버튼 클릭 수행함
+    const dualModeBtn = await screen.findByText(/DUAL 모드 \(2인\)/i);
+    await user.click(dualModeBtn);
+
+    // 4. 모드 변경 시 QR 컴포넌트가 언마운트되었는지 검증함
     expect(screen.queryByText(/STEP 1: SUBJECT 01 WAITING/i)).toBeNull();
-    // 4. 페이지 이탈 없이 LabPage에 머물러 있는지 검증함
+    // 5. 페이지 이탈 없이 LabPage에 머물러 있는지 검증함
     expect(mockRouter.asPath).toBe('/lab');
   });
 });
@@ -131,7 +135,11 @@ describe('다중 페어링 상태 전이 및 완료 통합 테스트 수행함',
   });
 
   it('첫 번째 사용자가 연결되었을 때, 두 번째 사용자의 QR 생성 UI가 자동 노출되어야 함', async () => {
-    render(<UIProvider><QRResetInteraction /></UIProvider>);
+    render(
+      <UIProvider>
+        <QRResetInteraction />
+      </UIProvider>
+    );
 
     // 1. QR 생성 버튼 클릭하여 1번 참가자 페어링 시작함
     const createBtn = screen.getByText(/Subject 01 연결 QR 생성/i);
@@ -165,7 +173,11 @@ describe('다중 페어링 상태 전이 및 완료 통합 테스트 수행함',
   });
 
   it('두 사용자 모두 페어링이 완료되었을 때 실험 시작 버튼이 노출되어야 함', async () => {
-    render(<UIProvider><QRResetInteraction /></UIProvider>);
+    render(
+      <UIProvider>
+        <QRResetInteraction />
+      </UIProvider>
+    );
 
     // 1. 1번 참가자 페어링 시작함
     fireEvent.click(screen.getByText(/Subject 01 연결 QR 생성/i));

@@ -104,30 +104,39 @@ export const Default: Story = {
 // ---------------------------------------------------------------------------
 
 /**
- * [Interactive] 톱니바퀴 설정 버튼 클릭 시 리셋 동작 검증함.
+ * [Interactive] 톱니바퀴 설정 버튼 클릭 시 모드 선택 드롭다운이 열리는 동작 검증함.
  *
  * play 함수:
  * 1. 헤더 우측 Settings(SVG) 버튼 식별 및 클릭
- * 2. 설정 버튼이 정상적으로 DOM에 존재하는지 단언함
+ * 2. "DUAL 모드 (2인)" 및 "BTI 모드 (1인)" 옵션이 DOM에 존재하는지 단언함
  */
 export const SettingsOpen: Story = {
   parameters: {
     docs: {
       description: {
         story:
-          '톱니바퀴 버튼 클릭 시 세션 리셋 및 QR 닫기가 수행되는 상태임. 설정 버튼이 정상적으로 렌더링되는지 확인함.',
+          '톱니바퀴 버튼 클릭 후 실험 모드 선택 드롭다운이 노출되는 상태임. 두 가지 모드 옵션("DUAL 모드 (2인)", "BTI 모드 (1인)")이 정상적으로 렌더링되는지 확인함.',
       },
     },
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    // 설정(톱니바퀴) 버튼을 SVG 클래스 기반으로 식별함
+    // 설정(톱니바퀴) 버튼을 SVG 클래스 기반으로 식별하여 클릭 수행함
     const allButtons = canvas.getAllByRole('button');
     const settingsBtn = allButtons.find((btn: HTMLElement) =>
       btn.querySelector('svg.lucide-settings')
     );
     await expect(settingsBtn).toBeDefined();
+    if (settingsBtn) {
+      await userEvent.click(settingsBtn);
+    }
+
+    // 드롭다운 메뉴의 두 모드 옵션이 렌더링되었는지 단언함
+    const dualOption = await canvas.findByText(/DUAL 모드 \(2인\)/i);
+    const btiOption = await canvas.findByText(/BTI 모드 \(1인\)/i);
+    await expect(dualOption).toBeInTheDocument();
+    await expect(btiOption).toBeInTheDocument();
   },
 };
 
@@ -479,13 +488,13 @@ export const ExperimentRunning: Story = {
 // ---------------------------------------------------------------------------
 
 /**
- * [Interactive] QR이 열려 있는 상태에서 설정 버튼을 클릭하면 세션이 초기화되는 시나리오임.
+ * [Interactive] QR이 열려 있는 상태에서 모드를 변경하면 세션이 초기화되는 시나리오임.
  *
  * 전체 흐름:
  * 1. "Subject 01 연결 QR 생성" 클릭 → QR 표시
  * 2. "닫기" 클릭 → QR 닫힘
  * 3. 다시 "Subject 01 연결 QR 생성" 클릭 → QR 재표시
- * 4. 설정 버튼 클릭 → resetStatus + QR 닫힘
+ * 4. 설정 버튼 클릭 → DUAL 모드 재선택 → handleModeChange 호출 → resetStatus + QR 닫힘
  * 5. 초기 상태("Subject 01 연결 QR 생성")로 복구됨 단언
  */
 export const QRResetInteraction: Story = {
@@ -493,7 +502,7 @@ export const QRResetInteraction: Story = {
     docs: {
       description: {
         story:
-          'QR 열린 상태에서 설정 버튼을 클릭하면 세션이 초기화되고 QR이 닫히는 시나리오임. 설정 버튼이 resetStatus와 setIsQRVisible(false)를 함께 호출하는 동작을 검증함.',
+          'QR 열린 상태에서 설정 메뉴를 통해 모드를 변경하면 세션이 초기화되고 QR이 닫히는 시나리오임. handleModeChange가 resetStatus와 setIsQRVisible(false)를 함께 호출하는 동작을 검증함.',
       },
     },
     msw: {
@@ -538,7 +547,7 @@ export const QRResetInteraction: Story = {
     const reopenBtn = await canvas.findByText(/Subject 01 연결 QR 생성/i);
     await userEvent.click(reopenBtn);
 
-    // 4. 설정 버튼 식별 및 클릭 수행함 (리셋 + QR 닫기)
+    // 4. 설정 버튼 식별 및 드롭다운 활성화 수행함
     const allButtons = canvas.getAllByRole('button');
     const settingsBtn = allButtons.find((btn: HTMLElement) =>
       btn.querySelector('svg.lucide-settings')
@@ -547,7 +556,11 @@ export const QRResetInteraction: Story = {
       await userEvent.click(settingsBtn);
     }
 
-    // 5. 설정 버튼 클릭으로 QR이 닫히고 초기 버튼으로 복구되었는지 단언함
+    // 5. DUAL 모드 재선택하여 모드 변경 트리거 수행함 (QR 초기화 유도)
+    const dualModeBtn = await canvas.findByText(/DUAL 모드 \(2인\)/i);
+    await userEvent.click(dualModeBtn);
+
+    // 6. 모드 변경으로 인해 QR이 닫히고 초기 버튼으로 복구되었는지 단언함
     await expect(
       canvas.getByText(/Subject 01 연결 QR 생성/i)
     ).toBeInTheDocument();
