@@ -134,16 +134,33 @@ const Navbar: React.FC<NavbarProps> = ({
                 </button>
               ) : (
                 <button
-                  onClick={handleLogout} // 로그아웃 기능으로 변경
-                  className="cursor-pointer group flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-white/5 border border-white/10 text-indigo-400 hover:text-rose-400 transition-all"
+                  onClick={handleLogout}
+                  // 로그인 버튼
+                  className={`cursor-pointer group flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border shadow-none ${
+                    theme === 'dark'
+                      ? 'bg-white/5 border-white/10 text-slate-400 hover:bg-slate-800 hover:border-slate-800'
+                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-200 hover:border-slate-200'
+                  }`}
                   title="로그아웃 하시겠습니까?"
                 >
-                  <User size={14} className="group-hover:hidden" />
-                  <LogOut size={14} className="hidden group-hover:block" />
-                  <span className="group-hover:hidden">
+                  <User
+                    size={14}
+                    className={`group-hover:hidden ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-500'}`}
+                  />
+                  <LogOut
+                    size={14}
+                    className={`hidden group-hover:block ${theme === 'dark' ? 'text-rose-400' : 'text-rose-600'}`}
+                  />
+                  <span
+                    className={`group-hover:hidden ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}
+                  >
                     {userName || '사용자'}님
                   </span>
-                  <span className="hidden group-hover:block">로그아웃</span>
+                  <span
+                    className={`hidden group-hover:block font-bold ${theme === 'dark' ? 'text-rose-400' : 'text-rose-600'}`}
+                  >
+                    로그아웃
+                  </span>
                 </button>
               )}
             </div>

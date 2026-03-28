@@ -37,7 +37,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
       if (canvas.parentElement) {
         canvas.width = canvas.parentElement.offsetWidth;
         canvas.height = canvas.parentElement.offsetHeight;
-        currentY = canvas.height / 2;
+        currentY = canvas.height / 2 - 130;
         points = [];
       }
     };
@@ -46,7 +46,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
     resize();
 
     const generateNextY = () => {
-      const centerY = canvas.height / 2;
+      const centerY = canvas.height / 2 - 130;
 
       if (sparkTargets.length > 0) {
         const target = centerY + sparkTargets[0];
@@ -160,12 +160,14 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
                 isDark ? 'text-indigo-400' : 'text-indigo-600'
               }`}
             >
-              상명대학교 휴먼AI공학전공 팀 휴로(Heuro) 졸업 프로젝트
+              상명대학교 휴먼AI공학전공
+              <br />
+              Team_Heuro 졸업 프로젝트
             </span>
           </div>
         </div>
 
-        <div className="relative mb-12 select-none flex flex-col items-center">
+        <div className="relative mb-12 sm:mb-16 select-none flex flex-col items-center">
           <h1 className="flex flex-col items-center cursor-default leading-[0.85]">
             <span
               className={`text-7xl md:text-[140px] font-black tracking-[-0.05em] ${
@@ -181,13 +183,13 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
           </h1>
         </div>
 
-        <div className="max-w-3xl space-y-10 mb-16">
+        <div className="max-w-3xl space-y-3 sm:space-y-10 mb-8 sm:mb-16">
           <h2
             className={`text-xl md:text-3xl font-black italic tracking-tight uppercase cursor-default select-none ${
               isDark ? 'text-indigo-400' : 'text-indigo-600'
             }`}
           >
-            뇌파 동조화 기반 우정 테스트, 커플 궁합 테스트
+            뇌파 동조화 기반 우정 및 커플 궁합 테스트
           </h2>
           <div
             className={`space-y-4 font-bold text-base md:text-xl leading-relaxed cursor-default select-none ${
@@ -195,8 +197,8 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
             }`}
           >
             <p>
-              실시간 뇌파 동조화 분석을 통해 당신과 상대의 숨겨진 뇌파 매칭률을
-              확인하세요!
+              실시간 뇌파 동조화 분석을 통해 당신과 상대의 <br />
+              숨겨진 뇌파 매칭률을 확인하세요!
             </p>
           </div>
         </div>
@@ -204,7 +206,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           <button
             onClick={() => handleNavigation('intro')}
-            className={`group px-10 py-5 glass border rounded-3xl font-black text-lg flex items-center gap-3 cursor-pointer transition-all duration-300 ${
+            className={`group px-10 py-5 glass border rounded-3xl font-black text-lg flex items-center justify-center gap-3 cursor-pointer transition-all duration-300 ${
               isDark
                 ? 'border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-transparent'
                 : 'border-indigo-100 text-slate-700 hover:bg-indigo-100 hover:border-transparent hover:shadow-lg shadow-indigo-500/5'
@@ -223,11 +225,11 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             <span className="relative z-10 flex items-center gap-4">
+              실험실 입장
               <FlaskConical
                 size={24}
                 className="group-hover:rotate-12 transition-transform duration-300"
               />
-              실험실 입장
             </span>
             <div className="absolute inset-0 border-2 border-white/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
