@@ -11,6 +11,7 @@ import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
 import MobileLabView from './ui/mobile-lab-view';
+import { useUI } from '@/app/providers/ui-context'; // 다크 라이트 모드를 위해 임포트 추가
 
 // next.config.ts의 optimizePackageImports 설정으로 인해 성능 저하 없이 편리한 임포트 사용함
 import {
@@ -30,6 +31,10 @@ const emptySubscribe = () => () => {};
  * 진입점에서 환경을 감지하여 모바일인 경우 참여 유도 인터페이스로 전환 수행함
  */
 const LabPage = () => {
+  // UI 컨텍스트에서 테마 가져오기 & isDark 변수 생성
+  const ui = useUI();
+  const isDark = ui.theme === 'dark';
+
   // 클라이언트 사이드 마운트 여부 확인 수행함
   const isClient = useSyncExternalStore(
     emptySubscribe,
@@ -108,8 +113,17 @@ const LabPage = () => {
 
   /**
    * 서버 사이드 렌더링 시 하이드레이션 오류 방지를 위해 빈 화면 반환함
-   */
+   
   if (!isClient) return <div className="min-h-screen bg-slate-950" />;
+  */
+
+  // 서버 렌더링 시 하이드레이션 오류 방지 화면도 라이트/다크에 맞게 변경
+  if (!isClient)
+    return (
+      <div
+        className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
+      />
+    );
 
   /**
    * [진입점 검사] 모바일 환경인 경우 실험 참여 유도 뷰로 즉시 전환함
@@ -126,7 +140,7 @@ const LabPage = () => {
       return (
         <button
           onClick={handleStartExperiment}
-          className="group relative inline-flex items-center gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20"
+          className="group relative inline-flex items-center cursor-pointer gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20"
         >
           <Play size={20} fill="currentColor" />
           <span>실험 시작</span>
@@ -149,7 +163,7 @@ const LabPage = () => {
             setIsQRVisible(true);
           }
         }}
-        className="group relative inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-indigo-500/20"
+        className="group relative inline-flex items-center cursor-pointer gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-indigo-500/20"
       >
         {isQRVisible ? <X size={20} /> : <PlusCircle size={20} />}
         <span>{isQRVisible ? '닫기' : buttonText}</span>
@@ -158,9 +172,15 @@ const LabPage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 pt-24 pb-12 px-6">
+    //  1. 최상단 main 배경색을 투명하게(transparent) 하거나 테마에 맞게 변경
+    <main
+      className={`min-h-screen pt-24 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
+    >
       <div className="max-w-[1600px] mx-auto space-y-10">
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-10">
+        {/*  2. 헤더 밑줄 색상 변경*/}
+        <header
+          className={`flex flex-col md:flex-row md:items-end justify-between gap-6 border-b pb-10 ${isDark ? 'border-white/5' : 'border-slate-200'}`}
+        >
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-indigo-500 mb-1">
               <LayoutDashboard size={18} />
@@ -168,32 +188,46 @@ const LabPage = () => {
                 Operator Dashboard
               </span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter italic">
+
+            {/*  3. 메인 타이틀 글자색 변경*/}
+            <h1
+              className={`text-4xl md:text-5xl font-black tracking-tighter italic ${isDark ? 'text-white' : 'text-slate-900'}`}
+            >
               {currentConfig.title.split(' ')[0]}{' '}
               <span className="text-indigo-500">
                 {currentConfig.title.split(' ')[1]}
               </span>{' '}
               {currentConfig.title.split(' ')[2]}
             </h1>
-            <p className="text-slate-400 text-sm font-medium">
+
+            {/*}  4. 설명글 글자색 변경*/}
+            <p
+              className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+            >
               {currentConfig.description}
             </p>
           </div>
 
           <div className="flex items-center gap-4">
             {renderControlButton()}
-            <div className="h-10 w-[1px] bg-white/10 mx-2" />
-            {/* 설정 버튼 및 드롭다운 메뉴 컨테이너 위치함 */}
+            <div
+              className={`h-10 w-[1px] mx-2 ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}
+            />
+
+            {/* 설정 버튼 및 드롭다운 메뉴 컨테이너 — isDark 테마 대응 */}
             <div className="relative">
               <button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors"
+                className={`p-3 rounded-xl border transition-colors cursor-pointer ${
+                  isDark
+                    ? 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                    : 'bg-white border-slate-200 text-slate-500 hover:text-indigo-600 shadow-sm'
+                }`}
               >
                 <Settings size={20} />
               </button>
               {isSettingsOpen && (
                 <>
-                  {/* 드롭다운 외부 영역 클릭 시 메뉴를 닫기 위한 투명 백드롭 적용함 */}
                   <div
                     className="fixed inset-0 z-40"
                     onClick={() => setIsSettingsOpen(false)}
@@ -228,8 +262,17 @@ const LabPage = () => {
 
         {isQRVisible && !isAllPaired && (
           <section className="animate-in fade-in zoom-in duration-500">
-            <div className="p-8 rounded-[2.5rem] bg-indigo-500/5 border border-indigo-500/20 backdrop-blur-sm flex flex-col items-center gap-6">
-              <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">
+            {/*}  6. QR코드 박스 배경/테두리 변경*/}
+            <div
+              className={`p-8 rounded-[2.5rem] border backdrop-blur-sm flex flex-col items-center gap-6 ${
+                isDark
+                  ? 'bg-indigo-500/5 border-indigo-500/20'
+                  : 'bg-white/80 border-indigo-100 shadow-sm'
+              }`}
+            >
+              <p
+                className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}
+              >
                 STEP {pairedSubjects.length + 1}: SUBJECT 0
                 {pairedSubjects.length + 1} WAITING
               </p>
@@ -237,7 +280,7 @@ const LabPage = () => {
                 value={pairingCode || 'SESSION-LOADING...'}
                 timeLeft={timeLeft}
                 onRefresh={startPairing}
-                isDark={true}
+                isDark={isDark}
                 subjectIndex={pairedSubjects.length + 1}
               />
             </div>
@@ -257,10 +300,19 @@ const LabPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-6">
           <div className="lg:col-span-2">
-            <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-4">
+            {/* 7. Live Connection Status 박스 배경/테두리 변경*/}
+            <div
+              className={`p-8 rounded-[2rem] border space-y-4 ${
+                isDark
+                  ? 'bg-white/[0.02] border-white/5'
+                  : 'bg-white border-slate-200 shadow-sm'
+              }`}
+            >
               <div className="flex items-center gap-2">
                 <Activity size={18} className="text-indigo-500" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h3
+                  className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}
+                >
                   Live Connection Status
                 </h3>
               </div>
@@ -268,7 +320,15 @@ const LabPage = () => {
                 {[1, 2].map((num) => (
                   <div
                     key={num}
-                    className={`p-4 rounded-xl border flex flex-col gap-1 ${pairedSubjects.includes(num) ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/[0.03] border-white/5'} ${num > currentConfig.targetCount ? 'opacity-20' : ''}`}
+                    className={`p-4 rounded-xl border flex flex-col gap-1 ${
+                      pairedSubjects.includes(num)
+                        ? isDark
+                          ? 'bg-indigo-500/10 border-indigo-500/30'
+                          : 'bg-indigo-50 border-indigo-200'
+                        : isDark
+                          ? 'bg-white/[0.03] border-white/5'
+                          : 'bg-slate-50 border-slate-200'
+                    } ${num > currentConfig.targetCount ? 'opacity-20' : ''}`}
                   >
                     <div className="flex justify-between items-center">
                       <p className="text-[10px] text-slate-500 font-bold uppercase">
@@ -278,8 +338,17 @@ const LabPage = () => {
                         <CheckCircle2 size={14} className="text-indigo-500" />
                       )}
                     </div>
+                    {/* 9. 연결 상태 텍스트 색상 변경*/}
                     <p
-                      className={`text-lg font-black ${pairedSubjects.includes(num) ? 'text-white' : 'text-slate-700'}`}
+                      className={`text-lg font-black ${
+                        pairedSubjects.includes(num)
+                          ? isDark
+                            ? 'text-white'
+                            : 'text-indigo-600'
+                          : isDark
+                            ? 'text-slate-700'
+                            : 'text-slate-400'
+                      }`}
                     >
                       {pairedSubjects.includes(num)
                         ? 'CONNECTED'
@@ -293,9 +362,16 @@ const LabPage = () => {
             </div>
           </div>
 
-          <div className="p-8 rounded-[2rem] bg-indigo-500/10 border border-indigo-500/20 relative overflow-hidden group">
+          {/*  10. System Phase(우측 하단) 박스 배경/테두리 변경*/}
+          <div
+            className={`p-8 rounded-[2rem] border relative overflow-hidden group ${
+              isDark
+                ? 'bg-indigo-500/10 border-indigo-500/20'
+                : 'bg-indigo-50 border-indigo-100'
+            }`}
+          >
             <Activity
-              className="absolute -right-4 -top-4 text-indigo-500/5 group-hover:scale-110 transition-transform duration-500"
+              className={`absolute -right-4 -top-4 group-hover:scale-110 transition-transform duration-500 ${isDark ? 'text-indigo-500/5' : 'text-indigo-500/10'}`}
               size={120}
             />
             <div className="relative space-y-4">
@@ -303,14 +379,21 @@ const LabPage = () => {
                 <div
                   className={`w-2 h-2 rounded-full ${isAllPaired ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}
                 />
-                <span className="text-xs font-bold text-white uppercase tracking-widest">
+                {/* 11. System Phase 텍스트 변경*/}
+                <span
+                  className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-900'}`}
+                >
                   System Phase
                 </span>
               </div>
-              <p className="text-2xl font-black text-white uppercase italic tracking-tighter">
+              <p
+                className={`text-2xl font-black uppercase italic tracking-tighter ${isDark ? 'text-white' : 'text-indigo-900'}`}
+              >
                 {isAllPaired ? 'Experiment Ready' : 'Awaiting Entry'}
               </p>
-              <p className="text-xs text-slate-400 leading-relaxed font-medium">
+              <p
+                className={`text-xs leading-relaxed font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+              >
                 운영자 채널 활성화 완료됨. {currentConfig.targetCount}명의
                 피실험자가 합류해야 실험 시작 버튼이 활성화됨.
               </p>

@@ -10,3 +10,12 @@ export { default as measurementApi } from './signal';
 export * from './auth';
 export * from './session';
 export * from './signal';
+export { engineApi } from './engine';
+export type {
+  EngineAnalyzeResult,
+  EngineSubjectSummary,
+  EnginePipelineResult,
+  SubjectFeatureResult,
+  PipelineParams,
+  PipelineParamsDetail,
+} from './engine';
