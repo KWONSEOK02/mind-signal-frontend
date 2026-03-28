@@ -1,0 +1,89 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4] [cursor=pointer]:
+        - img [ref=e7]
+        - generic [ref=e9]: 뇌파 시그널
+      - generic [ref=e10]:
+        - button "홈" [ref=e11] [cursor=pointer]
+        - button "소개" [ref=e12] [cursor=pointer]
+        - button "실험실" [ref=e13] [cursor=pointer]
+        - button "결과확인" [ref=e14] [cursor=pointer]
+        - button "시즌 2" [ref=e15] [cursor=pointer]
+        - generic [ref=e16]:
+          - button [ref=e17] [cursor=pointer]:
+            - img [ref=e18]
+          - button "로그인" [ref=e25] [cursor=pointer]:
+            - img [ref=e26]
+            - text: 로그인
+          - link "예약하기" [ref=e29] [cursor=pointer]:
+            - /url: https://forms.gle/g1vY9QuH1QjBzNmm9
+            - img [ref=e30]
+            - text: 예약하기
+  - main [ref=e32]:
+    - generic [ref=e35]:
+      - generic [ref=e38]: 상명대학교 휴먼AI공학전공 팀 휴로(Heuro) 졸업 프로젝트
+      - heading "뇌파 시그널" [level=1] [ref=e40]:
+        - generic [ref=e41]: 뇌파
+        - generic [ref=e42]: 시그널
+      - generic [ref=e43]:
+        - heading "뇌파 동조화 기반 우정 테스트, 커플 궁합 테스트" [level=2] [ref=e44]
+        - paragraph [ref=e46]: 실시간 뇌파 동조화 분석을 통해 당신과 상대의 숨겨진 뇌파 매칭률을 확인하세요!
+      - generic [ref=e47]:
+        - button "프로젝트 소개" [ref=e48] [cursor=pointer]:
+          - text: 프로젝트 소개
+          - img [ref=e49]
+        - button "실험실 입장" [ref=e51] [cursor=pointer]:
+          - generic [ref=e53]:
+            - img [ref=e54]
+            - text: 실험실 입장
+  - contentinfo [ref=e57]:
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - generic [ref=e61]:
+            - img [ref=e63]
+            - generic [ref=e65]: 뇌파 시그널
+          - generic [ref=e66]:
+            - paragraph [ref=e67]:
+              - text: 휴먼AI공학전공 팀 휴로(Heuro) 졸업 프로젝트에 참여해주셔서 감사합니다.
+              - text: 본 프로젝트는 202110844 문경수 학생을 포함한 팀 휴로의 책임 하에 운영되며, 참여자 여러분께 혁신적인 경험과 유의미한 통찰을 제공하겠습니다.
+            - generic [ref=e68]:
+              - img [ref=e69]
+              - generic [ref=e72]: "프로젝트 관련 문의 : mks002@icloud.com"
+        - generic [ref=e73]:
+          - heading "SITEMAP" [level=4] [ref=e74]
+          - list [ref=e75]:
+            - listitem [ref=e76]:
+              - button "홈" [ref=e77] [cursor=pointer]
+            - listitem [ref=e78]:
+              - button "프로젝트 소개" [ref=e79] [cursor=pointer]
+            - listitem [ref=e80]:
+              - button "실험실" [ref=e81] [cursor=pointer]
+            - listitem [ref=e82]:
+              - button "결과확인" [ref=e83] [cursor=pointer]
+            - listitem [ref=e84]:
+              - button "시즌 2" [ref=e85] [cursor=pointer]
+        - generic [ref=e86]:
+          - heading "Policy" [level=4] [ref=e87]
+          - list [ref=e88]:
+            - listitem [ref=e89] [cursor=pointer]: 개인정보처리방침
+            - listitem [ref=e90] [cursor=pointer]: 이용약관
+            - listitem [ref=e91] [cursor=pointer]: 데이터 보호 규정
+            - listitem [ref=e92] [cursor=pointer]: 연구 윤리 준수
+      - generic [ref=e93]:
+        - paragraph [ref=e94]: "@ 2026 HEURO PROJECT. ALL RIGHTS RESERVED."
+        - generic [ref=e95]:
+          - link "상명대학교" [ref=e96] [cursor=pointer]:
+            - /url: https://www.smu.ac.kr
+          - link "휴먼AI공학전공" [ref=e97] [cursor=pointer]:
+            - /url: https://hi.smu.ac.kr
+  - button [ref=e99] [cursor=pointer]:
+    - img [ref=e100]
+  - button "Open Next.js Dev Tools" [ref=e109] [cursor=pointer]:
+    - img [ref=e110]
+  - alert [ref=e113]
+```

@@ -5,7 +5,13 @@ import api from './base';
 // ──────────────────────────────────────────────
 
 /** Emotiv 6종 메트릭 키 타입 정의함 */
-type MetricKey = 'focus' | 'engagement' | 'interest' | 'excitement' | 'stress' | 'relaxation';
+type MetricKey =
+  | 'focus'
+  | 'engagement'
+  | 'interest'
+  | 'excitement'
+  | 'stress'
+  | 'relaxation';
 
 /** 5대역 뇌파 키 타입 정의함 */
 type WaveBandKey = 'delta' | 'theta' | 'alpha' | 'beta' | 'gamma';
@@ -79,7 +85,11 @@ export interface EnginePipelineResult {
 /** 엔진 분석 API 함수 모음 정의함 */
 export const engineApi = {
   /** 기본 통계 분석 요청함 */
-  analyze: (groupId: string, subjectIndices: number[], includeMarkdown = false) =>
+  analyze: (
+    groupId: string,
+    subjectIndices: number[],
+    includeMarkdown = false
+  ) =>
     api.post<EngineAnalyzeResult>('/engine/analyze', {
       groupId,
       subjectIndices,
@@ -94,7 +104,7 @@ export const engineApi = {
       params?: PipelineParams;
       satisfactionScores?: Record<number, number>;
       includeMarkdown?: boolean;
-    },
+    }
   ) =>
     api.post<EnginePipelineResult>('/engine/analyze/pipeline', {
       groupId,
