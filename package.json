@@ -18,7 +18,6 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@google/genai": "^1.40.0",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@tanstack/react-query": "^5.90.16",
