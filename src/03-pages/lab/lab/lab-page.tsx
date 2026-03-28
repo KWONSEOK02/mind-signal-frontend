@@ -76,7 +76,6 @@ const LabPage = () => {
    */
   const {
     pairingCode,
-    groupId,
     timeLeft,
     pairedSubjects,
     isAllPaired,
