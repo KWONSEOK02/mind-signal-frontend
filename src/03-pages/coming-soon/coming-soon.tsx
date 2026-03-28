@@ -100,7 +100,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({ theme }) => {
                   />
                   <button
                     type="submit"
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-5 rounded-2xl font-black transition-all flex items-center justify-center gap-2 group/btn whitespace-nowrap"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white  px-8 py-5 rounded-2xl font-black transition-all flex items-center justify-center gap-2 group/btn whitespace-nowrap"
                   >
                     <span>알림 신청하기</span>
                     <Bell size={18} />
@@ -108,7 +108,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({ theme }) => {
                 </div>
               </form>
             ) : (
-              <div className="flex flex-col items-center gap-4 animate-in zoom-in-95 duration-500">
+              <div className="flex flex-col items-center gap-4 animate-in zoom-in-95 duration-500 ">
                 <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/30">
                   <CheckCircle2 className="text-green-400 w-8 h-8" />
                 </div>
