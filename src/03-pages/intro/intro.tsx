@@ -47,47 +47,72 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-32 space-y-32">
-      <div className="grid md:grid-cols-2 gap-16 items-center">
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <h2
-              className={`text-5xl font-black tracking-tighter italic leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}
+      <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+        <div className="space-y-8 relative z-10">
+          <h2
+            className={`text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter italic leading-[1.1] ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}
+          >
+            감정의 데이터화
+          </h2>
+          <p
+            className={`text-lg md:text-xl font-medium leading-relaxed max-w-lg ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}
+          >
+            뇌파 시그널 프로젝트는 인간의 무의식적 반응인{' '}
+            <strong
+              className={`${
+                isDark ? 'text-indigo-400' : 'text-indigo-600'
+              } font-black`}
             >
-              감정의 데이터화,
-              <br />
-              인연의 가시화
-            </h2>
-            <p
-              className={`text-xl font-bold leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
-            >
-              뇌파 시그널 프로젝트는 인간의 무의식적 반응인{' '}
-              <span
-                className={`${isDark ? 'text-white decoration-indigo-500' : 'text-indigo-600 decoration-indigo-300'} underline underline-offset-4`}
-              >
-                뇌파 동조화
-              </span>
-              를 통해 인연의 깊이를 정량적으로 분석하는 공학적 시도입니다.
-            </p>
-          </div>
+              뇌파 동조화(Neural Sync)
+            </strong>
+            친구 및 인연의 깊이를 정량적으로 분석하는 공학적 시도입니다.
+          </p>
         </div>
-        <div
-          className={`glass p-1 rounded-[50px] border ${isDark ? 'border-white/5' : 'border-indigo-100'} shadow-2xl overflow-hidden relative group`}
-        >
-          <Image
-            src="https://framerusercontent.com/images/WUV1fZgVSOY2jdQ59SFX4Mmom0.webp?width=1430&height=1240"
-            alt="EEG Headset"
-            width={1430}
-            height={1240}
-            className="w-full h-full object-cover rounded-[48px] brightness-75 transition-transform duration-1000 group-hover:scale-110"
+
+        <div className="relative group">
+          <div
+            className={`absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-[3rem] blur-3xl transition-opacity duration-700 ${
+              isDark
+                ? 'opacity-20 group-hover:opacity-40'
+                : 'opacity-10 group-hover:opacity-20'
+            }`}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 to-transparent opacity-60" />
-          <div className="absolute bottom-10 left-10 space-y-1">
-            <h4 className="text-xl font-black italic uppercase text-white">
-              Emotiv Insight
-            </h4>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              Precision EEG Device
-            </p>
+
+          <div
+            className={`relative p-10 md:p-16 rounded-[3rem] border backdrop-blur-sm transition-all duration-700 ${
+              isDark
+                ? 'bg-white/5 border-white/10'
+                : 'bg-slate-50 border-slate-200'
+            }`}
+          >
+            <Image
+              src="https://framerusercontent.com/images/WUV1fZgVSOY2jdQ59SFX4Mmom0.webp?width=1430&height=1240"
+              alt="Emotiv Insight Headset"
+              width={1430}
+              height={1240}
+              className="w-full h-auto object-contain drop-shadow-2xl group-hover:-translate-y-2 transition-transform duration-500 ease-out"
+            />
+
+            <div className="mt-12 text-center space-y-1">
+              <h4
+                className={`text-2xl font-black italic uppercase tracking-tight ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}
+              >
+                Emotiv Insight
+              </h4>
+              <p
+                className={`text-xs font-bold uppercase tracking-widest ${
+                  isDark ? 'text-slate-500' : 'text-slate-400'
+                }`}
+              >
+                Precision EEG Device
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -120,24 +145,17 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
               desc: '이벤트 참여자는 당일 밤 10시에 카카오톡 및 이메일로 뇌파 분석 리포트를 제공받습니다. 뇌파 분석에 관한 추가 궁금한 사항이 있으면 저희 웹사이트에 방문해서 확인하실 수 있습니다.',
             },
           ].map((item, i) => (
-            <div
-              key={i}
-              className={`rounded-3xl ${
-                isDark
-                  ? 'p-0'
-                  : 'p-[2px] bg-[linear-gradient(to_bottom_right,#e9d5ff,#fbcfe8,#bae6fd,#fef08a)]'
-              }`}
-            >
+            <div key={i} className="rounded-3xl">
               <div
-                className={`h-full p-8 space-y-4 ${
+                className={`h-full p-8 space-y-4 rounded-3xl border ${
                   isDark
-                    ? 'rounded-3xl bg-white/5 border border-white/5' // 다크모드: 배경과 비슷한 차분한 회색 박스 (테두리도 동일하게 맞춤)
-                    : 'glass rounded-[calc(1.5rem-2px)] bg-white/95' // 라이트모드: 흰색 바탕
+                    ? 'bg-white/5 border-white/5'
+                    : 'bg-transparent border-[#C6D2FF]'
                 }`}
               >
                 <span
                   className={`text-4xl font-black italic ${
-                    isDark ? 'text-purple-400' : 'text-purple-300' // 라이트모드는 더 부드러운 파스텔톤 보라색으로!
+                    isDark ? 'text-[#615FFF]' : 'text-[#615FFF]'
                   }`}
                 >
                   {item.step}
@@ -183,7 +201,6 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
                 className={`w-full cursor-pointer p-6 flex items-center justify-between font-black text-left hover:bg-white/5 transition-colors ${openFaq === i ? 'text-indigo-500 bg-white/5' : isDark ? 'text-slate-200' : 'text-slate-800'}`}
               >
                 <div className="flex items-center gap-4">
-                  {/* Q는 선명한 인디고 색상으로 고정! */}
                   <span
                     className={`italic text-xl ${isDark ? 'text-indigo-500' : 'text-indigo-500'}`}
                   >
@@ -201,7 +218,6 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
                 <div
                   className={`p-8 bg-white/5 border-t ${isDark ? 'border-white/5 text-slate-400' : 'border-indigo-200 text-slate-700'} font-medium leading-relaxed animate-in slide-in-from-top-4 duration-500 flex gap-4`}
                 >
-                  {/* A는 Q랑 확실히 대비되게 보라색으로 고정! */}
                   <span
                     className={`italic text-xl font-black ${isDark ? 'text-purple-400' : 'text-purple-500'}`}
                   >

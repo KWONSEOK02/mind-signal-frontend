@@ -213,7 +213,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </button>
           </form>
 
-          {/* 팀원이 추가한 외부 로그인 UI 영역 반영함 */}
+          {/* 외부 로그인 UI 영역 반영함 */}
           {isLogin && (
             <div className="mt-8">
               <div className="relative flex items-center justify-center mb-6">

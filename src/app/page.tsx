@@ -12,12 +12,7 @@ export default function MainPage() {
   const { theme, handlePageChange } = useUI();
 
   return (
-    <div
-      className={`transition-colors duration-500 min-h-screen ${
-        theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'
-      }`}
-    >
-      <Home theme={theme} setCurrentPage={handlePageChange} />
-    </div>
+    // 겉을 감싸고 있던 불필요한 배경색 코드 없앰.
+    <Home theme={theme} setCurrentPage={handlePageChange} />
   );
 }

@@ -45,9 +45,10 @@ const ChatAssistant: React.FC<{ theme: 'light' | 'dark' }> = (
   };
 
   return (
-    <div className="fixed bottom-8 right-8 z-[100]">
+    //모바일은 bottom-4, right-4 / 큰 화면은 sm: 적용
+    <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100]">
       {isOpen ? (
-        <div className="w-[380px] h-[550px] glass rounded-[32px] border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
+        <div className="w-[calc(100vw-2rem)] sm:w-[380px] h-[70vh] sm:h-[550px] bg-gray-900 rounded-[32px] border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
           <div className="p-6 bg-indigo-600 flex items-center justify-between text-white">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -62,7 +63,7 @@ const ChatAssistant: React.FC<{ theme: 'light' | 'dark' }> = (
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="hover:bg-black/10 p-2 rounded-full transition-colors"
+              className="cursor-pointer hover:bg-black/10 p-2 rounded-full transition-colors"
             >
               <X size={20} />
             </button>
@@ -117,7 +118,7 @@ const ChatAssistant: React.FC<{ theme: 'light' | 'dark' }> = (
               />
               <button
                 onClick={handleSend}
-                className="absolute right-2 top-2 p-2.5 bg-indigo-600 text-white rounded-xl"
+                className="cursor-pointer absolute right-2 top-2 p-2.5 bg-indigo-600 text-white rounded-xl"
               >
                 <Send size={18} />
               </button>
@@ -127,7 +128,7 @@ const ChatAssistant: React.FC<{ theme: 'light' | 'dark' }> = (
       ) : (
         <button
           onClick={() => setIsOpen(true)}
-          className="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform active:scale-95 group"
+          className="cursor-pointer w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform active:scale-95 group"
         >
           <Bot
             size={28}

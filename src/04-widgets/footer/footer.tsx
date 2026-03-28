@@ -52,8 +52,8 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
                 <span
                   className={`font-bold transition-colors ${isDark ? 'text-slate-200' : 'text-slate-900'}`}
                 >
-                  휴먼AI공학전공 팀 휴로(Heuro) 졸업 프로젝트에 참여해주셔서
-                  감사합니다.
+                  휴먼AI공학전공 팀 휴로(Heuro) <br />
+                  졸업 프로젝트에 참여해주셔서 감사합니다.
                 </span>
                 <br />본 프로젝트는 202110844 문경수 학생을 포함한 팀 휴로의
                 책임 하에 운영되며, 참여자 여러분께 혁신적인 경험과 유의미한

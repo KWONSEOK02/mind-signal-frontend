@@ -50,3 +50,13 @@ yarn-error.log*
 /dist
 *storybook.log
 storybook-static
+
+.vercel
+
+# Project planning (local only)
+.plans/
+context/
+
+# Test artifacts
+playwright-report/
+test-results/
