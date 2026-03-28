@@ -42,7 +42,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
           // 언마운트 이후 콜백 실행 방지 플래그 확인함
           if (!cancelled) onScanSuccess(decodedText);
         },
-        (_error: string) => {
+        () => {
           // 미검출 프레임 에러는 정상 동작이므로 무시함
         }
       )
