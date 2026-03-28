@@ -11,6 +11,8 @@ export * from './auth';
 export * from './session';
 export * from './signal';
 export { engineApi } from './engine';
+export { chatApi } from './chat';
+export type { ChatResponse, ChatAskResponse } from './chat';
 export type {
   EngineAnalyzeResult,
   EngineSubjectSummary,
