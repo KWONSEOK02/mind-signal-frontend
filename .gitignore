@@ -56,3 +56,7 @@ storybook-static
 # Project planning (local only)
 .plans/
 context/
+
+# Test artifacts
+playwright-report/
+test-results/
