@@ -42,12 +42,12 @@ const Results: React.FC<ResultsProps> = ({
   const [partnerName, setPartnerName] = useState<string>('');
   const [loading, setLoading] = useState(!!groupId && isLoggedIn);
   const [error, setError] = useState<string | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!groupId || !isLoggedIn) return;
 
     let cancelled = false;
-    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
     const fetchData = async () => {
       try {
@@ -59,28 +59,28 @@ const Results: React.FC<ResultsProps> = ({
         if (cancelled) return;
 
         // 세션 상태에서 userName/partnerName 추출함
-        const sessions = statusRes.data.data.sessions;
+        const sessions = statusRes.data?.data?.sessions ?? [];
         const mySess = sessions.find((s) => s.isMe);
         const partnerSess = sessions.find((s) => !s.isMe);
         setUserName(mySess?.userName || '');
         setPartnerName(partnerSess?.userName || '');
 
-        if (analysisRes?.data) {
+        if (analysisRes?.status === 'success' && analysisRes.data) {
           setAnalysisData(analysisRes.data);
           setLoading(false);
-          if (pollTimer) clearInterval(pollTimer);
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
         } else {
           // 분석 결과 미존재 — 폴링함
           setError('분석이 진행 중입니다...');
-          if (!pollTimer) {
-            pollTimer = setInterval(async () => {
+          if (!pollTimerRef.current) {
+            pollTimerRef.current = setInterval(async () => {
               try {
                 const res = await analysisApi.getResult(groupId);
-                if (!cancelled && res?.data) {
+                if (!cancelled && res?.status === 'success' && res.data) {
                   setAnalysisData(res.data);
                   setError(null);
                   setLoading(false);
-                  if (pollTimer) clearInterval(pollTimer);
+                  if (pollTimerRef.current) clearInterval(pollTimerRef.current);
                 }
               } catch {
                 // 계속 폴링함
@@ -99,7 +99,10 @@ const Results: React.FC<ResultsProps> = ({
     fetchData();
     return () => {
       cancelled = true;
-      if (pollTimer) clearInterval(pollTimer);
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
     };
   }, [groupId, isLoggedIn]);
 

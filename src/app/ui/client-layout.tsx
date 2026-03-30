@@ -43,7 +43,7 @@ const ClientLayoutContent = ({ children }: { children: React.ReactNode }) => {
       <main className="flex-grow pt-20">{children}</main>
 
       <Footer theme={ui.theme} setCurrentPage={ui.handlePageChange} />
-      <ChatAssistant theme={ui.theme} />
+      <ChatAssistant theme={ui.theme} groupId={ui.activeGroupId ?? undefined} />
 
       <AuthModal
         isOpen={ui.isAuthModalOpen}

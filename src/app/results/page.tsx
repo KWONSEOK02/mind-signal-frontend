@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useUI } from '@/app/providers/ui-context';
 import Results from '@/03-pages/results/results';
@@ -9,8 +9,20 @@ import Results from '@/03-pages/results/results';
 function ResultsContent() {
   const searchParams = useSearchParams();
   const groupId = searchParams.get('groupId') || undefined;
-  const { theme, isLoggedIn, setIsLoggedIn, handlePageChange, openAuthModal } =
-    useUI();
+  const {
+    theme,
+    isLoggedIn,
+    setIsLoggedIn,
+    handlePageChange,
+    openAuthModal,
+    setActiveGroupId,
+  } = useUI();
+
+  // results 페이지 진입 시 activeGroupId를 UIContext에 설정함
+  useEffect(() => {
+    setActiveGroupId(groupId ?? null);
+    return () => setActiveGroupId(null);
+  }, [groupId, setActiveGroupId]);
 
   return (
     <div

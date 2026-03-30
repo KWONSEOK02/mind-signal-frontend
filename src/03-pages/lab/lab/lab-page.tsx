@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useEffect,
 } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { SignalComparisonWidget } from '@/04-widgets';
@@ -33,6 +34,7 @@ const emptySubscribe = () => () => {};
 const LabPage = () => {
   // UI 컨텍스트에서 테마 가져오기 & isDark 변수 생성
   const ui = useUI();
+  const router = useRouter();
   const isDark = ui.theme === 'dark';
 
   // 클라이언트 사이드 마운트 여부 확인 수행함
@@ -109,8 +111,7 @@ const LabPage = () => {
       subject1Signal.elapsedSeconds > 0 &&
       (currentConfig.targetCount === 1 || subject2Signal.elapsedSeconds > 0);
     if (allDone) {
-      ui.handlePageChange('results');
-      window.history.pushState(null, '', `/results?groupId=${groupId}`);
+      router.push(`/results?groupId=${groupId}`);
     }
   }, [
     groupId,
@@ -119,7 +120,7 @@ const LabPage = () => {
     subject1Signal.elapsedSeconds,
     subject2Signal.elapsedSeconds,
     currentConfig.targetCount,
-    ui,
+    router,
   ]);
 
   /**
