@@ -16,9 +16,11 @@ interface UIContextType {
   isLoggedIn: boolean;
   userName: string;
   isAuthModalOpen: boolean;
+  activeGroupId: string | null;
   toggleTheme: () => void;
   setIsLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
   setUserName: React.Dispatch<React.SetStateAction<string>>;
+  setActiveGroupId: React.Dispatch<React.SetStateAction<string | null>>;
   openAuthModal: () => void;
   closeAuthModal: () => void;
   handlePageChange: (page: PageType) => void;
@@ -36,6 +38,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>('');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -93,9 +96,11 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({
         isLoggedIn,
         userName,
         isAuthModalOpen,
+        activeGroupId,
         toggleTheme,
         setIsLoggedIn,
         setUserName,
+        setActiveGroupId,
         openAuthModal,
         closeAuthModal,
         handlePageChange,

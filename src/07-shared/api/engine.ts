@@ -1,41 +1,6 @@
 import api from './base';
 
 // ──────────────────────────────────────────────
-// POST /engine/analyze 응답 타입 (기본 통계)
-// ──────────────────────────────────────────────
-
-/** Emotiv 6종 메트릭 키 타입 정의함 */
-type MetricKey =
-  | 'focus'
-  | 'engagement'
-  | 'interest'
-  | 'excitement'
-  | 'stress'
-  | 'relaxation';
-
-/** 5대역 뇌파 키 타입 정의함 */
-type WaveBandKey = 'delta' | 'theta' | 'alpha' | 'beta' | 'gamma';
-
-/** 피실험자 기본 통계 요약 타입 정의함 */
-export interface EngineSubjectSummary {
-  subjectIndex: number;
-  metricsMean: Record<MetricKey, number>;
-  metricsStd: Record<MetricKey, number>;
-  wavesMean: Record<WaveBandKey, number>;
-  totalSamples: number;
-  durationSeconds: number;
-  error?: string;
-}
-
-/** 기본 분석 응답 타입 정의함 */
-export interface EngineAnalyzeResult {
-  groupId: string;
-  subjects: EngineSubjectSummary[];
-  synchronyScore: number | null;
-  markdown?: string;
-}
-
-// ──────────────────────────────────────────────
 // POST /engine/analyze/pipeline 응답 타입 (전체 파이프라인)
 // ──────────────────────────────────────────────
 
@@ -84,18 +49,6 @@ export interface EnginePipelineResult {
 
 /** 엔진 분석 API 함수 모음 정의함 */
 export const engineApi = {
-  /** 기본 통계 분석 요청함 */
-  analyze: (
-    groupId: string,
-    subjectIndices: number[],
-    includeMarkdown = false
-  ) =>
-    api.post<EngineAnalyzeResult>('/engine/analyze', {
-      groupId,
-      subjectIndices,
-      includeMarkdown,
-    }),
-
   /** 전체 파이프라인 분석 요청함 */
   analyzePipeline: (
     groupId: string,

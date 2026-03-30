@@ -14,7 +14,10 @@ interface ChatMessage {
   showInquiryForm?: boolean;
 }
 
-const ChatAssistant: React.FC<{ theme: 'light' | 'dark' }> = () => {
+const ChatAssistant: React.FC<{
+  theme: 'light' | 'dark';
+  groupId?: string;
+}> = ({ groupId }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -40,7 +43,7 @@ const ChatAssistant: React.FC<{ theme: 'light' | 'dark' }> = () => {
     setIsLoading(true);
 
     try {
-      const response = await chatApi.sendMessage(userMsg);
+      const response = await chatApi.sendMessage(userMsg, groupId);
 
       const botMessage: ChatMessage = {
         role: 'assistant',
