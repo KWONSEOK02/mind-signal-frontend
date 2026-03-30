@@ -75,6 +75,7 @@ const LabPage = () => {
    * 설정된 목표 인원수를 기반으로 페어링 로직 구동함
    */
   const {
+    groupId,
     pairingCode,
     timeLeft,
     pairedSubjects,
@@ -96,6 +97,30 @@ const LabPage = () => {
       subject2Signal.startMeasurement();
     }
   }, [subject1Signal, subject2Signal, currentConfig.targetCount]);
+
+  /**
+   * 두 subject 측정 완료 시 결과 페이지 이동 수행함
+   */
+  useEffect(() => {
+    if (!groupId) return;
+    const allDone =
+      !subject1Signal.isMeasuring &&
+      !subject2Signal.isMeasuring &&
+      subject1Signal.elapsedSeconds > 0 &&
+      (currentConfig.targetCount === 1 || subject2Signal.elapsedSeconds > 0);
+    if (allDone) {
+      ui.handlePageChange('results');
+      window.history.pushState(null, '', `/results?groupId=${groupId}`);
+    }
+  }, [
+    groupId,
+    subject1Signal.isMeasuring,
+    subject2Signal.isMeasuring,
+    subject1Signal.elapsedSeconds,
+    subject2Signal.elapsedSeconds,
+    currentConfig.targetCount,
+    ui,
+  ]);
 
   /**
    * 실험 모드 변경 시 세션 초기화 및 UI 닫기 일괄 처리함
