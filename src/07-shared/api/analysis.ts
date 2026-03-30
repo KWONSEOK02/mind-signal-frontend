@@ -20,6 +20,21 @@ export interface AnalysisResultResponse {
   data: AnalysisResultData;
 }
 
+/** 내 실험 결과 목록 항목 타입 정의함 */
+export interface MyResultItem {
+  groupId: string;
+  matchingScore: number;
+  user1Name: string | null;
+  user2Name: string | null;
+  createdAt: string | null;
+}
+
+/** 내 실험 결과 목록 응답 타입 정의함 */
+export interface MyResultsResponse {
+  status: string;
+  data: MyResultItem[];
+}
+
 /** 분석 결과 조회 API 정의함 */
 export const analysisApi = {
   /** groupId로 분석 결과 조회함 */
@@ -27,4 +42,8 @@ export const analysisApi = {
     api
       .get<AnalysisResultResponse>(`/analysis/${groupId}`)
       .then((res) => res.data),
+
+  /** 내 실험 결과 목록 조회함 */
+  getMyResults: () =>
+    api.get<MyResultsResponse>('/analysis/my').then((res) => res.data),
 };
