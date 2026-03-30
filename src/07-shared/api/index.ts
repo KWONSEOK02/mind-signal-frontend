@@ -12,10 +12,9 @@ export * from './session';
 export * from './signal';
 export { engineApi } from './engine';
 export { chatApi } from './chat';
+export { analysisApi } from './analysis';
 export type { ChatResponse, ChatAskResponse } from './chat';
 export type {
-  EngineAnalyzeResult,
-  EngineSubjectSummary,
   EnginePipelineResult,
   SubjectFeatureResult,
   PipelineParams,

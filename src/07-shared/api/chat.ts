@@ -17,8 +17,10 @@ export interface ChatAskResponse {
 /** 챗봇 API 클라이언트 정의함 */
 export const chatApi = {
   /** 챗봇 메시지 전송 — 페이지 안내 또는 텍스트 답변 반환함 */
-  sendMessage: (message: string) =>
-    api.post<ChatResponse>('/chat', { message }).then((res) => res.data),
+  sendMessage: (message: string, groupId?: string) =>
+    api
+      .post<ChatResponse>('/chat', { message, groupId })
+      .then((res) => res.data),
 
   /** 문의하기 이메일 전송함 */
   sendInquiry: (email: string, message: string) =>

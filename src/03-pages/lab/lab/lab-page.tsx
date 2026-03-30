@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useEffect,
 } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { SignalComparisonWidget } from '@/04-widgets';
@@ -33,6 +34,7 @@ const emptySubscribe = () => () => {};
 const LabPage = () => {
   // UI 컨텍스트에서 테마 가져오기 & isDark 변수 생성
   const ui = useUI();
+  const router = useRouter();
   const isDark = ui.theme === 'dark';
 
   // 클라이언트 사이드 마운트 여부 확인 수행함
@@ -75,6 +77,7 @@ const LabPage = () => {
    * 설정된 목표 인원수를 기반으로 페어링 로직 구동함
    */
   const {
+    groupId,
     pairingCode,
     timeLeft,
     pairedSubjects,
@@ -96,6 +99,29 @@ const LabPage = () => {
       subject2Signal.startMeasurement();
     }
   }, [subject1Signal, subject2Signal, currentConfig.targetCount]);
+
+  /**
+   * 두 subject 측정 완료 시 결과 페이지 이동 수행함
+   */
+  useEffect(() => {
+    if (!groupId) return;
+    const allDone =
+      !subject1Signal.isMeasuring &&
+      !subject2Signal.isMeasuring &&
+      subject1Signal.elapsedSeconds > 0 &&
+      (currentConfig.targetCount === 1 || subject2Signal.elapsedSeconds > 0);
+    if (allDone) {
+      router.push(`/results?groupId=${groupId}`);
+    }
+  }, [
+    groupId,
+    subject1Signal.isMeasuring,
+    subject2Signal.isMeasuring,
+    subject1Signal.elapsedSeconds,
+    subject2Signal.elapsedSeconds,
+    currentConfig.targetCount,
+    router,
+  ]);
 
   /**
    * 실험 모드 변경 시 세션 초기화 및 UI 닫기 일괄 처리함

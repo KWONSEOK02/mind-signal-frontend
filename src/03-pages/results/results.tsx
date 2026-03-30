@@ -1,9 +1,20 @@
 'use client';
 
-import React, { useRef } from 'react';
-import { Lock, Share2, LogIn, Download, Users, Info } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import {
+  Lock,
+  Share2,
+  LogIn,
+  Download,
+  Users,
+  Info,
+  Loader2,
+} from 'lucide-react';
 import html2canvas from 'html2canvas';
-import { PageType } from '@/07-shared/types'; // PageType 임포트 추가
+import { PageType } from '@/07-shared/types';
+import { analysisApi } from '@/07-shared/api/analysis';
+import sessionApi from '@/07-shared/api/session';
+import type { AnalysisResultData } from '@/07-shared/api/analysis';
 
 interface ResultsProps {
   theme: 'light' | 'dark';
@@ -11,21 +22,91 @@ interface ResultsProps {
   setIsLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
   setCurrentPage: (page: PageType) => void;
   openAuthModal: () => void;
+  groupId?: string;
 }
 
 const Results: React.FC<ResultsProps> = ({
   theme,
   isLoggedIn,
-  //setIsLoggedIn: _setIsLoggedIn, // 1. 사용하지 않을 경우 앞에 _를 붙여 린트 무시
   setCurrentPage,
   openAuthModal,
+  groupId,
 }) => {
   const isDark = theme === 'dark';
   const reportRef = useRef<HTMLDivElement>(null);
 
-  const userScore = 88.4;
-  const userName = '문경수';
-  const partnerName = '김철수';
+  const [analysisData, setAnalysisData] = useState<AnalysisResultData | null>(
+    null
+  );
+  const [userName, setUserName] = useState<string>('');
+  const [partnerName, setPartnerName] = useState<string>('');
+  const [loading, setLoading] = useState(!!groupId && isLoggedIn);
+  const [error, setError] = useState<string | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!groupId || !isLoggedIn) return;
+
+    let cancelled = false;
+
+    const fetchData = async () => {
+      try {
+        const [analysisRes, statusRes] = await Promise.all([
+          analysisApi.getResult(groupId).catch(() => null),
+          sessionApi.checkSessionStatus(groupId),
+        ]);
+
+        if (cancelled) return;
+
+        // 세션 상태에서 userName/partnerName 추출함
+        const sessions = statusRes.data?.data?.sessions ?? [];
+        const mySess = sessions.find((s) => s.isMe);
+        const partnerSess = sessions.find((s) => !s.isMe);
+        setUserName(mySess?.userName || '');
+        setPartnerName(partnerSess?.userName || '');
+
+        if (analysisRes?.status === 'success' && analysisRes.data) {
+          setAnalysisData(analysisRes.data);
+          setLoading(false);
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+        } else {
+          // 분석 결과 미존재 — 폴링함
+          setError('분석이 진행 중입니다...');
+          if (!pollTimerRef.current) {
+            pollTimerRef.current = setInterval(async () => {
+              try {
+                const res = await analysisApi.getResult(groupId);
+                if (!cancelled && res?.status === 'success' && res.data) {
+                  setAnalysisData(res.data);
+                  setError(null);
+                  setLoading(false);
+                  if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+                }
+              } catch {
+                // 계속 폴링함
+              }
+            }, 5000);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setError('일시적 오류가 발생했습니다.');
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+    return () => {
+      cancelled = true;
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+  }, [groupId, isLoggedIn]);
+
+  const userScore = analysisData?.matchingScore ?? 0;
 
   const syncLevels = [
     { range: '0 - 20%', label: '"서먹서먹한 사이"', color: 'text-slate-500' },
@@ -91,6 +172,57 @@ const Results: React.FC<ResultsProps> = ({
       console.error('다운로드 실패:', err);
     }
   };
+
+  // groupId 없는 경우
+  if (isLoggedIn && !groupId) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-24 sm:py-48 flex flex-col items-center justify-center text-center space-y-6">
+        <h2
+          className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
+        >
+          결과를 찾을 수 없습니다
+        </h2>
+        <p
+          className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+        >
+          실험 완료 후 자동으로 이동됩니다.
+        </p>
+        <button
+          onClick={() => setCurrentPage('home')}
+          className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-indigo-700 transition-all"
+        >
+          메인으로 돌아가기
+        </button>
+      </div>
+    );
+  }
+
+  // 로딩 상태
+  if (isLoggedIn && loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-24 sm:py-48 flex flex-col items-center justify-center text-center space-y-6">
+        <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
+        <p
+          className={`text-lg font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+        >
+          {error || '분석 결과를 불러오는 중...'}
+        </p>
+      </div>
+    );
+  }
+
+  // 에러 상태
+  if (isLoggedIn && error && !analysisData) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-24 sm:py-48 flex flex-col items-center justify-center text-center space-y-6">
+        <p
+          className={`text-lg font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+        >
+          {error}
+        </p>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return (

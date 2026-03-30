@@ -17,6 +17,8 @@ export interface GroupSessionStatus {
   subjectIndex: number;
   status: string;
   guestJoined: boolean;
+  userName?: string;
+  isMe?: boolean;
 }
 
 /**
