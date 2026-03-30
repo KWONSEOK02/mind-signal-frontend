@@ -10,6 +10,9 @@ export interface AnalysisResultData {
   markdown: string;
   user1Name: string | null;
   user2Name: string | null;
+  isBTI: boolean;
+  metricsMean: Record<string, number> | null;
+  wavesMean: Record<string, number> | null;
 }
 
 export interface AnalysisResultResponse {

@@ -298,124 +298,220 @@ const Results: React.FC<ResultsProps> = ({
         </div>
       </div>
 
-      {/* 분석 섹션 01 */}
-      <section className="space-y-12">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-600/20">
-            01
-          </div>
-          <h3
-            className={`text-base sm:text-2xl font-black uppercase tracking-tighter sm:tracking-tight whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}
-          >
-            뇌파 동조율 분석 (Neural Sync)
-          </h3>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          <div
-            className={`glass p-10 rounded-[40px] border flex flex-col justify-center space-y-8 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
-          >
-            <div className="space-y-6">
-              <div
-                className={`flex items-center justify-between p-6 rounded-3xl border ${isDark ? 'bg-white/5 border-white/5' : 'bg-white border-indigo-100 shadow-sm'}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-                    <Users size={24} />
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                      참여한 사람
-                    </div>
-                    <div
-                      className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
-                    >
-                      {userName}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                className={`flex items-center justify-between p-6 rounded-3xl border ${isDark ? 'bg-white/5 border-white/5' : 'bg-white border-indigo-100 shadow-sm'}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
-                    <Users size={24} />
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                      함께 참여한 사람
-                    </div>
-                    <div
-                      className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
-                    >
-                      {partnerName}
-                    </div>
-                  </div>
-                </div>
-              </div>
+      {/* 분석 섹션 01 — DUAL이면 동조율, BTI면 개인 메트릭 */}
+      {analysisData?.isBTI ? (
+        <section className="space-y-12">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-600/20">
+              01
             </div>
-            <div
-              className={`p-8 rounded-3xl border flex items-start gap-4 ${isDark ? 'bg-indigo-600/10 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'}`}
+            <h3
+              className={`text-base sm:text-2xl font-black uppercase tracking-tighter sm:tracking-tight whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}
             >
-              <div className="p-2 bg-indigo-600 rounded-lg text-white">
-                <Info size={20} />
-              </div>
-              <p
-                className={`text-sm font-medium leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-700'}`}
-              >
-                두 피험자가 동일한 주제로 상호작용하는 동안{' '}
-                <span className="font-bold text-indigo-500">
-                  전두엽(Frontal)
-                </span>{' '}
-                영역의 뇌파 위상이 고도로 일치되었습니다.
-              </p>
-            </div>
+              개인 뇌파 프로필 (Neural Profile)
+            </h3>
           </div>
 
-          <div
-            className={`glass p-12 rounded-[40px] border flex flex-col items-center justify-center text-center relative overflow-hidden ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
-          >
-            <div className="relative mb-8 p-6 flex items-center justify-center">
-              <svg
-                width="240"
-                height="240"
-                viewBox="0 0 200 200"
-                className="-rotate-90 drop-shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+          {analysisData.metricsMean ? (
+            <div
+              className={`glass p-10 rounded-[40px] border space-y-6 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
+            >
+              <h4
+                className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}
               >
-                <circle
-                  cx="100"
-                  cy="100"
-                  r={radius}
-                  className={`fill-none ${isDark ? 'stroke-white/10' : 'stroke-indigo-100'}`}
-                  strokeWidth="16"
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r={radius}
-                  className="fill-none stroke-indigo-600"
-                  strokeWidth="16"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={offset}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-1">
-                  Total Sync
-                </span>
-                <span className="text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-indigo-600 to-purple-600">
-                  {userScore.toFixed(0)}%
-                </span>
+                감정 메트릭 평균
+              </h4>
+              {Object.entries(analysisData.metricsMean).map(([key, val]) => (
+                <div key={key} className="flex items-center gap-4">
+                  <span
+                    className={`w-24 text-sm font-bold capitalize ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+                  >
+                    {key}
+                  </span>
+                  <div
+                    className={`flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-indigo-100'}`}
+                  >
+                    <div
+                      className="h-full bg-indigo-500 rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(100, val * 100).toFixed(0)}%`,
+                      }}
+                    />
+                  </div>
+                  <span
+                    className={`w-12 text-sm font-bold text-right ${isDark ? 'text-white' : 'text-slate-900'}`}
+                  >
+                    {(val * 100).toFixed(0)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {analysisData.wavesMean ? (
+            <div
+              className={`glass p-10 rounded-[40px] border space-y-6 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
+            >
+              <h4
+                className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}
+              >
+                뇌파 대역 파워
+              </h4>
+              {(() => {
+                const total = Object.values(analysisData.wavesMean!).reduce(
+                  (a, b) => a + b,
+                  0
+                );
+                return Object.entries(analysisData.wavesMean!).map(
+                  ([key, val]) => {
+                    const pct = total > 0 ? (val / total) * 100 : 0;
+                    return (
+                      <div key={key} className="flex items-center gap-4">
+                        <span
+                          className={`w-24 text-sm font-bold capitalize ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+                        >
+                          {key}
+                        </span>
+                        <div
+                          className={`flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-indigo-100'}`}
+                        >
+                          <div
+                            className="h-full bg-purple-500 rounded-full transition-all"
+                            style={{ width: `${pct.toFixed(0)}%` }}
+                          />
+                        </div>
+                        <span
+                          className={`w-12 text-sm font-bold text-right ${isDark ? 'text-white' : 'text-slate-900'}`}
+                        >
+                          {pct.toFixed(0)}%
+                        </span>
+                      </div>
+                    );
+                  }
+                );
+              })()}
+            </div>
+          ) : null}
+        </section>
+      ) : (
+        <section className="space-y-12">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-600/20">
+              01
+            </div>
+            <h3
+              className={`text-base sm:text-2xl font-black uppercase tracking-tighter sm:tracking-tight whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}
+            >
+              뇌파 동조율 분석 (Neural Sync)
+            </h3>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <div
+              className={`glass p-10 rounded-[40px] border flex flex-col justify-center space-y-8 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
+            >
+              <div className="space-y-6">
+                <div
+                  className={`flex items-center justify-between p-6 rounded-3xl border ${isDark ? 'bg-white/5 border-white/5' : 'bg-white border-indigo-100 shadow-sm'}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                      <Users size={24} />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        참여한 사람
+                      </div>
+                      <div
+                        className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
+                      >
+                        {userName}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className={`flex items-center justify-between p-6 rounded-3xl border ${isDark ? 'bg-white/5 border-white/5' : 'bg-white border-indigo-100 shadow-sm'}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
+                      <Users size={24} />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        함께 참여한 사람
+                      </div>
+                      <div
+                        className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
+                      >
+                        {partnerName}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                className={`p-8 rounded-3xl border flex items-start gap-4 ${isDark ? 'bg-indigo-600/10 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'}`}
+              >
+                <div className="p-2 bg-indigo-600 rounded-lg text-white">
+                  <Info size={20} />
+                </div>
+                <p
+                  className={`text-sm font-medium leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-700'}`}
+                >
+                  두 피험자가 동일한 주제로 상호작용하는 동안{' '}
+                  <span className="font-bold text-indigo-500">
+                    전두엽(Frontal)
+                  </span>{' '}
+                  영역의 뇌파 위상이 고도로 일치되었습니다.
+                </p>
               </div>
             </div>
-            <h4 className="text-2xl font-black uppercase bg-[linear-gradient(to_right,#6672F4_0%,#00DA90_100%)] bg-clip-text text-transparent">
-              {currentLevel.label}
-            </h4>
+
+            <div
+              className={`glass p-12 rounded-[40px] border flex flex-col items-center justify-center text-center relative overflow-hidden ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
+            >
+              <div className="relative mb-8 p-6 flex items-center justify-center">
+                <svg
+                  width="240"
+                  height="240"
+                  viewBox="0 0 200 200"
+                  className="-rotate-90 drop-shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+                >
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r={radius}
+                    className={`fill-none ${isDark ? 'stroke-white/10' : 'stroke-indigo-100'}`}
+                    strokeWidth="16"
+                  />
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r={radius}
+                    className="fill-none stroke-indigo-600"
+                    strokeWidth="16"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-1">
+                    Total Sync
+                  </span>
+                  <span className="text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-indigo-600 to-purple-600">
+                    {userScore.toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+              <h4 className="text-2xl font-black uppercase bg-[linear-gradient(to_right,#6672F4_0%,#00DA90_100%)] bg-clip-text text-transparent">
+                {currentLevel.label}
+              </h4>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 분석 섹션 02 */}
       <section className="space-y-8 scroll-mt-32">
