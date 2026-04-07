@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Play, Square, Activity, Clock, Timer } from 'lucide-react';
+import { MIN_ANALYSIS_SECONDS } from '@/07-shared/constants/experiment';
 
 /**
  * 컴포넌트 Props 인터페이스 정의함
@@ -73,8 +74,10 @@ const SignalMeasurer: React.FC<SignalMeasurerProps> = ({
           </button>
         ) : (
           <>
-            {/* 측정 경과 시간 타이머 표시함 */}
-            <div className="flex items-center gap-1.5 font-mono text-lg font-black tracking-tighter text-indigo-500">
+            {/* 측정 경과 시간 타이머 표시함 — MIN_ANALYSIS_SECONDS 기준으로 색상 분기함 */}
+            <div
+              className={`flex items-center gap-1.5 font-mono text-lg font-black tracking-tighter ${elapsedSeconds >= MIN_ANALYSIS_SECONDS ? 'text-emerald-500' : 'text-rose-400'}`}
+            >
               <Timer size={16} />
               <span>
                 {Math.floor(elapsedSeconds / 60)
