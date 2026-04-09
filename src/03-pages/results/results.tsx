@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Lock,
   Share2,
@@ -9,12 +10,20 @@ import {
   Users,
   Info,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { PageType } from '@/07-shared/types';
 import { analysisApi } from '@/07-shared/api/analysis';
 import sessionApi from '@/07-shared/api/session';
 import type { AnalysisResultData } from '@/07-shared/api/analysis';
+import { getSocket } from '@/07-shared/lib/socket-client';
+import { config } from '@/07-shared/config/config';
+import {
+  POLLING_TIMEOUT_SECONDS,
+  POLLING_INTERVAL_MS,
+} from '@/07-shared/constants/experiment';
+import type { AnalysisTier } from '@/07-shared/types';
 
 interface ResultsProps {
   theme: 'light' | 'dark';
@@ -34,6 +43,7 @@ const Results: React.FC<ResultsProps> = ({
 }) => {
   const isDark = theme === 'dark';
   const reportRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const [analysisData, setAnalysisData] = useState<AnalysisResultData | null>(
     null
@@ -42,7 +52,12 @@ const Results: React.FC<ResultsProps> = ({
   const [partnerName, setPartnerName] = useState<string>('');
   const [loading, setLoading] = useState(!!groupId && isLoggedIn);
   const [error, setError] = useState<string | null>(null);
+  const [tier, setTier] = useState<AnalysisTier | null>(null);
+  const [pollingTimedOut, setPollingTimedOut] = useState(false);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollStartRef = useRef<number>(0);
+  const sessionsRef = useRef<Array<{ isMe?: boolean; userName?: string }>>([]);
+  const fetchDataRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!groupId || !isLoggedIn) return;
@@ -60,6 +75,7 @@ const Results: React.FC<ResultsProps> = ({
 
         // 세션 상태에서 userName/partnerName 추출함
         const sessions = statusRes.data?.data?.sessions ?? [];
+        sessionsRef.current = sessions; // ref에 보관하여 폴링 콜백에서 접근 가능
         const mySess = sessions.find((s) => s.isMe);
         const partnerSess = sessions.find((s) => !s.isMe);
         setUserName(mySess?.userName || '');
@@ -72,8 +88,23 @@ const Results: React.FC<ResultsProps> = ({
         } else {
           // 분석 결과 미존재 — 폴링함
           setError('분석이 진행 중입니다...');
+          pollStartRef.current = Date.now();
+
           if (!pollTimerRef.current) {
             pollTimerRef.current = setInterval(async () => {
+              // 타임아웃 체크
+              const elapsed = (Date.now() - pollStartRef.current) / 1000;
+              if (elapsed >= POLLING_TIMEOUT_SECONDS) {
+                if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+                pollTimerRef.current = null;
+                if (!cancelled) {
+                  setPollingTimedOut(true);
+                  setLoading(false);
+                  setError(null);
+                }
+                return;
+              }
+
               try {
                 const res = await analysisApi.getResult(groupId);
                 if (!cancelled && res?.status === 'success' && res.data) {
@@ -81,11 +112,18 @@ const Results: React.FC<ResultsProps> = ({
                   setError(null);
                   setLoading(false);
                   if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+
+                  // Tier 판정: isBTI인데 원래 DUAL이었으면 PARTIAL
+                  if (res.data.isBTI && sessionsRef.current.length >= 2) {
+                    setTier('PARTIAL');
+                  } else {
+                    setTier('VALID');
+                  }
                 }
               } catch {
                 // 계속 폴링함
               }
-            }, 5000);
+            }, POLLING_INTERVAL_MS);
           }
         }
       } catch {
@@ -96,6 +134,7 @@ const Results: React.FC<ResultsProps> = ({
       }
     };
 
+    fetchDataRef.current = fetchData;
     fetchData();
     return () => {
       cancelled = true;
@@ -105,6 +144,35 @@ const Results: React.FC<ResultsProps> = ({
       }
     };
   }, [groupId, isLoggedIn]);
+
+  // analysis-status 소켓 이벤트 리스너 등록함
+  useEffect(() => {
+    if (!groupId) return;
+    const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
+
+    const handler = (payload: {
+      groupId: string;
+      tier: AnalysisTier;
+      message: string;
+    }) => {
+      if (payload.groupId !== groupId) return;
+      setTier(payload.tier);
+      if (payload.tier === 'ABORTED') {
+        setPollingTimedOut(true);
+        setLoading(false);
+        setError(null);
+        if (pollTimerRef.current) {
+          clearInterval(pollTimerRef.current);
+          pollTimerRef.current = null;
+        }
+      }
+    };
+
+    socket.on('analysis-status', handler);
+    return () => {
+      socket.off('analysis-status', handler);
+    };
+  }, [groupId]);
 
   const userScore = analysisData?.matchingScore ?? 0;
 
@@ -211,6 +279,81 @@ const Results: React.FC<ResultsProps> = ({
     );
   }
 
+  // ABORTED 상태 — 측정 시간 부족으로 분석 불가
+  if (isLoggedIn && tier === 'ABORTED') {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-24 sm:py-48 flex flex-col items-center justify-center text-center space-y-6">
+        <div className="w-20 h-20 bg-rose-500/10 border-2 border-rose-500/20 rounded-full flex items-center justify-center">
+          <AlertCircle size={40} className="text-rose-400" />
+        </div>
+        <h2
+          className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
+        >
+          분석 불가
+        </h2>
+        <p
+          className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+        >
+          측정 시간이 너무 짧아 분석할 수 없습니다.
+          <br />
+          재측정이 필요합니다.
+        </p>
+        <button
+          onClick={() => router.push('/lab/join')}
+          className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-indigo-700 transition-all"
+        >
+          재측정하기
+        </button>
+      </div>
+    );
+  }
+
+  // 폴링 타임아웃 — ABORTED가 아닌데 결과 없음
+  if (isLoggedIn && pollingTimedOut && !analysisData && tier !== 'ABORTED') {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-24 sm:py-48 flex flex-col items-center justify-center text-center space-y-6">
+        <h2
+          className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
+        >
+          결과를 가져올 수 없습니다
+        </h2>
+        <p
+          className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+        >
+          분석 서버 응답 시간이 초과되었습니다.
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={() => {
+              setPollingTimedOut(false);
+              setLoading(true);
+              setError(null);
+              // 기존 폴링 타이머 정리 후 재시작함
+              if (pollTimerRef.current) {
+                clearInterval(pollTimerRef.current);
+                pollTimerRef.current = null;
+              }
+              if (fetchDataRef.current) fetchDataRef.current();
+            }}
+            className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-indigo-700 transition-all"
+          >
+            재시도
+          </button>
+          <button
+            onClick={() => setCurrentPage('home')}
+            className={`px-8 py-4 rounded-2xl font-bold cursor-pointer transition-all ${
+              isDark
+                ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
+                : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            메인으로
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // 에러 상태
   if (isLoggedIn && error && !analysisData) {
     return (
@@ -297,6 +440,24 @@ const Results: React.FC<ResultsProps> = ({
           </button>
         </div>
       </div>
+
+      {/* PARTIAL 안내 배지 — 한 명 데이터만 분석된 경우 표시함 */}
+      {tier === 'PARTIAL' ? (
+        <div
+          className={`flex items-center gap-3 px-5 py-3 rounded-2xl ${
+            isDark
+              ? 'bg-amber-500/10 border border-amber-500/20'
+              : 'bg-amber-50 border border-amber-200'
+          }`}
+        >
+          <Info size={18} className="text-amber-500 shrink-0" />
+          <p
+            className={`text-sm font-medium ${isDark ? 'text-amber-300' : 'text-amber-700'}`}
+          >
+            한 분의 데이터만 분석되었습니다 (BTI 개인 분석 모드)
+          </p>
+        </div>
+      ) : null}
 
       {/* 분석 섹션 01 — DUAL이면 동조율, BTI면 개인 메트릭 */}
       {analysisData?.isBTI ? (

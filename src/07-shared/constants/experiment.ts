@@ -26,3 +26,12 @@ export const EXPERIMENT_CONFIG = {
     description: '개인별 뇌파 특성을 분석하여 성향 유형을 도출함',
   },
 } as const;
+
+/** 최소 분석 가능 시간(초) — 백엔드 MIN_ANALYSIS_SECONDS와 동기화 필수 */
+export const MIN_ANALYSIS_SECONDS = 180;
+
+/** 결과 폴링 최대 대기 시간(초) */
+export const POLLING_TIMEOUT_SECONDS = 120;
+
+/** 결과 폴링 간격(ms) */
+export const POLLING_INTERVAL_MS = 5000;

@@ -21,6 +21,7 @@ import {
   Settings,
   PlusCircle,
   Play,
+  Square,
   X,
   CheckCircle2,
 } from 'lucide-react';
@@ -137,8 +138,21 @@ const LabPage = () => {
   );
 
   /**
+   * 오퍼레이터가 실험 진행 중 측정 중지 요청함 — stop-all API 한 번 호출로 일괄 처리함
+   */
+  const handleStopExperiment = async () => {
+    if (!groupId) return;
+    // subject1 groupId 기준 stop-all 호출함
+    await subject1Signal.stopMeasurement(groupId, 'ManualEarly');
+    // subject2는 BE가 groupId로 일괄 처리하므로 소켓 정리만 수행함
+    if (currentConfig.targetCount > 1) {
+      void subject2Signal.stopMeasurement();
+    }
+  };
+
+  /**
    * 서버 사이드 렌더링 시 하이드레이션 오류 방지를 위해 빈 화면 반환함
-   
+
   if (!isClient) return <div className="min-h-screen bg-slate-950" />;
   */
 
@@ -161,6 +175,19 @@ const LabPage = () => {
    * 상태에 따른 제어 버튼 렌더링 함수 정의함
    */
   const renderControlButton = () => {
+    // 측정 진행 중인 경우 중지 버튼 표시함
+    if (subject1Signal.isMeasuring || subject2Signal.isMeasuring) {
+      return (
+        <button
+          onClick={() => void handleStopExperiment()}
+          className="group relative inline-flex items-center cursor-pointer gap-2 px-8 py-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 rounded-2xl font-black transition-all duration-300"
+        >
+          <Square size={20} fill="currentColor" />
+          <span>실험 중지</span>
+        </button>
+      );
+    }
+
     if (isAllPaired) {
       return (
         <button

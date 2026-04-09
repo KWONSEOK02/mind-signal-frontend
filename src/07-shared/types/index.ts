@@ -2,6 +2,16 @@ import { PairingSessionStatus } from '../constants/session-status';
 
 export type PageType = 'home' | 'intro' | 'lab' | 'results' | 'expand' | 'join';
 
+/** 측정 종료 사유 (BE Zod enum과 동기화) */
+export type StopReason =
+  | 'Natural'
+  | 'ManualEarly'
+  | 'HeadsetLost'
+  | 'ProcessError';
+
+/** 분석 결과 3-tier 분류 (BE triggerPostMeasurementByTier와 동기화) */
+export type AnalysisTier = 'VALID' | 'PARTIAL' | 'ABORTED';
+
 /**
  * [Shared] 도메인 특성을 반영한 사용자 역할 타입 정의함
  */

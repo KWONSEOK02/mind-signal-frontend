@@ -2,8 +2,10 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { measurementApi, EmotivMetrics } from '@/07-shared/api';
+import { engineApi } from '@/07-shared/api/engine';
 import { getSocket } from '@/07-shared/lib/socket-client';
 import { config } from '@/07-shared/config/config';
+import type { StopReason } from '@/07-shared/types';
 
 /**
  * eeg-live 소켓 이벤트 페이로드 구조 정의함
@@ -83,12 +85,11 @@ const useSignal = (sessionId: string | null) => {
       }: MeasurementCompletePayload) => {
         if (incomingId !== sessionId) return; // 다른 세션 완료 신호 무시함
         setIsMeasuring(false);
-        // 타이머 초기화함
+        // 타이머 정지함 — elapsedSeconds는 lab-page.tsx 결과 이동 판단에 필요하므로 리셋하지 않음
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
-        setElapsedSeconds(0);
       };
 
       completeHandlerRef.current = completeHandler;
@@ -105,31 +106,43 @@ const useSignal = (sessionId: string | null) => {
 
   /**
    * 측정 중지 처리함
-   * 소켓 이벤트 리스너 해제 및 타이머 초기화 수행함
+   * 소켓 이벤트 리스너 해제 및 타이머 정지 수행함
+   * groupId 전달 시 BE stop-all API 호출함 — elapsedSeconds 리셋 없이 유지함
    */
-  const stopMeasurement = useCallback(() => {
-    setIsMeasuring(false);
+  const stopMeasurement = useCallback(
+    async (groupId?: string, stopReason?: StopReason) => {
+      setIsMeasuring(false);
 
-    const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
+      const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
 
-    if (handlerRef.current) {
-      socket.off('eeg-live', handlerRef.current);
-      handlerRef.current = null;
-    }
+      if (handlerRef.current) {
+        socket.off('eeg-live', handlerRef.current);
+        handlerRef.current = null;
+      }
 
-    // measurement-complete 리스너 해제함
-    if (completeHandlerRef.current) {
-      socket.off('measurement-complete', completeHandlerRef.current);
-      completeHandlerRef.current = null;
-    }
+      // measurement-complete 리스너 해제함
+      if (completeHandlerRef.current) {
+        socket.off('measurement-complete', completeHandlerRef.current);
+        completeHandlerRef.current = null;
+      }
 
-    // 타이머 초기화함
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setElapsedSeconds(0);
-  }, []);
+      // 타이머 정지함 — elapsedSeconds는 lab-page.tsx 결과 이동 판단에 필요하므로 리셋하지 않음
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
+      // groupId가 전달되면 BE stop-all API 호출함
+      if (groupId) {
+        try {
+          await engineApi.stopAll(groupId, stopReason ?? 'ManualEarly');
+        } catch (err) {
+          console.error('stop-all API 실패함:', err);
+        }
+      }
+    },
+    []
+  );
 
   // 언마운트 시 소켓 리스너 및 타이머 정리함
   useEffect(() => {
