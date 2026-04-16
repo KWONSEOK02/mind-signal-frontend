@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { PairingSessionStatus, PairingData } from '@/07-shared';
 import { PairingStep } from './pairing-engine';
 
 /**
