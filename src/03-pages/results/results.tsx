@@ -24,6 +24,7 @@ import {
   POLLING_INTERVAL_MS,
 } from '@/07-shared/constants/experiment';
 import type { AnalysisTier } from '@/07-shared/types';
+import MyResultsList from './my-results-list';
 
 interface ResultsProps {
   theme: 'light' | 'dark';
@@ -241,27 +242,15 @@ const Results: React.FC<ResultsProps> = ({
     }
   };
 
-  // groupId 없는 경우
+  // groupId 없는 경우 — 내 실험 결과 목록 렌더링함
   if (isLoggedIn && !groupId) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-24 sm:py-48 flex flex-col items-center justify-center text-center space-y-6">
-        <h2
-          className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
-        >
-          결과를 찾을 수 없습니다
-        </h2>
-        <p
-          className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
-        >
-          실험 완료 후 자동으로 이동됩니다.
-        </p>
-        <button
-          onClick={() => setCurrentPage('home')}
-          className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-indigo-700 transition-all"
-        >
-          메인으로 돌아가기
-        </button>
-      </div>
+      <MyResultsList
+        theme={theme}
+        isLoggedIn={isLoggedIn}
+        openAuthModal={openAuthModal}
+        setCurrentPage={setCurrentPage}
+      />
     );
   }
 
