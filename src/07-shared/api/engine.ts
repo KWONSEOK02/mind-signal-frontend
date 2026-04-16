@@ -1,4 +1,5 @@
 import api from './base';
+import type { StopReason } from '@/07-shared/types';
 
 // ──────────────────────────────────────────────
 // POST /engine/analyze/pipeline 응답 타입 (전체 파이프라인)
@@ -47,6 +48,13 @@ export interface EnginePipelineResult {
 // API 호출 함수
 // ──────────────────────────────────────────────
 
+/** stop-all 응답 타입 정의함 */
+export interface StopAllResponse {
+  status: 'success';
+  stoppedCount: number;
+  allCompleted: boolean;
+}
+
 /** 엔진 분석 API 함수 모음 정의함 */
 export const engineApi = {
   /** 전체 파이프라인 분석 요청함 */
@@ -65,5 +73,12 @@ export const engineApi = {
       params: options?.params,
       satisfactionScores: options?.satisfactionScores,
       includeMarkdown: options?.includeMarkdown ?? false,
+    }),
+
+  /** groupId 기준 전체 측정 중지 요청함 */
+  stopAll: (groupId: string, stopReason: StopReason = 'ManualEarly') =>
+    api.post<StopAllResponse>('/engine/stream/stop-all', {
+      groupId,
+      stopReason,
     }),
 };
