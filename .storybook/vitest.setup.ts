@@ -35,7 +35,7 @@ declare global {
 /**
  * [Checklist] Vitest Setup 실행 여부 확인 로그 출력함
  */
-console.log('✅ Vitest Setup: Initializing Typed Router Mocks');
+console.info('✅ Vitest Setup: Initializing Typed Router Mocks');
 
 /**
  * [Fix] Storybook UI 환경에서 Vitest 코어 로드 실패 시 발생하는 에러 방지용 shim 정의함
