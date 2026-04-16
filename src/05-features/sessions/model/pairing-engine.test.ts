@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { PairingSessionStatus, PairingData } from '@/07-shared';
 import { PairingStep } from './pairing-engine';
 
 /**
@@ -13,12 +14,19 @@ vi.mock('@/07-shared', () => ({
 
 // 모킹된 sessionApi 참조 획득함
 import { sessionApi } from '@/07-shared';
-const mockSessionApi = vi.mocked(sessionApi);
+const mockCreatedPairing = sessionApi.createdPairing as ReturnType<
+  typeof vi.fn
+>;
+const mockCheckStatus = sessionApi.checkSessionStatus as ReturnType<
+  typeof vi.fn
+>;
 
 describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
   let engine: PairingStep;
-  let onStatusUpdate: ReturnType<typeof vi.fn>;
-  let onTimeUpdate: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vi.fn() 타입 호환용
+  let onStatusUpdate: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let onTimeUpdate: any;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -42,13 +50,13 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
     };
 
     beforeEach(() => {
-      mockSessionApi.createdPairing.mockResolvedValue({
+      mockCreatedPairing.mockResolvedValue({
         data: { status: 'success', data: mockPairingData },
       } as never);
     });
 
     it('createdPairing API 호출 후 페어링 데이터를 반환 처리함', async () => {
-      mockSessionApi.checkSessionStatus.mockResolvedValue({
+      mockCheckStatus.mockResolvedValue({
         data: {
           data: {
             groupId: 'group-1',
@@ -61,12 +69,12 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
 
       const result = await engine.execute(onStatusUpdate, onTimeUpdate);
 
-      expect(mockSessionApi.createdPairing).toHaveBeenCalledOnce();
+      expect(mockCreatedPairing).toHaveBeenCalledOnce();
       expect(result).toEqual(mockPairingData);
     });
 
     it('groupId 전달 시 API에 해당 값을 포함하여 호출 처리함', async () => {
-      mockSessionApi.checkSessionStatus.mockResolvedValue({
+      mockCheckStatus.mockResolvedValue({
         data: {
           data: {
             groupId: 'group-1',
@@ -79,13 +87,11 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
 
       await engine.execute(onStatusUpdate, onTimeUpdate, 'existing-group');
 
-      expect(mockSessionApi.createdPairing).toHaveBeenCalledWith(
-        'existing-group'
-      );
+      expect(mockCreatedPairing).toHaveBeenCalledWith('existing-group');
     });
 
     it('타이머가 1초마다 남은 시간을 콜백으로 전달 처리함', async () => {
-      mockSessionApi.checkSessionStatus.mockResolvedValue({
+      mockCheckStatus.mockResolvedValue({
         data: {
           data: {
             groupId: 'group-1',
@@ -106,7 +112,7 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
     });
 
     it('폴링에서 guestJoined=true 감지 시 PAIRED 상태를 콜백 처리함', async () => {
-      mockSessionApi.checkSessionStatus.mockResolvedValue({
+      mockCheckStatus.mockResolvedValue({
         data: {
           data: {
             groupId: 'group-1',
@@ -135,10 +141,10 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
         expiresAt: new Date(Date.now() + 2000).toISOString(), // 2초 후 만료
       };
 
-      mockSessionApi.createdPairing.mockResolvedValue({
+      mockCreatedPairing.mockResolvedValue({
         data: { status: 'success', data: expiredData },
       } as never);
-      mockSessionApi.checkSessionStatus.mockResolvedValue({
+      mockCheckStatus.mockResolvedValue({
         data: {
           data: {
             groupId: 'group-1',
@@ -160,9 +166,7 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
 
   describe('에러 처리', () => {
     it('createdPairing API 실패 시 ERROR 상태 콜백 + 예외 throw 처리함', async () => {
-      mockSessionApi.createdPairing.mockRejectedValue(
-        new Error('Network error')
-      );
+      mockCreatedPairing.mockRejectedValue(new Error('Network error'));
 
       await expect(
         engine.execute(onStatusUpdate, onTimeUpdate)
@@ -179,7 +183,7 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
         expiresAt: new Date(Date.now() + 300_000).toISOString(),
       };
 
-      mockSessionApi.createdPairing.mockResolvedValue({
+      mockCreatedPairing.mockResolvedValue({
         data: { status: 'success', data: mockData },
       } as never);
 
@@ -187,7 +191,7 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
         response: { status: number };
       };
       axiosError.response = { status: 401 };
-      mockSessionApi.checkSessionStatus.mockRejectedValue(axiosError);
+      mockCheckStatus.mockRejectedValue(axiosError);
 
       await engine.execute(onStatusUpdate, onTimeUpdate);
       await vi.advanceTimersByTimeAsync(3000);
@@ -203,7 +207,7 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
         expiresAt: new Date(Date.now() + 300_000).toISOString(),
       };
 
-      mockSessionApi.createdPairing.mockResolvedValue({
+      mockCreatedPairing.mockResolvedValue({
         data: { status: 'success', data: mockData },
       } as never);
 
@@ -211,7 +215,7 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
         response: { status: number };
       };
       axiosError.response = { status: 410 };
-      mockSessionApi.checkSessionStatus.mockRejectedValue(axiosError);
+      mockCheckStatus.mockRejectedValue(axiosError);
 
       await engine.execute(onStatusUpdate, onTimeUpdate);
       await vi.advanceTimersByTimeAsync(3000);
@@ -229,10 +233,10 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
         expiresAt: new Date(Date.now() + 300_000).toISOString(),
       };
 
-      mockSessionApi.createdPairing.mockResolvedValue({
+      mockCreatedPairing.mockResolvedValue({
         data: { status: 'success', data: mockData },
       } as never);
-      mockSessionApi.checkSessionStatus.mockResolvedValue({
+      mockCheckStatus.mockResolvedValue({
         data: {
           data: {
             groupId: 'group-1',

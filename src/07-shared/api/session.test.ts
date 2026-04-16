@@ -13,7 +13,8 @@ vi.mock('./base', () => ({
 }));
 
 import { api } from './base';
-const mockApi = vi.mocked(api);
+const mockPost = api.post as ReturnType<typeof vi.fn>;
+const mockGet = api.get as ReturnType<typeof vi.fn>;
 
 describe('sessionApi — 세션 API 통합 테스트 수행함', () => {
   beforeEach(() => {
@@ -34,28 +35,28 @@ describe('sessionApi — 세션 API 통합 테스트 수행함', () => {
     };
 
     it('groupId 없이 호출 시 POST /sessions에 null groupId 전송 처리함', async () => {
-      mockApi.post.mockResolvedValue(mockResponse);
+      mockPost.mockResolvedValue(mockResponse);
 
       const result = await sessionApi.createdPairing();
 
-      expect(mockApi.post).toHaveBeenCalledWith('/sessions', {
+      expect(mockPost).toHaveBeenCalledWith('/sessions', {
         groupId: null,
       });
       expect(result.data.data.groupId).toBe('group-123');
     });
 
     it('groupId 전달 시 해당 값을 POST body에 포함 처리함', async () => {
-      mockApi.post.mockResolvedValue(mockResponse);
+      mockPost.mockResolvedValue(mockResponse);
 
       await sessionApi.createdPairing('existing-group');
 
-      expect(mockApi.post).toHaveBeenCalledWith('/sessions', {
+      expect(mockPost).toHaveBeenCalledWith('/sessions', {
         groupId: 'existing-group',
       });
     });
 
     it('API 실패 시 에러가 전파 처리됨', async () => {
-      mockApi.post.mockRejectedValue(new Error('Network error'));
+      mockPost.mockRejectedValue(new Error('Network error'));
 
       await expect(sessionApi.createdPairing()).rejects.toThrow(
         'Network error'
@@ -75,11 +76,11 @@ describe('sessionApi — 세션 API 통합 테스트 수행함', () => {
           },
         },
       };
-      mockApi.post.mockResolvedValue(mockResponse);
+      mockPost.mockResolvedValue(mockResponse);
 
       const result = await sessionApi.verifyPairing('token-xyz');
 
-      expect(mockApi.post).toHaveBeenCalledWith('/sessions/token-xyz/pair');
+      expect(mockPost).toHaveBeenCalledWith('/sessions/token-xyz/pair');
       expect(result.data.data.subjectIndex).toBe(1);
     });
   });
@@ -101,18 +102,16 @@ describe('sessionApi — 세션 API 통합 테스트 수행함', () => {
           },
         },
       };
-      mockApi.get.mockResolvedValue(mockResponse);
+      mockGet.mockResolvedValue(mockResponse);
 
       const result = await sessionApi.checkSessionStatus('group-123');
 
-      expect(mockApi.get).toHaveBeenCalledWith(
-        '/sessions/group/group-123/status'
-      );
+      expect(mockGet).toHaveBeenCalledWith('/sessions/group/group-123/status');
       expect(result.data.data.sessions[0].guestJoined).toBe(true);
     });
 
     it('그룹 미존재 시 에러가 전파 처리됨', async () => {
-      mockApi.get.mockRejectedValue(new Error('Not found'));
+      mockGet.mockRejectedValue(new Error('Not found'));
 
       await expect(
         sessionApi.checkSessionStatus('nonexistent')
