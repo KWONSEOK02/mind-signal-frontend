@@ -63,9 +63,9 @@ describe('extractToken — QR 토큰 추출 단위 테스트 수행함', () => {
     });
 
     it('한국어가 포함된 URL에서도 토큰 추출 처리함', () => {
-      expect(
-        extractToken('https://example.com/join?token=한글토큰')
-      ).toBe('한글토큰');
+      expect(extractToken('https://example.com/join?token=한글토큰')).toBe(
+        '한글토큰'
+      );
     });
 
     it('프래그먼트(#)가 있는 URL에서 token 파라미터 추출 처리함', () => {
