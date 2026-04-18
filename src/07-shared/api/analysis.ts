@@ -66,7 +66,7 @@ export const analysisApi = {
   /** SEQUENTIAL 분석 요청 수행함 */
   postSequentialAnalysis: (groupId: string, algorithm?: string) =>
     api
-      .post<SequentialAnalysisResponse>('/api/analyze/sequential', {
+      .post<SequentialAnalysisResponse>('/analyze/sequential', {
         groupId,
         algorithm,
       } satisfies SequentialAnalysisRequest)
