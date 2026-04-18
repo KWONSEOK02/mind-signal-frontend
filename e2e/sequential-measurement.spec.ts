@@ -101,16 +101,16 @@ test.describe('/lab SEQUENTIAL happy path', () => {
 });
 
 /**
- * Scenario 2: 라벨 regression — DUAL 페이지에 "반응 유사도"가 없고
- * SEQUENTIAL 페이지에 "동기화 점수"가 없음을 확인 처리함
+ * Scenario 2: 홈 페이지 라벨 regression — 비로그인 상태에서도
+ * 홈 페이지(`/`) 본문에 "Inter-brain Synchrony" 문자열이 없음을 확인 처리함.
+ * DUAL/SEQUENTIAL 결과 페이지 라벨 정합성은 별도 컴포넌트 단위 테스트에서 검증함.
  */
-test.describe('Label regression', () => {
-  test('DUAL 결과 페이지에서 동기화/synchrony 레이블 확인 처리됨', async ({
+test.describe('Home page label regression', () => {
+  test('홈 페이지 본문에 Inter-brain Synchrony 레이블 부재 처리됨', async ({
     page,
   }: {
     page: import('@playwright/test').Page;
   }) => {
-    // 비로그인 상태에서도 홈 페이지에 Inter-brain Synchrony 없어야 함
     await page.goto('/');
     const bodyText = await page.evaluate(() => document.body.innerText);
     expect(bodyText).not.toContain('Inter-brain Synchrony');
