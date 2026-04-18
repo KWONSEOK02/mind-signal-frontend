@@ -1,7 +1,20 @@
 /**
- * [Shared] 실험 모드 종류 정의함
+ * [Shared] 실험 모드 식별자 상수 정의함
  */
-export type ExperimentMode = 'DUAL' | 'BTI';
+export const EXPERIMENT_MODES = {
+  /** 2인 동시 측정 모드 (Phase 1) */
+  DUAL: 'DUAL',
+  /** 뇌BTI 성향 측정 모드 (Phase 1) */
+  BTI: 'BTI',
+  /** 시분할 측정 모드 (1PC 환경, Phase 14 P2) */
+  SEQUENTIAL: 'SEQUENTIAL',
+} as const;
+
+/**
+ * [Shared] 실험 모드 유니온 타입 — EXPERIMENT_MODES에서 자동 유도함
+ */
+export type ExperimentMode =
+  (typeof EXPERIMENT_MODES)[keyof typeof EXPERIMENT_MODES];
 
 /**
  * [Shared] 실험 모드별 세부 설정 상수 정의함

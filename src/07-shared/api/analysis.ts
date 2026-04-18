@@ -13,6 +13,10 @@ export interface AnalysisResultData {
   isBTI: boolean;
   metricsMean: Record<string, number> | null;
   wavesMean: Record<string, number> | null;
+  /** 분석 모드 식별자 — SEQUENTIAL이면 similarity_features 사용함 */
+  analysis_mode?: 'DUAL' | 'SEQUENTIAL' | 'BTI';
+  /** SEQUENTIAL 모드 유사도 특징 벡터 — Zod parse 전 원본 보관함 */
+  similarity_features?: Record<string, unknown>;
 }
 
 export interface AnalysisResultResponse {
@@ -35,6 +39,18 @@ export interface MyResultsResponse {
   data: MyResultItem[];
 }
 
+/** SEQUENTIAL 분석 요청 body 타입 정의함 */
+export interface SequentialAnalysisRequest {
+  groupId: string;
+  algorithm?: string;
+}
+
+/** SEQUENTIAL 분석 응답 타입 정의함 */
+export interface SequentialAnalysisResponse {
+  success: boolean;
+  result: AnalysisResultData;
+}
+
 /** 분석 결과 조회 API 정의함 */
 export const analysisApi = {
   /** groupId로 분석 결과 조회함 */
@@ -46,4 +62,13 @@ export const analysisApi = {
   /** 내 실험 결과 목록 조회함 */
   getMyResults: () =>
     api.get<MyResultsResponse>('/analysis/my').then((res) => res.data),
+
+  /** SEQUENTIAL 분석 요청 수행함 */
+  postSequentialAnalysis: (groupId: string, algorithm?: string) =>
+    api
+      .post<SequentialAnalysisResponse>('/analyze/sequential', {
+        groupId,
+        algorithm,
+      } satisfies SequentialAnalysisRequest)
+      .then((res) => res.data),
 };
