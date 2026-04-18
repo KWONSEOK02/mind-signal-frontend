@@ -290,10 +290,10 @@ describe('canTransitionSequential — SEQUENTIAL 상태 전환 로직', () => {
   });
 
   describe('Subject 2 전환 규칙 — Subject 1 선행 대기 보장', () => {
-    it('Subject 2: Subject 1이 MEASURING 중일 때 PAIRED → MEASURING 전환 허용 처리됨', () => {
+    it('Subject 2: Subject 1이 MEASURING 중일 때 PAIRED → MEASURING 전환 거부 처리됨', () => {
       expect(
         canTransitionSequential(2, 'PAIRED', 'MEASURING', 'MEASURING')
-      ).toBe(true);
+      ).toBe(false);
     });
 
     it('Subject 2: Subject 1이 COMPLETED 후 PAIRED → MEASURING 전환 허용 처리됨', () => {

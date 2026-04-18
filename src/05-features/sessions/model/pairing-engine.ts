@@ -58,12 +58,10 @@ export function canTransitionSequential(
   }
 
   if (subjectIndex === 2) {
-    // Subject 2는 Subject 1이 MEASURING 또는 COMPLETED일 때만 MEASURING 전환 가능함
+    // Subject 2는 Subject 1이 COMPLETED된 뒤에만 MEASURING 전환 가능함
+    // (순차 측정 설계 의도: Subject 1 선행 → 완료 → Subject 2 시작, 겹침 금지)
     if (to === 'MEASURING') {
-      return (
-        from === 'PAIRED' &&
-        (otherSubjectState === 'MEASURING' || otherSubjectState === 'COMPLETED')
-      );
+      return from === 'PAIRED' && otherSubjectState === 'COMPLETED';
     }
     if (to === 'COMPLETED') {
       return from === 'MEASURING';
