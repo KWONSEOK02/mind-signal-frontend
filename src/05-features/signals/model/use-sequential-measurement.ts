@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { analysisApi } from '@/07-shared/api/analysis';
 import useSignal from './use-signal';
 
@@ -30,6 +30,9 @@ export function useSequentialMeasurement(
   groupId: string | null
 ) {
   const [state, setState] = useState<SequentialMeasurementState>('READY');
+
+  // triggerAnalysis 동시 호출 차단 플래그 보관함 (setState 비동기 반영 전 double-click 방지)
+  const analysisInFlightRef = useRef(false);
 
   // 각 피실험자별 신호 훅 인스턴스 생성함
   const subject1Signal = useSignal(sessionId1);
@@ -76,13 +79,23 @@ export function useSequentialMeasurement(
    */
   const triggerAnalysis = useCallback(async () => {
     if (state !== 'SUBJECT_2_DONE' || !groupId) return;
+    // setState('ANALYZING')의 비동기 반영을 기다리지 않고 중복 호출되면 REF 기반으로 차단함
+    if (analysisInFlightRef.current) return;
+    analysisInFlightRef.current = true;
 
     setState('ANALYZING');
     try {
-      await analysisApi.postSequentialAnalysis(groupId);
-      setState('COMPLETED');
+      const res = await analysisApi.postSequentialAnalysis(groupId);
+      // BE가 HTTP 200이라도 { success: false }를 내려주면 실패로 처리함
+      if (res?.success) {
+        setState('COMPLETED');
+      } else {
+        setState('SESSION_ABORTED');
+      }
     } catch {
       setState('SESSION_ABORTED');
+    } finally {
+      analysisInFlightRef.current = false;
     }
   }, [state, groupId]);
 
