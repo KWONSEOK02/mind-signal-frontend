@@ -21,6 +21,13 @@ const eslintConfig = defineConfig([
   ]),
   ...storybook.configs["flat/recommended"],
 
+  // 아키텍처: 불필요한 console.log 정리 권장 (console.error/warn/info 허용)
+  {
+    rules: {
+      'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
+    },
+  },
+
   /**
    * [Override] 스토리 파일 전용 린트 예외 규칙 정의함
    * Vitest 브라우저 모드 호환성을 위해 @storybook/react 직접 임포트 허용함

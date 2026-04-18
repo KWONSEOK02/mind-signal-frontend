@@ -24,6 +24,7 @@ import {
   POLLING_INTERVAL_MS,
 } from '@/07-shared/constants/experiment';
 import type { AnalysisTier } from '@/07-shared/types';
+import MyResultsList from './my-results-list';
 
 interface ResultsProps {
   theme: 'light' | 'dark';
@@ -241,27 +242,15 @@ const Results: React.FC<ResultsProps> = ({
     }
   };
 
-  // groupId 없는 경우
+  // groupId 없는 경우 — 내 실험 결과 목록 렌더링함
   if (isLoggedIn && !groupId) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-24 sm:py-48 flex flex-col items-center justify-center text-center space-y-6">
-        <h2
-          className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
-        >
-          결과를 찾을 수 없습니다
-        </h2>
-        <p
-          className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
-        >
-          실험 완료 후 자동으로 이동됩니다.
-        </p>
-        <button
-          onClick={() => setCurrentPage('home')}
-          className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-indigo-700 transition-all"
-        >
-          메인으로 돌아가기
-        </button>
-      </div>
+      <MyResultsList
+        theme={theme}
+        isLoggedIn={isLoggedIn}
+        openAuthModal={openAuthModal}
+        setCurrentPage={setCurrentPage}
+      />
     );
   }
 
@@ -275,6 +264,81 @@ const Results: React.FC<ResultsProps> = ({
         >
           {error || '분석 결과를 불러오는 중...'}
         </p>
+      </div>
+    );
+  }
+
+  // ABORTED 상태 — 측정 시간 부족으로 분석 불가
+  if (isLoggedIn && tier === 'ABORTED') {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-24 sm:py-48 flex flex-col items-center justify-center text-center space-y-6">
+        <div className="w-20 h-20 bg-rose-500/10 border-2 border-rose-500/20 rounded-full flex items-center justify-center">
+          <AlertCircle size={40} className="text-rose-400" />
+        </div>
+        <h2
+          className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
+        >
+          분석 불가
+        </h2>
+        <p
+          className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+        >
+          측정 시간이 너무 짧아 분석할 수 없습니다.
+          <br />
+          재측정이 필요합니다.
+        </p>
+        <button
+          onClick={() => router.push('/lab/join')}
+          className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-indigo-700 transition-all"
+        >
+          재측정하기
+        </button>
+      </div>
+    );
+  }
+
+  // 폴링 타임아웃 — ABORTED가 아닌데 결과 없음
+  if (isLoggedIn && pollingTimedOut && !analysisData && tier !== 'ABORTED') {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-24 sm:py-48 flex flex-col items-center justify-center text-center space-y-6">
+        <h2
+          className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}
+        >
+          결과를 가져올 수 없습니다
+        </h2>
+        <p
+          className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+        >
+          분석 서버 응답 시간이 초과되었습니다.
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={() => {
+              setPollingTimedOut(false);
+              setLoading(true);
+              setError(null);
+              // 기존 폴링 타이머 정리 후 재시작함
+              if (pollTimerRef.current) {
+                clearInterval(pollTimerRef.current);
+                pollTimerRef.current = null;
+              }
+              if (fetchDataRef.current) fetchDataRef.current();
+            }}
+            className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold cursor-pointer hover:bg-indigo-700 transition-all"
+          >
+            재시도
+          </button>
+          <button
+            onClick={() => setCurrentPage('home')}
+            className={`px-8 py-4 rounded-2xl font-bold cursor-pointer transition-all ${
+              isDark
+                ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
+                : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            메인으로
+          </button>
+        </div>
       </div>
     );
   }

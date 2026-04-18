@@ -21,8 +21,14 @@ const envSchema = z.object({
     .url()
     .default('https://mind-signal-backend-74ab2db9e087.herokuapp.com'),
 
-  /** 페어링 세션 유효 시간 (초 단위, 기본 300초) */
-  NEXT_PUBLIC_PAIRING_TIMEOUT: z.string().transform(Number).default(300),
+  /** 페어링 세션 유효 시간 (초 단위, 기본 300초). 양의 정수만 허용 */
+  NEXT_PUBLIC_PAIRING_TIMEOUT: z
+    .string()
+    .default('300')
+    .transform(Number)
+    .refine((n) => Number.isInteger(n) && n > 0, {
+      message: 'NEXT_PUBLIC_PAIRING_TIMEOUT must be a positive integer',
+    }),
 
   /** 소켓 서버 연결 주소 */
   NEXT_PUBLIC_SOCKET_URL: z.string().url().optional(),
