@@ -1,7 +1,20 @@
 /**
- * [Shared] 실험 모드 종류 정의함
+ * [Shared] 실험 모드 식별자 상수 정의함
  */
-export type ExperimentMode = 'DUAL' | 'BTI';
+export const EXPERIMENT_MODES = {
+  /** 2인 동시 측정 모드 (Phase 1) */
+  DUAL: 'DUAL',
+  /** 뇌BTI 성향 측정 모드 (Phase 1) */
+  BTI: 'BTI',
+  /** 시분할 측정 모드 (1PC 환경, Phase 14 P2) */
+  SEQUENTIAL: 'SEQUENTIAL',
+} as const;
+
+/**
+ * [Shared] 실험 모드 유니온 타입 — EXPERIMENT_MODES에서 자동 유도함
+ */
+export type ExperimentMode =
+  (typeof EXPERIMENT_MODES)[keyof typeof EXPERIMENT_MODES];
 
 /**
  * [Shared] 실험 모드별 세부 설정 상수 정의함
@@ -24,6 +37,17 @@ export const EXPERIMENT_CONFIG = {
     targetCount: 1,
     title: 'Brain-BTI Analyzer',
     description: '개인별 뇌파 특성을 분석하여 성향 유형을 도출함',
+  },
+  /**
+   * 1PC 순차 측정 모드 설정임 — DUAL과 동일한 2인 페어링을 사용하되
+   * 측정은 한 장치에서 순차로 수행됨
+   */
+  SEQUENTIAL: {
+    mode: 'SEQUENTIAL' as ExperimentMode,
+    targetCount: 2,
+    title: 'Sequential Subject Monitor',
+    description:
+      '한 장치에서 두 피실험자의 데이터를 순차 측정하여 유사도를 분석함',
   },
 } as const;
 

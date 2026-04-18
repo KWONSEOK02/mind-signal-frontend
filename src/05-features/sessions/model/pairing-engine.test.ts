@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PairingStep } from './pairing-engine';
+import { PairingStep, canTransitionSequential } from './pairing-engine';
 
 /**
  * sessionApi 모킹 — pairing-engine이 의존하는 API 레이어를 격리함
@@ -255,6 +255,92 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
       await vi.advanceTimersByTimeAsync(5000);
 
       expect(onTimeUpdate).not.toHaveBeenCalled();
+    });
+  });
+});
+
+/**
+ * SEQUENTIAL 모드 상태 전환 단위 테스트 수행함
+ */
+describe('canTransitionSequential — SEQUENTIAL 상태 전환 로직', () => {
+  describe('Subject 1 전환 규칙', () => {
+    it('Subject 1: WAITING → PAIRED 전환 허용 처리됨', () => {
+      expect(canTransitionSequential(1, 'WAITING', 'PAIRED', 'WAITING')).toBe(
+        true
+      );
+    });
+
+    it('Subject 1: PAIRED → MEASURING 전환 허용 처리됨', () => {
+      expect(canTransitionSequential(1, 'PAIRED', 'MEASURING', 'PAIRED')).toBe(
+        true
+      );
+    });
+
+    it('Subject 1: MEASURING → COMPLETED 전환 허용 처리됨', () => {
+      expect(
+        canTransitionSequential(1, 'MEASURING', 'COMPLETED', 'PAIRED')
+      ).toBe(true);
+    });
+
+    it('Subject 1: WAITING → MEASURING 직접 전환 거부 처리됨', () => {
+      expect(
+        canTransitionSequential(1, 'WAITING', 'MEASURING', 'WAITING')
+      ).toBe(false);
+    });
+  });
+
+  describe('Subject 2 전환 규칙 — Subject 1 선행 대기 보장', () => {
+    it('Subject 2: Subject 1이 MEASURING 중일 때 PAIRED → MEASURING 전환 거부 처리됨', () => {
+      expect(
+        canTransitionSequential(2, 'PAIRED', 'MEASURING', 'MEASURING')
+      ).toBe(false);
+    });
+
+    it('Subject 2: Subject 1이 COMPLETED 후 PAIRED → MEASURING 전환 허용 처리됨', () => {
+      expect(
+        canTransitionSequential(2, 'PAIRED', 'MEASURING', 'COMPLETED')
+      ).toBe(true);
+    });
+
+    it('Subject 2: Subject 1이 PAIRED 상태면 MEASURING 전환 거부 처리됨', () => {
+      expect(canTransitionSequential(2, 'PAIRED', 'MEASURING', 'PAIRED')).toBe(
+        false
+      );
+    });
+
+    it('Subject 2: Subject 1이 WAITING이면 MEASURING 전환 거부 처리됨', () => {
+      expect(canTransitionSequential(2, 'PAIRED', 'MEASURING', 'WAITING')).toBe(
+        false
+      );
+    });
+
+    it('Subject 2: MEASURING → COMPLETED 전환 허용 처리됨', () => {
+      expect(
+        canTransitionSequential(2, 'MEASURING', 'COMPLETED', 'COMPLETED')
+      ).toBe(true);
+    });
+
+    it('Subject 2: WAITING → PAIRED 전환 허용 처리됨', () => {
+      expect(canTransitionSequential(2, 'WAITING', 'PAIRED', 'WAITING')).toBe(
+        true
+      );
+    });
+  });
+
+  describe('PairingStep 모드 설정', () => {
+    it('DUAL 모드로 생성 시 mode=DUAL 확인 처리됨', () => {
+      const step = new PairingStep('DUAL');
+      expect(step.mode).toBe('DUAL');
+    });
+
+    it('SEQUENTIAL 모드로 생성 시 mode=SEQUENTIAL 확인 처리됨', () => {
+      const step = new PairingStep('SEQUENTIAL');
+      expect(step.mode).toBe('SEQUENTIAL');
+    });
+
+    it('기본 생성 시 mode=DUAL 확인 처리됨', () => {
+      const step = new PairingStep();
+      expect(step.mode).toBe('DUAL');
     });
   });
 });

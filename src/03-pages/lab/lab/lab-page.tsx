@@ -12,6 +12,7 @@ import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
 import MobileLabView from './ui/mobile-lab-view';
+import SequentialFlow from './sequential-flow';
 import { useUI } from '@/app/providers/ui-context'; // 다크 라이트 모드를 위해 임포트 추가
 
 // next.config.ts의 optimizePackageImports 설정으로 인해 성능 저하 없이 편리한 임포트 사용함
@@ -48,7 +49,7 @@ const LabPage = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isQRVisible, setIsQRVisible] = useState(false);
   // 모드 상태 및 드롭다운 토글 상태 관리 추가함
-  const [mode, setMode] = useState<'DUAL' | 'BTI'>('DUAL');
+  const [mode, setMode] = useState<'DUAL' | 'BTI' | 'SEQUENTIAL'>('DUAL');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   /**
@@ -128,7 +129,7 @@ const LabPage = () => {
    * 실험 모드 변경 시 세션 초기화 및 UI 닫기 일괄 처리함
    */
   const handleModeChange = useCallback(
-    (newMode: 'DUAL' | 'BTI') => {
+    (newMode: 'DUAL' | 'BTI' | 'SEQUENTIAL') => {
       setMode(newMode);
       resetStatus();
       setIsQRVisible(false);
@@ -169,6 +170,20 @@ const LabPage = () => {
    */
   if (isMobile) {
     return <MobileLabView />;
+  }
+
+  /**
+   * [모드 분기] SEQUENTIAL 모드인 경우 순차 측정 흐름 컴포넌트 렌더링함
+   * 페어링 완료 후(isAllPaired) SEQUENTIAL 플로우로 전환함
+   */
+  if (mode === 'SEQUENTIAL' && isAllPaired) {
+    return (
+      <SequentialFlow
+        sessionId1={sessions[0]?.id ?? null}
+        sessionId2={sessions[1]?.id ?? null}
+        groupId={groupId}
+      />
+    );
   }
 
   /**
@@ -304,6 +319,16 @@ const LabPage = () => {
                       }`}
                     >
                       BTI 모드 (1인)
+                    </button>
+                    <button
+                      onClick={() => handleModeChange('SEQUENTIAL')}
+                      className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
+                        mode === 'SEQUENTIAL'
+                          ? 'bg-emerald-500/20 text-emerald-400'
+                          : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      SEQUENTIAL 모드 (순차)
                     </button>
                   </div>
                 </>
