@@ -176,13 +176,8 @@ const SimilarityResultView: React.FC<SimilarityResultViewProps> = ({
             </thead>
             <tbody className="space-y-2">
               {Object.entries(data.band_ratio_diff).map(([band, diff]) => (
-                <tr
-                  key={band}
-                  className={`border-t ${tableRowBorderClass}`}
-                >
-                  <td
-                    className={`py-3 font-bold capitalize ${bodyTextClass}`}
-                  >
+                <tr key={band} className={`border-t ${tableRowBorderClass}`}>
+                  <td className={`py-3 font-bold capitalize ${bodyTextClass}`}>
                     {band}
                   </td>
                   <td
@@ -222,9 +217,7 @@ const SimilarityResultView: React.FC<SimilarityResultViewProps> = ({
                 {data.faa_absolute_diff.toFixed(3)}
               </span>
             ) : (
-              <span
-                className={`font-black text-sm ${subtleTextClass}`}
-              >
+              <span className={`font-black text-sm ${subtleTextClass}`}>
                 N/A
               </span>
             )}

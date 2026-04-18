@@ -46,7 +46,8 @@ export const EXPERIMENT_CONFIG = {
     mode: 'SEQUENTIAL' as ExperimentMode,
     targetCount: 2,
     title: 'Sequential Subject Monitor',
-    description: '한 장치에서 두 피실험자의 데이터를 순차 측정하여 유사도를 분석함',
+    description:
+      '한 장치에서 두 피실험자의 데이터를 순차 측정하여 유사도를 분석함',
   },
 } as const;
 
