@@ -19,6 +19,17 @@ import { EmotivMetrics } from '@/07-shared/api';
 interface SignalRealtimeChartProps {
   metrics: EmotivMetrics | null; // 기존 data에서 metrics로 명칭 변경함
   color: string; // 차트의 테마 색상 추가함
+  /**
+   * SEQUENTIAL 모드에서 현재 측정 중인 피실험자 인덱스 (1 또는 2)
+   * subjectIndex가 activeSubjectIndex와 불일치하면 차트를 숨김
+   * undefined이면 DUAL 기본 동작으로 양쪽 모두 표시함
+   */
+  activeSubjectIndex?: 1 | 2;
+  /**
+   * 이 차트가 담당하는 피실험자 인덱스 (1 또는 2)
+   * activeSubjectIndex와 함께 사용하여 비활성 피실험자 차트를 숨김
+   */
+  subjectIndex?: 1 | 2;
 }
 
 /**
@@ -27,7 +38,14 @@ interface SignalRealtimeChartProps {
 const SignalRealtimeChart: React.FC<SignalRealtimeChartProps> = ({
   metrics,
   color,
+  activeSubjectIndex,
+  subjectIndex,
 }) => {
+  // SEQUENTIAL 모드에서 비활성 피실험자 차트는 숨김 처리함
+  const isHidden =
+    activeSubjectIndex !== undefined &&
+    subjectIndex !== undefined &&
+    activeSubjectIndex !== subjectIndex;
   /**
    * Recharts 규격에 맞게 실시간 지표 데이터를 포맷팅함
    */
@@ -59,6 +77,18 @@ const SignalRealtimeChart: React.FC<SignalRealtimeChartProps> = ({
         },
       ]
     : [];
+
+  // 비활성 상태이면 빈 대기 화면 반환함
+  if (isHidden) {
+    return (
+      <div className="w-full h-[400px] flex flex-col items-center justify-center gap-3">
+        <div className="w-12 h-12 border-4 border-white/5 border-t-white/20 rounded-full opacity-20" />
+        <p className="text-[10px] font-bold text-slate-700 tracking-widest uppercase">
+          Waiting for turn...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-[400px]">
