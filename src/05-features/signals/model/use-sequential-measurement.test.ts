@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useSequentialMeasurement } from './use-sequential-measurement';
+import { analysisApi } from '@/07-shared/api/analysis';
 
 /**
  * use-signal 훅 및 analysis API 모킹 수행함
@@ -192,6 +193,65 @@ describe('useSequentialMeasurement', () => {
     });
     await act(async () => {
       result.current.abort();
+    });
+
+    expect(result.current.state).toBe('SESSION_ABORTED');
+  });
+
+  it('triggerAnalysis가 reject되면 SESSION_ABORTED로 전환 처리됨', async () => {
+    vi.mocked(analysisApi.postSequentialAnalysis).mockRejectedValueOnce(
+      new Error('network down')
+    );
+
+    const { result } = renderHook(() =>
+      useSequentialMeasurement('session-1', 'session-2', 'group-1')
+    );
+
+    await act(async () => {
+      result.current.startSubject(1);
+    });
+    await act(async () => {
+      result.current.stopCurrentSubject();
+    });
+    await act(async () => {
+      result.current.startSubject(2);
+    });
+    await act(async () => {
+      result.current.stopCurrentSubject();
+    });
+    await act(async () => {
+      await result.current.triggerAnalysis();
+    });
+
+    expect(result.current.state).toBe('SESSION_ABORTED');
+  });
+
+  it('triggerAnalysis가 success:false를 내려주면 SESSION_ABORTED로 전환 처리됨', async () => {
+    vi.mocked(analysisApi.postSequentialAnalysis).mockResolvedValueOnce({
+      success: false,
+      result: { analysis_mode: 'SEQUENTIAL', similarity_features: {} },
+    } as unknown as Awaited<
+      ReturnType<typeof analysisApi.postSequentialAnalysis>
+    >);
+
+    const { result } = renderHook(() =>
+      useSequentialMeasurement('session-1', 'session-2', 'group-1')
+    );
+
+    await act(async () => {
+      result.current.startSubject(1);
+    });
+    await act(async () => {
+      result.current.stopCurrentSubject();
+    });
+    await act(async () => {
+      result.current.startSubject(2);
+    });
+    await act(async () => {
+      result.current.stopCurrentSubject();
+    });
+    await act(async () => {
+      await result.current.triggerAnalysis();
     });
 
     expect(result.current.state).toBe('SESSION_ABORTED');
