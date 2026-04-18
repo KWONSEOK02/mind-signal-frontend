@@ -103,6 +103,9 @@ export function useSequentialMeasurement(
    * 세션 중단 처리함 — 임의 상태에서 SESSION_ABORTED로 전환함
    */
   const abort = useCallback(() => {
+    // 종결 상태는 덮어쓰지 않음 — COMPLETED → SESSION_ABORTED 회귀 방지
+    if (state === 'COMPLETED' || state === 'SESSION_ABORTED') return;
+
     // 측정 중이면 정리 수행함
     if (state === 'SUBJECT_1_MEASURING') {
       void subject1Signal.stopMeasurement();
