@@ -26,7 +26,10 @@ import {
 import type { AnalysisTier } from '@/07-shared/types';
 import MyResultsList from './my-results-list';
 import SimilarityResultView from './similarity-result-view';
-import { cosinePearsonFaaSchema, similaritySchemaRegistry } from '@/07-shared/schemas/similarity';
+import {
+  cosinePearsonFaaSchema,
+  similaritySchemaRegistry,
+} from '@/07-shared/schemas/similarity';
 import type { CosinePearsonFaa } from '@/07-shared/schemas/similarity';
 
 interface ResultsProps {
@@ -194,7 +197,8 @@ const Results: React.FC<ResultsProps> = ({
           ? analysisData.similarity_features['algorithm']
           : 'cosine_pearson_faa';
 
-      const schema = similaritySchemaRegistry[algorithmKey] ?? cosinePearsonFaaSchema;
+      const schema =
+        similaritySchemaRegistry[algorithmKey] ?? cosinePearsonFaaSchema;
       const parseResult = schema.safeParse(analysisData.similarity_features);
 
       if (parseResult.success) {

@@ -265,15 +265,15 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
 describe('canTransitionSequential — SEQUENTIAL 상태 전환 로직', () => {
   describe('Subject 1 전환 규칙', () => {
     it('Subject 1: WAITING → PAIRED 전환 허용 처리됨', () => {
-      expect(
-        canTransitionSequential(1, 'WAITING', 'PAIRED', 'WAITING')
-      ).toBe(true);
+      expect(canTransitionSequential(1, 'WAITING', 'PAIRED', 'WAITING')).toBe(
+        true
+      );
     });
 
     it('Subject 1: PAIRED → MEASURING 전환 허용 처리됨', () => {
-      expect(
-        canTransitionSequential(1, 'PAIRED', 'MEASURING', 'PAIRED')
-      ).toBe(true);
+      expect(canTransitionSequential(1, 'PAIRED', 'MEASURING', 'PAIRED')).toBe(
+        true
+      );
     });
 
     it('Subject 1: MEASURING → COMPLETED 전환 허용 처리됨', () => {
@@ -303,15 +303,15 @@ describe('canTransitionSequential — SEQUENTIAL 상태 전환 로직', () => {
     });
 
     it('Subject 2: Subject 1이 PAIRED 상태면 MEASURING 전환 거부 처리됨', () => {
-      expect(
-        canTransitionSequential(2, 'PAIRED', 'MEASURING', 'PAIRED')
-      ).toBe(false);
+      expect(canTransitionSequential(2, 'PAIRED', 'MEASURING', 'PAIRED')).toBe(
+        false
+      );
     });
 
     it('Subject 2: Subject 1이 WAITING이면 MEASURING 전환 거부 처리됨', () => {
-      expect(
-        canTransitionSequential(2, 'PAIRED', 'MEASURING', 'WAITING')
-      ).toBe(false);
+      expect(canTransitionSequential(2, 'PAIRED', 'MEASURING', 'WAITING')).toBe(
+        false
+      );
     });
 
     it('Subject 2: MEASURING → COMPLETED 전환 허용 처리됨', () => {
@@ -321,9 +321,9 @@ describe('canTransitionSequential — SEQUENTIAL 상태 전환 로직', () => {
     });
 
     it('Subject 2: WAITING → PAIRED 전환 허용 처리됨', () => {
-      expect(
-        canTransitionSequential(2, 'WAITING', 'PAIRED', 'WAITING')
-      ).toBe(true);
+      expect(canTransitionSequential(2, 'WAITING', 'PAIRED', 'WAITING')).toBe(
+        true
+      );
     });
   });
 

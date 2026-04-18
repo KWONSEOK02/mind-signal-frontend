@@ -13,7 +13,8 @@ export const EXPERIMENT_MODES = {
 /**
  * [Shared] 실험 모드 유니온 타입 — EXPERIMENT_MODES에서 자동 유도함
  */
-export type ExperimentMode = (typeof EXPERIMENT_MODES)[keyof typeof EXPERIMENT_MODES];
+export type ExperimentMode =
+  (typeof EXPERIMENT_MODES)[keyof typeof EXPERIMENT_MODES];
 
 /**
  * [Shared] 실험 모드별 세부 설정 상수 정의함

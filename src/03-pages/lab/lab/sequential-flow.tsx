@@ -194,8 +194,7 @@ const SequentialFlow: React.FC<SequentialFlowProps> = ({
             <h1
               className={`text-4xl md:text-5xl font-black tracking-tighter italic ${isDark ? 'text-white' : 'text-slate-900'}`}
             >
-              Sequential{' '}
-              <span className="text-emerald-500">Measurement</span>
+              Sequential <span className="text-emerald-500">Measurement</span>
             </h1>
             <p
               className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
@@ -224,11 +223,7 @@ const SequentialFlow: React.FC<SequentialFlowProps> = ({
                             : 'bg-slate-100 border-slate-200 text-slate-400'
                     }`}
                   >
-                    {idx < activeStep ? (
-                      <CheckCircle2 size={18} />
-                    ) : (
-                      idx + 1
-                    )}
+                    {idx < activeStep ? <CheckCircle2 size={18} /> : idx + 1}
                   </div>
                   <span
                     className={`text-xs font-bold whitespace-nowrap ${

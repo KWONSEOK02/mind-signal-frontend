@@ -109,10 +109,18 @@ describe('useSequentialMeasurement', () => {
       useSequentialMeasurement('session-1', 'session-2', 'group-1')
     );
 
-    await act(async () => { result.current.startSubject(1); });
-    await act(async () => { result.current.stopCurrentSubject(); });
-    await act(async () => { result.current.startSubject(2); });
-    await act(async () => { result.current.stopCurrentSubject(); });
+    await act(async () => {
+      result.current.startSubject(1);
+    });
+    await act(async () => {
+      result.current.stopCurrentSubject();
+    });
+    await act(async () => {
+      result.current.startSubject(2);
+    });
+    await act(async () => {
+      result.current.stopCurrentSubject();
+    });
 
     expect(result.current.state).toBe('SUBJECT_2_DONE');
   });
@@ -122,10 +130,18 @@ describe('useSequentialMeasurement', () => {
       useSequentialMeasurement('session-1', 'session-2', 'group-1')
     );
 
-    await act(async () => { result.current.startSubject(1); });
-    await act(async () => { result.current.stopCurrentSubject(); });
-    await act(async () => { result.current.startSubject(2); });
-    await act(async () => { result.current.stopCurrentSubject(); });
+    await act(async () => {
+      result.current.startSubject(1);
+    });
+    await act(async () => {
+      result.current.stopCurrentSubject();
+    });
+    await act(async () => {
+      result.current.startSubject(2);
+    });
+    await act(async () => {
+      result.current.stopCurrentSubject();
+    });
     await act(async () => {
       await result.current.triggerAnalysis();
     });
@@ -138,8 +154,12 @@ describe('useSequentialMeasurement', () => {
       useSequentialMeasurement('session-1', 'session-2', 'group-1')
     );
 
-    await act(async () => { result.current.startSubject(1); });
-    await act(async () => { result.current.abort(); });
+    await act(async () => {
+      result.current.startSubject(1);
+    });
+    await act(async () => {
+      result.current.abort();
+    });
 
     expect(result.current.state).toBe('SESSION_ABORTED');
   });
@@ -149,7 +169,9 @@ describe('useSequentialMeasurement', () => {
       useSequentialMeasurement('session-1', 'session-2', 'group-1')
     );
 
-    await act(async () => { result.current.abort(); });
+    await act(async () => {
+      result.current.abort();
+    });
 
     expect(result.current.state).toBe('SESSION_ABORTED');
   });
@@ -159,10 +181,18 @@ describe('useSequentialMeasurement', () => {
       useSequentialMeasurement('session-1', 'session-2', 'group-1')
     );
 
-    await act(async () => { result.current.startSubject(1); });
-    await act(async () => { result.current.stopCurrentSubject(); });
-    await act(async () => { result.current.startSubject(2); });
-    await act(async () => { result.current.abort(); });
+    await act(async () => {
+      result.current.startSubject(1);
+    });
+    await act(async () => {
+      result.current.stopCurrentSubject();
+    });
+    await act(async () => {
+      result.current.startSubject(2);
+    });
+    await act(async () => {
+      result.current.abort();
+    });
 
     expect(result.current.state).toBe('SESSION_ABORTED');
   });

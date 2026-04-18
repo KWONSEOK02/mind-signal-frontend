@@ -60,8 +60,6 @@ describe('SimilarityResultView', () => {
 describe('SimilarityResultView — fallback', () => {
   it('data가 null이면 fallback 메시지 렌더링 처리됨', () => {
     render(<SimilarityResultView data={null} />);
-    expect(
-      screen.getByText(/분석 결과 구조 변경 감지/i)
-    ).toBeDefined();
+    expect(screen.getByText(/분석 결과 구조 변경 감지/i)).toBeDefined();
   });
 });

@@ -47,7 +47,9 @@ export function canTransitionSequential(
 ): boolean {
   if (subjectIndex === 1) {
     // Subject 1은 WAITING → PAIRED → MEASURING → COMPLETED 순서로만 전환 가능함
-    const allowed: Partial<Record<SequentialSubjectState, SequentialSubjectState[]>> = {
+    const allowed: Partial<
+      Record<SequentialSubjectState, SequentialSubjectState[]>
+    > = {
       WAITING: ['PAIRED'],
       PAIRED: ['MEASURING'],
       MEASURING: ['COMPLETED'],
