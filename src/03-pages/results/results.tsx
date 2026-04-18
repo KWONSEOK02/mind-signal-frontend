@@ -207,7 +207,7 @@ const Results: React.FC<ResultsProps> = ({
       // 파싱 실패 시 parsedSimilarity는 null 유지 — fallback UI 표시됨
     }
 
-    return <SimilarityResultView data={parsedSimilarity} />;
+    return <SimilarityResultView data={parsedSimilarity} theme={theme} />;
   }
 
   const userScore = analysisData?.matchingScore ?? 0;

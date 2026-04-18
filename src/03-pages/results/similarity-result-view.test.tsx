@@ -22,18 +22,18 @@ describe('SimilarityResultView', () => {
   };
 
   it('similarity_score를 퍼센트로 렌더링 처리됨', () => {
-    render(<SimilarityResultView data={mockData} />);
+    render(<SimilarityResultView data={mockData} theme="dark" />);
     // 72%로 표시 (0.72 * 100 = 72)
     expect(screen.getByText(/72/)).toBeDefined();
   });
 
   it('overall_cosine 값을 렌더링 처리됨', () => {
-    render(<SimilarityResultView data={mockData} />);
+    render(<SimilarityResultView data={mockData} theme="dark" />);
     expect(screen.getByText(/0\.85/)).toBeDefined();
   });
 
   it('band_ratio_diff 각 대역 행을 렌더링 처리됨', () => {
-    render(<SimilarityResultView data={mockData} />);
+    render(<SimilarityResultView data={mockData} theme="dark" />);
     expect(screen.getByText(/delta/i)).toBeDefined();
     expect(screen.getByText(/theta/i)).toBeDefined();
     expect(screen.getByText(/alpha/i)).toBeDefined();
@@ -42,15 +42,20 @@ describe('SimilarityResultView', () => {
   });
 
   it('faa_absolute_diff 값을 렌더링 처리됨', () => {
-    render(<SimilarityResultView data={mockData} />);
+    render(<SimilarityResultView data={mockData} theme="dark" />);
     expect(screen.getByText(/0\.14/)).toBeDefined();
   });
 
   it('faa_absolute_diff가 null이면 N/A 또는 없음 표시 처리됨', () => {
     const dataWithNull = { ...mockData, faa_absolute_diff: null };
-    render(<SimilarityResultView data={dataWithNull} />);
+    render(<SimilarityResultView data={dataWithNull} theme="dark" />);
     const matches = screen.getAllByText(/N\/A|없음/i);
     expect(matches.length).toBeGreaterThan(0);
+  });
+
+  it('light 테마에서도 리포트 제목이 렌더링 처리됨', () => {
+    render(<SimilarityResultView data={mockData} theme="light" />);
+    expect(screen.getByText(/반응 유사도 분석 리포트/i)).toBeDefined();
   });
 });
 
@@ -59,7 +64,7 @@ describe('SimilarityResultView', () => {
  */
 describe('SimilarityResultView — fallback', () => {
   it('data가 null이면 fallback 메시지 렌더링 처리됨', () => {
-    render(<SimilarityResultView data={null} />);
+    render(<SimilarityResultView data={null} theme="dark" />);
     expect(screen.getByText(/분석 결과 구조 변경 감지/i)).toBeDefined();
   });
 });
