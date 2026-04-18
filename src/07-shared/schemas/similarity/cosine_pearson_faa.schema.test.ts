@@ -51,13 +51,15 @@ describe('cosinePearsonFaaSchema', () => {
   });
 
   it('algorithm 필드 누락 시 파싱 실패 처리됨', () => {
-    const { algorithm: _, ...withoutAlgorithm } = validPayload;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { algorithm: _alg, ...withoutAlgorithm } = validPayload;
     const result = cosinePearsonFaaSchema.safeParse(withoutAlgorithm);
     expect(result.success).toBe(false);
   });
 
   it('band_ratio_diff 필드 누락 시 파싱 실패 처리됨', () => {
-    const { band_ratio_diff: _, ...withoutBandRatio } = validPayload;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { band_ratio_diff: _brd, ...withoutBandRatio } = validPayload;
     const result = cosinePearsonFaaSchema.safeParse(withoutBandRatio);
     expect(result.success).toBe(false);
   });
