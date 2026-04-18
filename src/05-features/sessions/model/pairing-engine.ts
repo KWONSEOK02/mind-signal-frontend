@@ -1,5 +1,6 @@
 import { sessionApi, PairingSessionStatus, PairingData } from '@/07-shared';
 import { AxiosError, AxiosResponse } from 'axios';
+import type { ExperimentMode } from '@/07-shared/constants/experiment';
 
 /**
  * 로컬 타입 정의 수행함 (API 타입 갱신 지연 및 타입 추론 오류 방지 목적)
@@ -22,11 +23,68 @@ interface GroupPollResponse {
 }
 
 /**
+ * SEQUENTIAL 모드에서 피실험자별 상태 정의함
+ * - WAITING: 연결 대기 중
+ * - PAIRED: 페어링 완료 (Subject 1이 측정 중인 동안 Subject 2가 유지하는 상태)
+ * - MEASURING: 측정 진행 중
+ * - COMPLETED: 측정 완료
+ */
+export type SequentialSubjectState =
+  | 'WAITING'
+  | 'PAIRED'
+  | 'MEASURING'
+  | 'COMPLETED';
+
+/**
+ * SEQUENTIAL 모드 전환 가능 여부를 판단하는 순수 함수 정의함
+ * subject 1이 MEASURING인 동안 subject 2는 PAIRED 상태를 유지함
+ */
+export function canTransitionSequential(
+  subjectIndex: 1 | 2,
+  from: SequentialSubjectState,
+  to: SequentialSubjectState,
+  otherSubjectState: SequentialSubjectState
+): boolean {
+  if (subjectIndex === 1) {
+    // Subject 1은 WAITING → PAIRED → MEASURING → COMPLETED 순서로만 전환 가능함
+    const allowed: Partial<Record<SequentialSubjectState, SequentialSubjectState[]>> = {
+      WAITING: ['PAIRED'],
+      PAIRED: ['MEASURING'],
+      MEASURING: ['COMPLETED'],
+    };
+    return (allowed[from] ?? []).includes(to);
+  }
+
+  if (subjectIndex === 2) {
+    // Subject 2는 Subject 1이 MEASURING 또는 COMPLETED일 때만 MEASURING 전환 가능함
+    if (to === 'MEASURING') {
+      return (
+        from === 'PAIRED' &&
+        (otherSubjectState === 'MEASURING' || otherSubjectState === 'COMPLETED')
+      );
+    }
+    if (to === 'COMPLETED') {
+      return from === 'MEASURING';
+    }
+    // WAITING → PAIRED는 항상 허용함
+    if (from === 'WAITING' && to === 'PAIRED') return true;
+  }
+
+  return false;
+}
+
+/**
  * [Model] 단일 피실험자 페어링 단계를 수행하는 독립 엔진 정의함
  */
 export class PairingStep {
   private pollingId: NodeJS.Timeout | null = null;
   private timerId: NodeJS.Timeout | null = null;
+  /** 현재 실험 모드 — SEQUENTIAL이면 상태 전환 로직 달라짐 */
+  readonly mode: ExperimentMode;
+
+  constructor(mode: ExperimentMode = 'DUAL') {
+    this.mode = mode;
+  }
 
   /**
    * 실행 중인 모든 타이머 및 폴링 자원 해제 수행함
