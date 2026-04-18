@@ -9,7 +9,6 @@ reviews:
     base_branches:
       - main
       - dev
-  ignore_formatting: true
   path_instructions:
     - path: "src/07-shared/**"
       instructions: |

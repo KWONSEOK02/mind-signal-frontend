@@ -22,7 +22,13 @@ const envSchema = z.object({
     .string()
     .url()
     .default('https://mind-signal-backend-74ab2db9e087.herokuapp.com'),
-  NEXT_PUBLIC_PAIRING_TIMEOUT: z.string().transform(Number).default(300),
+  NEXT_PUBLIC_PAIRING_TIMEOUT: z
+    .string()
+    .default('300')
+    .transform(Number)
+    .refine((n) => Number.isInteger(n) && n > 0, {
+      message: 'NEXT_PUBLIC_PAIRING_TIMEOUT must be a positive integer',
+    }),
   NEXT_PUBLIC_SOCKET_URL: z.string().url().optional(),
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().optional().default(''),
   NEXT_PUBLIC_KAKAO_CLIENT_ID: z.string().optional().default(''),
@@ -197,6 +203,38 @@ describe('config', () => {
     it('유효하지 않은 SOCKET_URL 입력 시 파싱 실패 처리됨', () => {
       const result = envSchema.safeParse({
         NEXT_PUBLIC_SOCKET_URL: 'not-a-url',
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('PAIRING_TIMEOUT 비숫자 "abc" 입력 시 파싱 실패 처리됨', () => {
+      const result = envSchema.safeParse({
+        NEXT_PUBLIC_PAIRING_TIMEOUT: 'abc',
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('PAIRING_TIMEOUT "0" 입력 시 파싱 실패 처리됨', () => {
+      const result = envSchema.safeParse({
+        NEXT_PUBLIC_PAIRING_TIMEOUT: '0',
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('PAIRING_TIMEOUT 음수 "-1" 입력 시 파싱 실패 처리됨', () => {
+      const result = envSchema.safeParse({
+        NEXT_PUBLIC_PAIRING_TIMEOUT: '-1',
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('PAIRING_TIMEOUT 소수 "100.5" 입력 시 파싱 실패 처리됨', () => {
+      const result = envSchema.safeParse({
+        NEXT_PUBLIC_PAIRING_TIMEOUT: '100.5',
       });
 
       expect(result.success).toBe(false);
