@@ -72,10 +72,8 @@ const LabPage = () => {
 
   /**
    * 상태 기반으로 현재 실험 설정 동적 로드함
-   * SEQUENTIAL은 DUAL과 동일한 2인 설정 사용하여 페어링 수행함
    */
-  const currentConfig =
-    EXPERIMENT_CONFIG[mode === 'SEQUENTIAL' ? 'DUAL' : mode];
+  const currentConfig = EXPERIMENT_CONFIG[mode];
 
   /**
    * 설정된 목표 인원수를 기반으로 페어링 로직 구동함
