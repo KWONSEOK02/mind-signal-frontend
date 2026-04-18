@@ -30,7 +30,6 @@ function getActiveStep(state: SequentialMeasurementState): number {
     case 'SUBJECT_1_MEASURING':
     case 'SUBJECT_1_DONE':
       return 0;
-    case 'SUBJECT_2_READY':
     case 'SUBJECT_2_MEASURING':
     case 'SUBJECT_2_DONE':
       return 1;
@@ -272,7 +271,6 @@ const SequentialFlow: React.FC<SequentialFlowProps> = ({
                 </div>
               ) : null}
               {state === 'SUBJECT_1_DONE' ||
-              state === 'SUBJECT_2_READY' ||
               state === 'SUBJECT_2_MEASURING' ||
               state === 'SUBJECT_2_DONE' ? (
                 <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 bg-white/5 px-2 py-1 rounded-lg">

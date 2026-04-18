@@ -6,7 +6,7 @@ import useSignal from './use-signal';
 
 /**
  * SEQUENTIAL 측정 상태 머신 상태 타입 정의함
- * READY → SUBJECT_1_MEASURING → SUBJECT_1_DONE → SUBJECT_2_READY
+ * READY → SUBJECT_1_MEASURING → SUBJECT_1_DONE
  *       → SUBJECT_2_MEASURING → SUBJECT_2_DONE → ANALYZING → COMPLETED
  *       (any step) → SESSION_ABORTED
  */
@@ -14,7 +14,6 @@ export type SequentialMeasurementState =
   | 'READY'
   | 'SUBJECT_1_MEASURING'
   | 'SUBJECT_1_DONE'
-  | 'SUBJECT_2_READY'
   | 'SUBJECT_2_MEASURING'
   | 'SUBJECT_2_DONE'
   | 'ANALYZING'
