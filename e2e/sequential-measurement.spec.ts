@@ -56,13 +56,9 @@ test.describe('/lab SEQUENTIAL happy path', () => {
       timeout: 10000,
     });
 
-    // Step 4: 두 subject 페어링 직접 API 호출 (mock 체크인)
-    await page.evaluate(async () => {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No auth token');
-      // 실제 그룹 ID는 DOM에서 추출하거나 API 응답에서 가져와야 함
-      // (DE mock 모드 활성 시 실제 groupId 추출 로직 추가 필요)
-    });
+    // Step 4 (페어링 mock 호출)은 DE mock 모드 완성 전까지 보류됨
+    // 실제 mock 페어링 API가 준비되면 token + groupId 추출 후 pair 엔드포인트를 호출할 것
+    // 현재는 페어링 로직이 비어 있어 Step 5 `Start Subject 1` 활성화가 timeout나는 원인이었으므로 블록 자체를 제거함
 
     // Step 5: Start Subject 1 클릭
     await page.getByRole('button', { name: /Start Subject 1/i }).click();
