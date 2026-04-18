@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { cosinePearsonFaaSchema } from './cosine_pearson_faa.schema';
+import { similaritySchemaRegistry } from './index';
 
 /**
  * cosine_pearson_faa 스키마 단위 테스트 수행함
@@ -78,5 +79,9 @@ describe('cosinePearsonFaaSchema', () => {
       similarity_score: 1,
     });
     expect(result.success).toBe(true);
+  });
+
+  it('레지스트리 default 키가 cosinePearsonFaaSchema를 가리킴', () => {
+    expect(similaritySchemaRegistry.default).toBe(cosinePearsonFaaSchema);
   });
 });

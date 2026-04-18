@@ -4,7 +4,6 @@ export { cosinePearsonFaaSchema } from './cosine_pearson_faa.schema';
 export type { CosinePearsonFaa } from './cosine_pearson_faa.schema';
 
 import { cosinePearsonFaaSchema } from './cosine_pearson_faa.schema';
-import { baseSimilaritySchema } from './_base';
 import { z } from 'zod';
 
 /**
@@ -16,5 +15,5 @@ export const similaritySchemaRegistry: Record<
   z.ZodSchema<unknown>
 > = {
   cosine_pearson_faa: cosinePearsonFaaSchema,
-  default: baseSimilaritySchema,
+  default: cosinePearsonFaaSchema,
 };
