@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -e
+
+# Gate 1: main 브랜치 직접 push 차단
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH" = "main" ]; then
+  echo "BLOCKED: direct push to main is not allowed."
+  echo "Create a feature branch (feat/..., fix/..., etc.) and open a PR instead."
+  exit 1
+fi
+
+# Gate 2: 마지막 10 커밋 메시지 Conventional Commits 형식 검증
+PATTERN='^(feat|fix|docs|chore|refactor|test|ci|revert|perf|style)(\(.+\))?!?: .+$'
+INVALID=$(git log --format=%s -10 --no-merges | grep -vE "$PATTERN" || true)
+if [ -n "$INVALID" ]; then
+  echo "BLOCKED: commit message convention violation:"
+  echo "$INVALID"
+  echo "Fix: git reset --soft HEAD~N and rewrite commits. DO NOT force push."
+  exit 1
+fi
+
+# Gate 3: uncommitted 변경 없음 확인
+if ! git diff-index --quiet HEAD --; then
+  echo "BLOCKED: uncommitted changes exist. Commit or stash before pushing."
+  exit 1
+fi
+
+echo "Pre-push gate passed."
+echo "✅ pre-push checks passed"
+# TIP: 이 hook가 실행되지 않으면 git config core.hooksPath .githooks 1회 설정 필요함
