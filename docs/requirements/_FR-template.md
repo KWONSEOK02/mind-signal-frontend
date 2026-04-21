@@ -9,7 +9,7 @@
 ## Metadata
 
 - **FR ID**: FR-XX
-- **Status**: Draft / Design / Implementing / Done / Deprecated
+- **Status**: ([RTM Status 값](./RTM.md#status-값) 참조)
 - **Priority**: P0 (필수) / P1 (중요) / P2 (선택)
 - **GitHub Issue**: #NNN
 - **Related ADRs**: ADR-NNN (해당 시)
