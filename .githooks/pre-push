@@ -9,18 +9,18 @@ if [ "$CURRENT_BRANCH" = "main" ]; then
   exit 1
 fi
 
-# Gate 2: 마지막 10 커밋 메시지 Conventional Commits 형식 검증
-PATTERN='^(feat|fix|docs|chore|refactor|test|ci|revert|perf|style)(\(.+\))?!?: .+$'
-INVALID=$(git log --format=%s -10 --no-merges | grep -vE "$PATTERN" || true)
-if [ -n "$INVALID" ]; then
-  echo "BLOCKED: commit message convention violation:"
-  echo "$INVALID"
-  echo "Fix: git reset --soft HEAD~N and rewrite commits. DO NOT force push."
-  exit 1
-fi
+# Gate 2: 마지막 10 커밋 메시지 commitlint 검증 (commitlint.config.js 기준)
+git log --format=%s -10 --no-merges | while IFS= read -r subject; do
+  if ! echo "$subject" | npx --no-install commitlint --config commitlint.config.js >/dev/null 2>&1; then
+    echo "BLOCKED: commit message violates commitlint rule:"
+    echo "  $subject"
+    echo "Fix: git reset --soft HEAD~N and rewrite commits. DO NOT force push."
+    exit 1
+  fi
+done || exit 1
 
-# Gate 3: uncommitted 변경 없음 확인
-if ! git diff-index --quiet HEAD --; then
+# Gate 3: uncommitted 변경 없음 확인 (untracked 파일 포함)
+if [ -n "$(git status --porcelain)" ]; then
   echo "BLOCKED: uncommitted changes exist. Commit or stash before pushing."
   exit 1
 fi
