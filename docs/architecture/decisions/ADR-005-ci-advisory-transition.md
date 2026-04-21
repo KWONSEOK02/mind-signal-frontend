@@ -1,6 +1,6 @@
 # ADR-005: CI 게이트를 2주 advisory 기간 후 blocking으로 전환함
 
-- **Status**: Accepted
+- **Status**: Proposed
 - **Date**: 2026-04-18
 - **Applies to**: both repos (BE + FE)
 - **Deciders**: @gs07103
@@ -109,7 +109,7 @@ PR 머지 차단 효과가 없음.
 
 ### Step 2: GitHub Branch protection 등록
 
-```
+```text
 Repository Settings
   → Branches
   → Branch protection rules
