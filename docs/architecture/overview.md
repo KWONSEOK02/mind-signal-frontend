@@ -124,7 +124,7 @@ flowchart TB
 
 ## FSD 레이어 구조 (번호 prefix)
 
-```
+```text
 app/             ← 01-app: Next.js routes, Providers, root layout
 02-processes/    ← (reserved) multi-feature workflows
 03-pages/        ← page-level components

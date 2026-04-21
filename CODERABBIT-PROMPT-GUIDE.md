@@ -30,7 +30,7 @@ CodeRabbit이 이 규칙 위반을 발견하면 NIT 코멘트를 달도록 `path
 
 FE FSD 레이어 구조 (번호가 클수록 더 foundational):
 
-```
+```text
 01-app/       ← Next.js routes, Providers, root layout
 03-pages/     ← page-level components (app/에서 import)
 04-widgets/   ← Navbar, Footer, SignalChart
@@ -209,7 +209,7 @@ React Compiler (Forget)가 활성화되어 있음. 다음 패턴은 불필요하
 
 ## 5. 리뷰 사이클
 
-```
+```text
 PR 생성
   ↓
 CodeRabbit 자동 분석 (수 분 소요)

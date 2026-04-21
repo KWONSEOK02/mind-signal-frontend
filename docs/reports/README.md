@@ -25,7 +25,7 @@
 
 ## 네이밍 규칙
 
-```
+```text
 <type>-YYYY-MM-DD-<slug>.md
 ```
 
