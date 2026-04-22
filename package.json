@@ -19,7 +19,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,md}\"",
     "typecheck": "tsc --noEmit",
     "depcruise": "depcruise src --config .dependency-cruiser.cjs",
-    "verify": "npm run format:check && npm run typecheck && npm run depcruise && npm run lint && npm run test && npm run build"
+    "verify": "npm run format:check && npm run typecheck && npm run depcruise && npm run lint && npm run test && npm run build",
+    "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.8",
@@ -43,6 +44,8 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.0",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "@playwright/test": "^1.58.2",
     "@storybook/addon-a11y": "^10.2.6",
     "@storybook/addon-docs": "^10.2.6",

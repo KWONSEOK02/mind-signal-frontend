@@ -1,0 +1,20 @@
+name: commitlint
+on:
+  pull_request:
+    branches: [main, dev]
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - uses: wagoid/commitlint-github-action@v6
+        with:
+          commitDepth: 1
+          failOnErrors: true
+        continue-on-error: true   # advisory 2주 — ADR-005
