@@ -1,6 +1,6 @@
 # ADR-005: CI 게이트를 2주 advisory 기간 후 blocking으로 전환함
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Date**: 2026-04-18
 - **Applies to**: both repos (BE + FE)
 - **Deciders**: @gs07103
@@ -31,13 +31,10 @@ blocking 효과가 없음:
 1. `.github/workflows/commitlint.yml`의 `continue-on-error: true` → `false` 교체 PR
 2. GitHub repo Settings > Branch protection > Required status checks에 `commitlint` 추가
 
-> ⚠️ **Transition date 미박제 (작성 시점)**: Wave 2 머지가 완료되면 이 ADR을 편집하여
-> 실제 머지 날짜를 아래 `Transition date` 필드에 기입할 것.
-
 ## Transition date
 
-- **Wave 2 머지일**: TBD (Wave 2 머지 직후 이 ADR 편집하여 날짜 박제)
-- **Blocking 전환 기한**: Wave 2 머지일 + 14 days (D+14)
+- **Wave 2 머지일**: 2026-04-21 (BE PR #42 `fd57a31` create merge; FE PR #42 `daaf737` squash)
+- **Blocking 전환 기한**: 2026-05-05 (Wave 2 머지일 + 14 days)
 
 > FE 특이사항: FE는 6-step verify 파이프라인이 이미 적용됨 (PR #36).
 > commitlint는 Wave 5에서 새로 추가됨. advisory transition 규칙은 BE와 동일하게 적용됨.
