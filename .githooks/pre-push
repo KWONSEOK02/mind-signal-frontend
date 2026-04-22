@@ -9,15 +9,24 @@ if [ "$CURRENT_BRANCH" = "main" ]; then
   exit 1
 fi
 
-# Gate 2: 마지막 10 커밋 메시지 commitlint 검증 (commitlint.config.js 기준)
-git log --format=%s -10 --no-merges | while IFS= read -r subject; do
-  if ! echo "$subject" | npx --no-install commitlint --config commitlint.config.js >/dev/null 2>&1; then
-    echo "BLOCKED: commit message violates commitlint rule:"
-    echo "  $subject"
-    echo "Fix: git reset --soft HEAD~N and rewrite commits. DO NOT force push."
-    exit 1
-  fi
-done || exit 1
+# Gate 2: push 대상 신규 커밋만 commitlint 검증 (origin/dev..HEAD 범위)
+# 과거 dev 히스토리는 체크에서 제외함 — origin/dev 없으면 fallback으로 최근 10개
+if git rev-parse --verify origin/dev >/dev/null 2>&1; then
+  SUBJECTS=$(git log --format=%s --no-merges origin/dev..HEAD)
+else
+  SUBJECTS=$(git log --format=%s --no-merges -10 HEAD)
+fi
+
+if [ -n "$SUBJECTS" ]; then
+  echo "$SUBJECTS" | while IFS= read -r subject; do
+    if ! echo "$subject" | npx --no-install commitlint --config commitlint.config.js >/dev/null 2>&1; then
+      echo "BLOCKED: commit message violates commitlint rule:"
+      echo "  $subject"
+      echo "Fix: git reset --soft HEAD~N and rewrite commits. DO NOT force push."
+      exit 1
+    fi
+  done || exit 1
+fi
 
 # Gate 3: uncommitted 변경 없음 확인 (untracked 파일 포함)
 if [ -n "$(git status --porcelain)" ]; then
