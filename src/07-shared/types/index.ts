@@ -60,7 +60,7 @@ export interface PairingData {
 }
 
 /**
- * 분석 결과 인터페이스 정의함
+ * 분析 결과 인터페이스 정의함
  */
 export interface AnalysisResult {
   analysisId: string;
@@ -69,4 +69,20 @@ export interface AnalysisResult {
   matchingScore: number;
   aiComment: string;
   createdAt: string;
+}
+
+/**
+ * Operator 초대 토큰 발급 응답 인터페이스 정의함 (Phase 16)
+ */
+export interface OperatorInviteResponse {
+  token: string;
+  expiresAt: number;
+}
+
+/**
+ * Operator 합류 응답 인터페이스 정의함 (Phase 16)
+ */
+export interface OperatorJoinResponse {
+  groupId: string;
+  experimentMode: 'DUAL_2PC';
 }

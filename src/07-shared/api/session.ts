@@ -62,3 +62,33 @@ const sessionApi = {
 };
 
 export default sessionApi;
+
+/**
+ * Operator 초대 토큰 발급 요청 수행함 (Wave 2 구현 예정)
+ *
+ * @param groupId - 그룹 식별자
+ * @returns 초대 토큰 및 만료 시각 (Unix ms)
+ * @throws Wave 2 구현 전 호출 시 오류 반환
+ */
+export async function createOperatorInviteToken(
+  groupId: string
+): Promise<{ token: string; expiresAt: number }> {
+  // TODO Wave 2 (BE-1-invite 완료 후): POST /api/sessions/:groupId/invite-operator
+  void groupId;
+  throw new Error('createOperatorInviteToken: not yet implemented (Wave 2)');
+}
+
+/**
+ * Operator로 그룹 합류 요청 수행함 (Wave 2 구현 예정)
+ *
+ * @param token - 초대 토큰 문자열
+ * @returns 그룹 ID + 실험 모드 확인 응답
+ * @throws Wave 2 구현 전 호출 시 오류 반환
+ */
+export async function joinAsOperator(
+  token: string
+): Promise<{ groupId: string; experimentMode: 'DUAL_2PC' }> {
+  // TODO Wave 2 (BE-1-join 완료 후): POST /api/sessions/join-as-operator
+  void token;
+  throw new Error('joinAsOperator: not yet implemented (Wave 2)');
+}
