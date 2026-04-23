@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import sessionApi from './session';
+import sessionApi, {
+  createOperatorInviteToken,
+  joinAsOperator,
+} from './session';
 
 /**
  * Axios 인스턴스를 모킹하여 API 레이어를 네트워크에서 격리함
@@ -117,5 +120,88 @@ describe('sessionApi — 세션 API 통합 테스트 수행함', () => {
         sessionApi.checkSessionStatus('nonexistent')
       ).rejects.toThrow('Not found');
     });
+  });
+});
+
+/**
+ * FE-1: createOperatorInviteToken / joinAsOperator API 클라이언트 테스트 수행함
+ * 성공 / 403 / 401 / 네트워크 에러 처리 검증함
+ */
+describe('createOperatorInviteToken — operator-invite API 클라이언트 테스트 수행함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('성공 시 POST /sessions/:groupId/invite-operator 호출 처리함', async () => {
+    const expiresAt = Date.now() + 300_000;
+    mockPost.mockResolvedValue({
+      data: { token: 'jwt-invite-token', expiresAt },
+    });
+
+    const result = await createOperatorInviteToken('group-abc');
+
+    expect(mockPost).toHaveBeenCalledWith(
+      '/sessions/group-abc/invite-operator'
+    );
+    expect(result.token).toBe('jwt-invite-token');
+    expect(result.expiresAt).toBe(expiresAt);
+  });
+
+  it('403 응답 시 에러가 전파 처리됨', async () => {
+    const err = Object.assign(new Error('Forbidden'), {
+      response: { status: 403 },
+    });
+    mockPost.mockRejectedValue(err);
+
+    await expect(createOperatorInviteToken('group-abc')).rejects.toThrow(
+      'Forbidden'
+    );
+    expect((err as { response: { status: number } }).response.status).toBe(403);
+  });
+
+  it('네트워크 에러 시 에러가 전파 처리됨', async () => {
+    mockPost.mockRejectedValue(new Error('Network Error'));
+
+    await expect(createOperatorInviteToken('group-abc')).rejects.toThrow(
+      'Network Error'
+    );
+  });
+});
+
+describe('joinAsOperator — join-as-operator API 클라이언트 테스트 수행함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('성공 시 POST /sessions/join-as-operator 호출 처리함', async () => {
+    mockPost.mockResolvedValue({
+      data: { groupId: 'group-xyz', experimentMode: 'DUAL_2PC' },
+    });
+
+    const result = await joinAsOperator('valid-jwt-token');
+
+    expect(mockPost).toHaveBeenCalledWith('/sessions/join-as-operator', {
+      token: 'valid-jwt-token',
+    });
+    expect(result.groupId).toBe('group-xyz');
+    expect(result.experimentMode).toBe('DUAL_2PC');
+  });
+
+  it('401 응답 시 에러가 전파 처리됨 (만료 토큰)', async () => {
+    const err = Object.assign(new Error('Unauthorized'), {
+      response: { status: 401 },
+    });
+    mockPost.mockRejectedValue(err);
+
+    await expect(joinAsOperator('expired-token')).rejects.toThrow(
+      'Unauthorized'
+    );
+    expect((err as { response: { status: number } }).response.status).toBe(401);
+  });
+
+  it('네트워크 에러 시 에러가 전파 처리됨', async () => {
+    mockPost.mockRejectedValue(new Error('Network Error'));
+
+    await expect(joinAsOperator('some-token')).rejects.toThrow('Network Error');
   });
 });
