@@ -164,6 +164,21 @@ test.describe('Scenario 1: DUAL_2PC Happy Path', () => {
           if (match) groupId = match[1];
         }
 
+        // Step 4a [T17-8: RC-4]: mock DE 2개에 runtime groupId 주입 → /register-dual trigger
+        // groupId가 확보된 경우에만 주입 (mock DE 기동 환경 전제)
+        if (groupId) {
+          await Promise.all([
+            pageA.request.post('http://localhost:8001/control/assign-group', {
+              data: { group_id: groupId },
+            }),
+            pageA.request.post('http://localhost:8002/control/assign-group', {
+              data: { group_id: groupId },
+            }),
+          ]).catch(() => {
+            // mock DE 미기동 환경에서는 실패 허용 (BE 없는 환경 대비)
+          });
+        }
+
         // Step 4: node_B — /lab/operator-join?token={token}&groupId={groupId} 진입
         // token이 없으면 mock 값으로 대체하여 페이지 로드만 검증함
         const joinUrl = `/lab/operator-join?token=${token ?? 'MOCK_TOKEN_FOR_E2E'}&groupId=${groupId ?? 'MOCK_GROUP_ID'}`;

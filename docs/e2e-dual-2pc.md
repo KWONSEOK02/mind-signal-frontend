@@ -17,9 +17,9 @@ start-e2e-dual-2pc.bat
 bat이 다음을 자동 수행함:
 
 1. Redis Docker 컨테이너 기동
-2. BE 기동 (`npm run dev` @ port 5000) + `DUAL_2PC_REGISTRATION_TIMEOUT_MS=5000` 주입
-3. mock DE #1 기동 (`scripts/mock_data_engine.py --subject-index 1 --port 8001`)
-4. mock DE #2 기동 (`scripts/mock_data_engine.py --subject-index 2 --port 8002`)
+2. BE 기동 (`npm run dev` @ port 5000) + `ENGINE_SECRET_KEY` + `DUAL_2PC_REGISTRATION_TIMEOUT_MS=5000` 주입
+3. mock DE #1 기동 (`scripts/mock_data_engine.py --subject-index 1 --port 8001 --engine-secret ... --backend-url ...`)
+4. mock DE #2 기동 (`scripts/mock_data_engine.py --subject-index 2 --port 8002 --engine-secret ... --backend-url ...`)
 5. FE 개발 서버 기동 (`npm run dev` @ port 3000, 로컬 BE 지정)
 
 ### 1-2. 수동 기동 (개별 제어)
@@ -28,18 +28,21 @@ bat이 다음을 자동 수행함:
 :: 1. Redis
 cd mind-signal-backend && docker-compose up -d
 
-:: 2. BE (Scenario 3용 timeout 단축 환경변수 포함)
+:: 2. BE (ENGINE_SECRET_KEY + Scenario 3용 timeout 단축 환경변수 포함)
 cd mind-signal-backend
+set ENGINE_SECRET_KEY=your-shared-secret-here
 set DUAL_2PC_REGISTRATION_TIMEOUT_MS=5000
 npm run dev
 
 :: 3. mock DE #1 (Scenario 1/3용)
+::    --engine-secret: BE /register-dual 인증용 (BE ENGINE_SECRET_KEY와 일치해야 함)
+::    --backend-url: mock DE가 /register-dual 호출 시 사용하는 BE 주소
 cd mind-signal-data-engine
 conda activate mind-signal
-python scripts/mock_data_engine.py --subject-index 1 --port 8001
+python scripts/mock_data_engine.py --subject-index 1 --port 8001 --engine-secret your-shared-secret-here --backend-url http://localhost:5000
 
 :: 4. mock DE #2 (Scenario 1용; Scenario 3에서는 이 서버를 기동하지 않아야 함)
-python scripts/mock_data_engine.py --subject-index 2 --port 8002
+python scripts/mock_data_engine.py --subject-index 2 --port 8002 --engine-secret your-shared-secret-here --backend-url http://localhost:5000
 
 :: 5. FE dev server
 cd mind-signal-frontend
@@ -99,6 +102,7 @@ npx playwright test --list
 | 1 | node_A: /lab 진입 | 세션 생성 UI |
 | 2 | node_A: DUAL_2PC 모드 + 파트너 PC 초대 QR 생성 | invite QR 표시 + 만료 타이머 |
 | 3 | node_A: QR data URL → token 파싱 | JWT token 확보 |
+| **4a** | **Playwright: mock DE 2개에 groupId 주입** | **`POST /control/assign-group` → `/register-dual` trigger** |
 | 4 | node_B: /lab/operator-join?token={token}&groupId={groupId} | 페이지 로드 |
 | 5 | node_B: "합류하기" 버튼 클릭 | joinAsOperator 성공 |
 | 6 | node_B: /lab?groupId={groupId} 리다이렉트 | 세션 대시보드 로드 |
@@ -109,6 +113,26 @@ npx playwright test --list
 | 11 | stimulus_start payload + aligned_pair 이벤트 수신 | timestamp_ms 포함 |
 | 12 | 콘솔 에러 없음 | JS 런타임 오류 0건 |
 | 13 | 두 컨텍스트 스크린샷 저장 | test-results/ 저장 |
+
+#### Step 4a 상세 — mock DE runtime groupId 주입 (T17-8, RC-4)
+
+DUAL_2PC에서 mock DE는 부팅 시 `groupId`를 알 수 없음. `groupId`는 BE가 세션 생성 응답으로 동적으로 발급하기 때문.
+
+Playwright Scenario 1이 `groupId`를 캡처한 직후, 실험 시작 버튼 클릭 전에
+`POST /control/assign-group` 를 mock DE #1/#2 각각에 호출하여 `group_id`를 주입함.
+주입받은 mock DE는 내부적으로 `POST BE/api/engine/register-dual`을 호출하여 등록을 완료함.
+
+```
+Playwright
+  └─ POST http://localhost:8001/control/assign-group  { group_id }
+  └─ POST http://localhost:8002/control/assign-group  { group_id }
+        ↓ mock DE 내부
+        └─ POST http://localhost:5000/api/engine/register-dual
+```
+
+**실기기 사용 시**: real DE는 launcher가 주입하는 `DUAL_2PC_GROUP_ID` env 변수로
+부팅 시점에 `/register-dual`을 직접 호출하므로 이 step이 필요 없음.
+`/control/assign-group` endpoint는 mock DE 전용임.
 
 ### Scenario 2: Invalid/Expired Token (PLAN L876-883)
 
