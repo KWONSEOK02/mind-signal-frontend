@@ -237,7 +237,7 @@ const LabPage = () => {
       );
     }
 
-    if (isAllPaired) {
+    if (mode === 'DUAL_2PC' ? partnerConnected : isAllPaired) {
       return (
         <button
           onClick={handleStartExperiment}
