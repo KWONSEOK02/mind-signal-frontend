@@ -6,9 +6,12 @@ import React, {
   useCallback,
   useEffect,
 } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
+import { OperatorInviteQr } from '@/05-features/sessions/ui/operator-invite-qr.component';
+import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
+import { DualSessionBanner } from '@/04-widgets/dual-session-banner';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
 import MobileLabView from './ui/mobile-lab-view';
@@ -25,6 +28,7 @@ import {
   Square,
   X,
   CheckCircle2,
+  QrCode,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -37,6 +41,7 @@ const LabPage = () => {
   // UI 컨텍스트에서 테마 가져오기 & isDark 변수 생성
   const ui = useUI();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isDark = ui.theme === 'dark';
 
   // 클라이언트 사이드 마운트 여부 확인 수행함
@@ -48,9 +53,16 @@ const LabPage = () => {
 
   const [isMobile, setIsMobile] = useState(false);
   const [isQRVisible, setIsQRVisible] = useState(false);
-  // 모드 상태 및 드롭다운 토글 상태 관리 추가함
-  const [mode, setMode] = useState<'DUAL' | 'BTI' | 'SEQUENTIAL'>('DUAL');
+  // 모드 상태 및 드롭다운 토글 상태 관리 추가함 (DUAL_2PC 추가)
+  const [mode, setMode] = useState<'DUAL' | 'BTI' | 'SEQUENTIAL' | 'DUAL_2PC'>(
+    'DUAL'
+  );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // DUAL_2PC 초대 QR 표시 여부 상태 정의함
+  const [isDual2pcQrVisible, setIsDual2pcQrVisible] = useState(false);
+
+  // URL query param에서 groupId 파싱 (operator-join 합류 후 리다이렉트 처리)
+  const urlGroupId = searchParams?.get('groupId') ?? null;
 
   /**
    * 브라우저 환경 및 화면 너비를 감지하여 모바일 모드 여부 결정함
@@ -72,14 +84,16 @@ const LabPage = () => {
 
   /**
    * 상태 기반으로 현재 실험 설정 동적 로드함
+   * DUAL_2PC는 DUAL과 동일한 targetCount=2 설정 재활용함
    */
-  const currentConfig = EXPERIMENT_CONFIG[mode];
+  const currentConfig =
+    mode === 'DUAL_2PC' ? EXPERIMENT_CONFIG['DUAL'] : EXPERIMENT_CONFIG[mode];
 
   /**
    * 설정된 목표 인원수를 기반으로 페어링 로직 구동함
    */
   const {
-    groupId,
+    groupId: pairingGroupId,
     pairingCode,
     timeLeft,
     pairedSubjects,
@@ -89,7 +103,21 @@ const LabPage = () => {
     resetStatus,
   } = usePairing(currentConfig.targetCount);
 
-  const subject1Signal = useSignal(sessions[0]?.id ?? null);
+  // groupId: URL 파라미터 우선, 없으면 페어링에서 가져옴
+  const groupId = urlGroupId ?? pairingGroupId;
+
+  // DUAL_2PC 세션 상태 머신 훅 구독함 (Phase 16 FE-4)
+  const {
+    state: dualState,
+    partnerConnected,
+    setDualSessionState,
+  } = useDualSession(groupId, mode);
+
+  const subject1Signal = useSignal(sessions[0]?.id ?? null, {
+    experimentMode: mode,
+    groupId,
+    setDualSessionState,
+  });
   const subject2Signal = useSignal(sessions[1]?.id ?? null);
 
   /**
@@ -97,16 +125,25 @@ const LabPage = () => {
    */
   const handleStartExperiment = useCallback(() => {
     subject1Signal.startMeasurement();
-    if (currentConfig.targetCount > 1) {
+    if (currentConfig.targetCount > 1 && mode !== 'DUAL_2PC') {
       subject2Signal.startMeasurement();
     }
-  }, [subject1Signal, subject2Signal, currentConfig.targetCount]);
+  }, [subject1Signal, subject2Signal, currentConfig.targetCount, mode]);
 
   /**
    * 두 subject 측정 완료 시 결과 페이지 이동 수행함
    */
   useEffect(() => {
     if (!groupId) return;
+
+    if (mode === 'DUAL_2PC') {
+      // DUAL_2PC: dualState 'completed' 전이 시 결과 이동함
+      if (dualState === 'completed') {
+        router.push(`/results?groupId=${groupId}`);
+      }
+      return;
+    }
+
     const allDone =
       !subject1Signal.isMeasuring &&
       !subject2Signal.isMeasuring &&
@@ -117,6 +154,8 @@ const LabPage = () => {
     }
   }, [
     groupId,
+    mode,
+    dualState,
     subject1Signal.isMeasuring,
     subject2Signal.isMeasuring,
     subject1Signal.elapsedSeconds,
@@ -129,10 +168,11 @@ const LabPage = () => {
    * 실험 모드 변경 시 세션 초기화 및 UI 닫기 일괄 처리함
    */
   const handleModeChange = useCallback(
-    (newMode: 'DUAL' | 'BTI' | 'SEQUENTIAL') => {
+    (newMode: 'DUAL' | 'BTI' | 'SEQUENTIAL' | 'DUAL_2PC') => {
       setMode(newMode);
       resetStatus();
       setIsQRVisible(false);
+      setIsDual2pcQrVisible(false);
       setIsSettingsOpen(false);
     },
     [resetStatus]
@@ -150,12 +190,6 @@ const LabPage = () => {
       void subject2Signal.stopMeasurement();
     }
   };
-
-  /**
-   * 서버 사이드 렌더링 시 하이드레이션 오류 방지를 위해 빈 화면 반환함
-
-  if (!isClient) return <div className="min-h-screen bg-slate-950" />;
-  */
 
   // 서버 렌더링 시 하이드레이션 오류 방지 화면도 라이트/다크에 맞게 변경
   if (!isClient)
@@ -203,7 +237,7 @@ const LabPage = () => {
       );
     }
 
-    if (isAllPaired) {
+    if (mode === 'DUAL_2PC' ? partnerConnected : isAllPaired) {
       return (
         <button
           onClick={handleStartExperiment}
@@ -211,6 +245,19 @@ const LabPage = () => {
         >
           <Play size={20} fill="currentColor" />
           <span>실험 시작</span>
+        </button>
+      );
+    }
+
+    // DUAL_2PC 모드: 파트너 PC 초대 QR 버튼 표시함 (PLAN L175)
+    if (mode === 'DUAL_2PC') {
+      return (
+        <button
+          onClick={() => setIsDual2pcQrVisible((prev) => !prev)}
+          className="group relative inline-flex items-center cursor-pointer gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-violet-500/20"
+        >
+          {isDual2pcQrVisible ? <X size={20} /> : <QrCode size={20} />}
+          <span>{isDual2pcQrVisible ? '닫기' : '파트너 PC 초대 QR'}</span>
         </button>
       );
     }
@@ -243,6 +290,13 @@ const LabPage = () => {
     <main
       className={`min-h-screen pt-24 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
     >
+      {/* DUAL_2PC 측정 중 상단 배너 (FE-4) — PLAN L142-145 */}
+      <DualSessionBanner
+        experimentMode={mode}
+        state={dualState}
+        partnerConnected={partnerConnected}
+      />
+
       <div className="max-w-[1600px] mx-auto space-y-10">
         {/*  2. 헤더 밑줄 색상 변경*/}
         <header
@@ -271,7 +325,9 @@ const LabPage = () => {
             <p
               className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
             >
-              {currentConfig.description}
+              {mode === 'DUAL_2PC'
+                ? '두 PC에서 동기화된 2PC 뇌파 측정 수행함 (Phase 16)'
+                : currentConfig.description}
             </p>
           </div>
 
@@ -293,13 +349,13 @@ const LabPage = () => {
               >
                 <Settings size={20} />
               </button>
-              {isSettingsOpen && (
+              {isSettingsOpen ? (
                 <>
                   <div
                     className="fixed inset-0 z-40"
                     onClick={() => setIsSettingsOpen(false)}
                   />
-                  <div className="absolute right-0 mt-3 w-48 p-2 rounded-xl bg-slate-800 border border-slate-700 shadow-xl z-50 flex flex-col gap-1">
+                  <div className="absolute right-0 mt-3 w-56 p-2 rounded-xl bg-slate-800 border border-slate-700 shadow-xl z-50 flex flex-col gap-1">
                     <button
                       onClick={() => handleModeChange('DUAL')}
                       className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
@@ -330,14 +386,67 @@ const LabPage = () => {
                     >
                       SEQUENTIAL 모드 (순차)
                     </button>
+                    {/* DUAL_2PC 모드 선택 버튼 (PLAN L174) */}
+                    <button
+                      onClick={() => handleModeChange('DUAL_2PC')}
+                      className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
+                        mode === 'DUAL_2PC'
+                          ? 'bg-violet-500/20 text-violet-400'
+                          : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      DUAL 2PC 모드 (2PC)
+                    </button>
                   </div>
                 </>
-              )}
+              ) : null}
             </div>
           </div>
         </header>
 
-        {isQRVisible && !isAllPaired && (
+        {/* DUAL_2PC 파트너 PC 초대 QR 표시 (PLAN L175-180) */}
+        {mode === 'DUAL_2PC' && isDual2pcQrVisible && groupId ? (
+          <section className="animate-in fade-in zoom-in duration-500">
+            <div
+              className={`p-8 rounded-[2.5rem] border backdrop-blur-sm flex flex-col items-center gap-6 ${
+                isDark
+                  ? 'bg-violet-500/5 border-violet-500/20'
+                  : 'bg-white/80 border-violet-100 shadow-sm'
+              }`}
+            >
+              <p
+                className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-violet-400' : 'text-violet-600'}`}
+              >
+                DUAL 2PC · 파트너 PC 초대
+              </p>
+              <OperatorInviteQr
+                groupId={groupId}
+                isDark={isDark}
+                onClose={() => setIsDual2pcQrVisible(false)}
+              />
+            </div>
+          </section>
+        ) : null}
+
+        {/* DUAL_2PC groupId 없을 때 안내 메시지 */}
+        {mode === 'DUAL_2PC' && isDual2pcQrVisible && !groupId ? (
+          <section className="animate-in fade-in zoom-in duration-500">
+            <div
+              className={`p-8 rounded-[2.5rem] border text-center ${
+                isDark
+                  ? 'bg-white/[0.02] border-white/5 text-slate-400'
+                  : 'bg-white border-slate-200 text-slate-600'
+              }`}
+            >
+              <p className="text-sm font-bold">
+                먼저 Subject를 페어링하여 groupId를 생성해야 함
+              </p>
+            </div>
+          </section>
+        ) : null}
+
+        {/* 기존 페어링 QR — DUAL_2PC 이외 모드에서만 표시함 */}
+        {isQRVisible && !isAllPaired && mode !== 'DUAL_2PC' ? (
           <section className="animate-in fade-in zoom-in duration-500">
             {/*}  6. QR코드 박스 배경/테두리 변경*/}
             <div
@@ -362,7 +471,7 @@ const LabPage = () => {
               />
             </div>
           </section>
-        )}
+        ) : null}
 
         <section className="min-h-[400px]">
           <SignalComparisonWidget
@@ -411,9 +520,9 @@ const LabPage = () => {
                       <p className="text-[10px] text-slate-500 font-bold uppercase">
                         Subject 0{num}
                       </p>
-                      {pairedSubjects.includes(num) && (
+                      {pairedSubjects.includes(num) ? (
                         <CheckCircle2 size={14} className="text-indigo-500" />
-                      )}
+                      ) : null}
                     </div>
                     {/* 9. 연결 상태 텍스트 색상 변경*/}
                     <p
@@ -454,7 +563,7 @@ const LabPage = () => {
             <div className="relative space-y-4">
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-2 h-2 rounded-full ${isAllPaired ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}
+                  className={`w-2 h-2 rounded-full ${isAllPaired || (mode === 'DUAL_2PC' && partnerConnected) ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}
                 />
                 {/* 11. System Phase 텍스트 변경*/}
                 <span
@@ -466,13 +575,22 @@ const LabPage = () => {
               <p
                 className={`text-2xl font-black uppercase italic tracking-tighter ${isDark ? 'text-white' : 'text-indigo-900'}`}
               >
-                {isAllPaired ? 'Experiment Ready' : 'Awaiting Entry'}
+                {mode === 'DUAL_2PC'
+                  ? partnerConnected
+                    ? 'Partner Ready'
+                    : dualState === 'measuring'
+                      ? 'Measuring'
+                      : 'Awaiting Partner'
+                  : isAllPaired
+                    ? 'Experiment Ready'
+                    : 'Awaiting Entry'}
               </p>
               <p
                 className={`text-xs leading-relaxed font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
               >
-                운영자 채널 활성화 완료됨. {currentConfig.targetCount}명의
-                피실험자가 합류해야 실험 시작 버튼이 활성화됨.
+                {mode === 'DUAL_2PC'
+                  ? '2PC 동기화 측정 모드. 파트너 PC가 합류해야 실험 시작 가능함.'
+                  : `운영자 채널 활성화 완료됨. ${currentConfig.targetCount}명의 피실험자가 합류해야 실험 시작 버튼이 활성화됨.`}
               </p>
             </div>
           </div>

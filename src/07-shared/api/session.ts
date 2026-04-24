@@ -62,3 +62,38 @@ const sessionApi = {
 };
 
 export default sessionApi;
+
+/**
+ * Operator 초대 토큰 발급 요청 수행함 (Phase 16 — BE-1-invite 연동)
+ *
+ * @param groupId - 그룹 식별자
+ * @returns 초대 토큰 및 만료 시각 (Unix ms)
+ * @throws ApiError 404 — 해당 groupId 세션 미존재 시
+ */
+export async function createOperatorInviteToken(
+  groupId: string
+): Promise<{ token: string; expiresAt: number }> {
+  // POST /api/sessions/:groupId/invite-operator (authenticate 미들웨어 적용)
+  const response = await api.post<{ token: string; expiresAt: number }>(
+    `/sessions/${groupId}/invite-operator`
+  );
+  return response.data;
+}
+
+/**
+ * Operator로 그룹 합류 요청 수행함 (Phase 16 — BE-1-join 연동)
+ *
+ * @param token - 초대 JWT 토큰 문자열
+ * @returns 그룹 ID + 실험 모드 확인 응답
+ * @throws ApiError 401 — 토큰 검증 실패 또는 만료 시
+ */
+export async function joinAsOperator(
+  token: string
+): Promise<{ groupId: string; experimentMode: 'DUAL_2PC' }> {
+  // POST /api/sessions/join-as-operator (authenticate 미적용 — JWT body 검증만)
+  const response = await api.post<{
+    groupId: string;
+    experimentMode: 'DUAL_2PC';
+  }>('/sessions/join-as-operator', { token });
+  return response.data;
+}

@@ -8,6 +8,8 @@ export const EXPERIMENT_MODES = {
   BTI: 'BTI',
   /** 시분할 측정 모드 (1PC 환경, Phase 14 P2) */
   SEQUENTIAL: 'SEQUENTIAL',
+  /** 2PC 동기화 측정 모드 (Phase 16) */
+  DUAL_2PC: 'DUAL_2PC',
 } as const;
 
 /**
