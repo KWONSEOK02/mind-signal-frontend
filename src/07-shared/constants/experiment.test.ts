@@ -24,7 +24,11 @@ describe('EXPERIMENT_MODES — 실험 모드 상수 검증함', () => {
     expect(mode).toBe('SEQUENTIAL');
   });
 
-  it('EXPERIMENT_MODES 객체가 정확히 3개 키를 보유함', () => {
-    expect(Object.keys(EXPERIMENT_MODES)).toHaveLength(3);
+  it('DUAL_2PC 값이 문자열 "DUAL_2PC"임을 확인함', () => {
+    expect(EXPERIMENT_MODES.DUAL_2PC).toBe('DUAL_2PC');
+  });
+
+  it('EXPERIMENT_MODES 객체가 정확히 4개 키를 보유함 (Phase 16 DUAL_2PC 추가)', () => {
+    expect(Object.keys(EXPERIMENT_MODES)).toHaveLength(4);
   });
 });
