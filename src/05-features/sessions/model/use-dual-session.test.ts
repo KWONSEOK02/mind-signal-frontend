@@ -39,6 +39,16 @@ vi.mock('@/07-shared/config/config', () => ({
   },
 }));
 
+// dual-trigger API 모킹 처리함 (폴링 격리 목적)
+vi.mock('@/07-shared/api/dual-trigger', () => ({
+  fetchRegistryStatus: vi.fn().mockResolvedValue({
+    ready: false,
+    registered: 0,
+    attempts: 0,
+    inFlight: false,
+  }),
+}));
+
 /**
  * 등록된 소켓 이벤트 핸들러를 이름으로 추출하는 헬퍼 정의함
  */
@@ -103,12 +113,13 @@ describe('useDualSession — DUAL_2PC 세션 상태 전이 테스트 수행함',
     expect(result.current.state).toBe('joining');
   });
 
-  it('dual-session-ready 수신 시 state=measuring, partnerConnected=true 전이 처리됨 (v3 N-5)', () => {
+  it('dual-session-ready 수신 시 state=measuring 전이 처리됨 (Phase 17.6: partnerConnected는 polling 담당)', () => {
     const { result } = renderHook(() =>
       useDualSession('group-abc', 'DUAL_2PC')
     );
 
     // v3 N-5: 202 Accepted 직후 측정 시작 금지 — dual-session-ready 수신 시에만 전이 허용
+    // Phase 17.6: partnerConnected 설정은 registry-status polling이 담당함
     // joining 상태에서 ready 이벤트 수신 시 measuring 전이 검증함
     act(() => {
       result.current.setDualSessionState('joining');
@@ -122,7 +133,9 @@ describe('useDualSession — DUAL_2PC 세션 상태 전이 테스트 수행함',
     });
 
     expect(result.current.state).toBe('measuring');
-    expect(result.current.partnerConnected).toBe(true);
+    // partnerConnected는 registry-status polling ready=true 수신 시 전환됨
+    // 소켓 이벤트만으로는 변경되지 않음 — polling mock이 ready=false 반환하므로 false 유지
+    expect(result.current.partnerConnected).toBe(false);
   });
 
   it('dual-session-ready 수신 시 다른 groupId이면 상태 미전이 처리됨', () => {
