@@ -170,7 +170,8 @@ export function useDualSession(
           failedSinceRef.current = null;
           setShowFallback(false);
         } else {
-          // 미완료 상태 → stuck 여부 판별 후 폴백 노출 결정함
+          // 미완료 상태 → 파트너 연결 해제 + stuck 여부 판별 후 폴백 노출 결정함
+          setPartnerConnected(false);
           const isStuck = !status.inFlight && !status.ready;
           if (isStuck) {
             if (failedSinceRef.current === null) {
@@ -194,6 +195,11 @@ export function useDualSession(
       cancelled = true;
       activeAbort?.abort();
       clearInterval(intervalId);
+      // 세션 전환/unmount 시 stale 상태 누수 방지 — 이전 그룹의 등록/연결 상태 청소함
+      setRegistryStatus(null);
+      setPartnerConnected(false);
+      setShowFallback(false);
+      failedSinceRef.current = null;
     };
   }, [groupId, experimentMode]);
 
