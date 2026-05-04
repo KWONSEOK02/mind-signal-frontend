@@ -11,6 +11,7 @@ import { useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { OperatorInviteQr } from '@/05-features/sessions/ui/operator-invite-qr.component';
 import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
+import { postDualTrigger } from '@/07-shared/api/dual-trigger';
 import { DualSessionBanner } from '@/04-widgets/dual-session-banner';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
@@ -110,8 +111,46 @@ const LabPage = () => {
   const {
     state: dualState,
     partnerConnected,
+    registryStatus,
+    showFallback,
     setDualSessionState,
   } = useDualSession(groupId, mode);
+
+  // 수동 트리거 상태 정의함
+  const [manualTriggerError, setManualTriggerError] = useState<string | null>(
+    null
+  );
+  const [manualTriggerPending, setManualTriggerPending] = useState(false);
+
+  /**
+   * DE 엔진 연결 지연 시 수동 트리거 재시도 처리함
+   * race 방지: ready 상태이면 즉시 반환함
+   * 더블클릭 방지: pending 중이면 즉시 반환함
+   */
+  const handleManualTrigger = async () => {
+    if (!groupId) return;
+    if (registryStatus?.ready) return;
+    if (manualTriggerPending) return;
+
+    setManualTriggerPending(true);
+    setManualTriggerError(null);
+    try {
+      await postDualTrigger(groupId);
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response
+        ?.status;
+      if (status === 503) {
+        setManualTriggerError(
+          '두 데이터 엔진이 모두 대기 상태가 아닙니다.' +
+            ' EMOTIV App과 DE 기동 상태를 확인하세요.'
+        );
+      } else {
+        setManualTriggerError(`연결 시도 실패: ${(err as Error).message}`);
+      }
+    } finally {
+      setManualTriggerPending(false);
+    }
+  };
 
   const subject1Signal = useSignal(sessions[0]?.id ?? null, {
     experimentMode: mode,
@@ -249,8 +288,39 @@ const LabPage = () => {
       );
     }
 
-    // DUAL_2PC 모드: 파트너 PC 초대 QR 버튼 표시함 (PLAN L175)
+    // DUAL_2PC 모드: 폴백 노출 + 파트너 PC 초대 QR 버튼 표시함 (PLAN L175)
     if (mode === 'DUAL_2PC') {
+      // showFallback=true → QR 버튼 + 수동 재연결 버튼 병렬 노출함
+      if (showFallback) {
+        return (
+          <div className="flex flex-col gap-3 items-center">
+            <button
+              onClick={() => setIsDual2pcQrVisible((prev) => !prev)}
+              className="group relative inline-flex items-center cursor-pointer gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-violet-500/20"
+            >
+              {isDual2pcQrVisible ? <X size={20} /> : <QrCode size={20} />}
+              <span>{isDual2pcQrVisible ? '닫기' : '파트너 PC 초대 QR'}</span>
+            </button>
+            <button
+              onClick={() => void handleManualTrigger()}
+              disabled={manualTriggerPending || !!registryStatus?.ready}
+              className={`text-sm ${
+                manualTriggerError ? 'text-rose-500' : 'text-amber-500'
+              } underline disabled:opacity-50`}
+            >
+              {manualTriggerPending
+                ? '연결 시도 중...'
+                : '엔진 연결이 지연됩니다. 다시 연결 시도'}
+            </button>
+            {manualTriggerError ? (
+              <p className="text-xs text-rose-500 max-w-md">
+                {manualTriggerError}
+              </p>
+            ) : null}
+          </div>
+        );
+      }
+
       return (
         <button
           onClick={() => setIsDual2pcQrVisible((prev) => !prev)}
