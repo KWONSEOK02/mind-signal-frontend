@@ -18,6 +18,11 @@ import { EXPERIMENT_CONFIG } from '@/07-shared';
 import MobileLabView from './ui/mobile-lab-view';
 import SequentialFlow from './sequential-flow';
 import { useUI } from '@/app/providers/ui-context'; // 다크 라이트 모드를 위해 임포트 추가
+import {
+  useDevModeStore,
+  useTapCounter,
+  AdminForcePairModal,
+} from '@/05-features/dev-mode';
 
 // next.config.ts의 optimizePackageImports 설정으로 인해 성능 저하 없이 편리한 임포트 사용함
 import {
@@ -51,6 +56,13 @@ const LabPage = () => {
     () => true,
     () => false
   );
+
+  // dev mode 5-tap admin force-pair UI 진입 상태 구독함
+  const isDevModeOn = useDevModeStore((s) => s.isDevModeOn);
+  const setDevModeOn = useDevModeStore((s) => s.setOn);
+  const setDevModeOff = useDevModeStore((s) => s.setOff);
+  // windowMs 2000ms — CI Playwright 5-click 안정성 마진 확보함
+  const { increment: incrementTap } = useTapCounter(5, 2000, setDevModeOn);
 
   const [isMobile, setIsMobile] = useState(false);
   const [isQRVisible, setIsQRVisible] = useState(false);
@@ -373,7 +385,11 @@ const LabPage = () => {
           className={`flex flex-col md:flex-row md:items-end justify-between gap-6 border-b pb-10 ${isDark ? 'border-white/5' : 'border-slate-200'}`}
         >
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-indigo-500 mb-1">
+            <div
+              className="flex items-center gap-2 text-indigo-500 mb-1 cursor-default"
+              onClick={incrementTap}
+              data-testid="dev-mode-tap-target"
+            >
               <LayoutDashboard size={18} />
               <span className="text-[10px] font-black uppercase tracking-[0.2em]">
                 Operator Dashboard
@@ -666,6 +682,12 @@ const LabPage = () => {
           </div>
         </div>
       </div>
+      <AdminForcePairModal
+        isOpen={isDevModeOn}
+        onClose={setDevModeOff}
+        pairingToken={pairingCode}
+        theme={isDark ? 'dark' : 'light'}
+      />
     </main>
   );
 };
