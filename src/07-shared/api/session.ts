@@ -59,6 +59,26 @@ const sessionApi = {
    */
   checkSessionStatus: (groupId: string) =>
     api.get<GroupStatusResponse>(`/sessions/group/${groupId}/status`),
+
+  /**
+   * Admin 강제 페어링 요청 수행함 — pairingToken 세션에 email 대상 사용자 강제 연결함.
+   *
+   * @param pairingToken - QR pairing 토큰 문자열
+   * @param email - 대상 사용자 이메일 (admin이 입력)
+   * @param options - axios per-request config (timeout / signal 등)
+   * @returns AxiosResponse 200 — body는 modal close trigger로만 사용함
+   * @throws AxiosError 401 — 인증 만료 / 403 — admin 권한 없음 / 404 — 대상 또는 토큰 불일치 / 400 — Zod validation / ECONNABORTED — timeout
+   */
+  forcePairing: (
+    pairingToken: string,
+    email: string,
+    options?: { signal?: AbortSignal; timeout?: number }
+  ) =>
+    api.post<PairingResponse>(
+      `/sessions/${pairingToken}/admin-pair`,
+      { email },
+      options
+    ),
 };
 
 export default sessionApi;
