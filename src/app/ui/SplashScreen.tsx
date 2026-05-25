@@ -10,11 +10,11 @@ export default function SplashScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsAnimating(true);
-    }, 2000);
+    }, 800);
 
     const removeTimer = setTimeout(() => {
       setIsVisible(false);
-    }, 4000);
+    }, 2300);
 
     return () => {
       clearTimeout(timer);
@@ -41,7 +41,7 @@ export default function SplashScreen() {
           }
           
           .heart-splash-animate {
-            animation: heartShrink 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation: heartShrink 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
           }
 
           @keyframes heartShrink {
