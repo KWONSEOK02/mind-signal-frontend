@@ -37,14 +37,12 @@ describe('sessionApi — 세션 API 통합 테스트 수행함', () => {
       },
     };
 
-    it('groupId 없이 호출 시 POST /sessions에 null groupId 전송 처리함', async () => {
+    it('groupId 없이 호출 시 POST /sessions에 빈 객체 전송 처리함 (옵션 D)', async () => {
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await sessionApi.createdPairing();
 
-      expect(mockPost).toHaveBeenCalledWith('/sessions', {
-        groupId: null,
-      });
+      expect(mockPost).toHaveBeenCalledWith('/sessions', {});
       expect(result.data.data.groupId).toBe('group-123');
     });
 
