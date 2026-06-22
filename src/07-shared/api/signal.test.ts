@@ -71,4 +71,55 @@ describe('measurementApi — EEG 측정 API 통합 테스트 수행함', () => {
       ).rejects.toThrow('Stream start failed');
     });
   });
+
+  describe('startDualByGroup', () => {
+    it('POST /measurements/groups/{id}/eeg/stream:start 올바른 URL 호출 처리함', async () => {
+      mockPost.mockResolvedValue({
+        data: { status: 'success', measuredAt: '2026-04-16T12:00:00Z' },
+      });
+
+      const result = await measurementApi.startDualByGroup('group-abc');
+
+      expect(mockPost).toHaveBeenCalledWith(
+        '/measurements/groups/group-abc/eeg/stream:start'
+      );
+      expect(result.data.status).toBe('success');
+    });
+
+    it('그룹 ID가 URL에 올바르게 보간 처리됨', async () => {
+      mockPost.mockResolvedValue({
+        data: { status: 'success' },
+      });
+
+      await measurementApi.startDualByGroup('grp-999');
+
+      expect(mockPost).toHaveBeenCalledWith(
+        '/measurements/groups/grp-999/eeg/stream:start'
+      );
+    });
+
+    it('202 성공 응답 반환 처리함', async () => {
+      const mockResponse = {
+        data: {
+          status: 'success' as const,
+          message: 'DUAL_2PC 측정 시작됨',
+          measuredAt: '2026-04-16T10:00:00Z',
+        },
+      };
+      mockPost.mockResolvedValue(mockResponse);
+
+      const result = await measurementApi.startDualByGroup('group-abc');
+
+      expect(result.data.status).toBe('success');
+      expect(result.data.message).toBe('DUAL_2PC 측정 시작됨');
+    });
+
+    it('API 실패 시 에러 전파 처리함', async () => {
+      mockPost.mockRejectedValue(new Error('Dual group stream start failed'));
+
+      await expect(
+        measurementApi.startDualByGroup('group-abc')
+      ).rejects.toThrow('Dual group stream start failed');
+    });
+  });
 });

@@ -12,6 +12,7 @@ import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { OperatorInviteQr } from '@/05-features/sessions/ui/operator-invite-qr.component';
 import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
 import { postDualTrigger } from '@/07-shared/api/dual-trigger';
+import measurementApi from '@/07-shared/api/signal';
 import { DualSessionBanner } from '@/04-widgets/dual-session-banner';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
@@ -173,13 +174,28 @@ const LabPage = () => {
 
   /**
    * 모든 활성화된 피실험자의 데이터 측정 시작 수행함
+   * DUAL_2PC: groupId 기반 일괄 시작 API 호출함
+   * 나머지 모드: 세션 ID 기반 개별 시작 수행함
    */
   const handleStartExperiment = useCallback(() => {
+    if (mode === 'DUAL_2PC') {
+      if (!groupId) return;
+      measurementApi.startDualByGroup(groupId).catch((err: unknown) => {
+        console.error('DUAL_2PC 측정 시작 실패함:', err);
+      });
+      return;
+    }
     subject1Signal.startMeasurement();
-    if (currentConfig.targetCount > 1 && mode !== 'DUAL_2PC') {
+    if (currentConfig.targetCount > 1) {
       subject2Signal.startMeasurement();
     }
-  }, [subject1Signal, subject2Signal, currentConfig.targetCount, mode]);
+  }, [
+    subject1Signal,
+    subject2Signal,
+    currentConfig.targetCount,
+    mode,
+    groupId,
+  ]);
 
   /**
    * 두 subject 측정 완료 시 결과 페이지 이동 수행함
@@ -300,8 +316,32 @@ const LabPage = () => {
       );
     }
 
-    // DUAL_2PC 모드: 폴백 노출 + 파트너 PC 초대 QR 버튼 표시함 (PLAN L175)
+    // DUAL_2PC 모드 처리 분기함
     if (mode === 'DUAL_2PC') {
+      // 그룹 미생성 + 피실험자 미충족 시 표준 페어링 버튼 표시함
+      if (!groupId && pairedSubjects.length < currentConfig.targetCount) {
+        const nextSubjectNum = pairedSubjects.length + 1;
+        const buttonText = `Subject 0${nextSubjectNum} 연결 QR 생성`;
+        return (
+          <button
+            onClick={() => {
+              if (isQRVisible) {
+                resetStatus();
+                setIsQRVisible(false);
+              } else {
+                startPairing();
+                setIsQRVisible(true);
+              }
+            }}
+            className="group relative inline-flex items-center cursor-pointer gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-indigo-500/20"
+          >
+            {isQRVisible ? <X size={20} /> : <PlusCircle size={20} />}
+            <span>{isQRVisible ? '닫기' : buttonText}</span>
+          </button>
+        );
+      }
+
+      // 페어링 완료 후 파트너 PC 초대 QR 버튼 표시함 (showFallback 포함)
       // showFallback=true → QR 버튼 + 수동 재연결 버튼 병렬 노출함
       if (showFallback) {
         return (
@@ -531,8 +571,11 @@ const LabPage = () => {
           </section>
         ) : null}
 
-        {/* 기존 페어링 QR — DUAL_2PC 이외 모드에서만 표시함 */}
-        {isQRVisible && !isAllPaired && mode !== 'DUAL_2PC' ? (
+        {/* 기존 페어링 QR — DUAL_2PC 포함 페어링 진행 중 표시함 */}
+        {isQRVisible &&
+        !isAllPaired &&
+        (mode !== 'DUAL_2PC' ||
+          (!groupId && pairedSubjects.length < currentConfig.targetCount)) ? (
           <section className="animate-in fade-in zoom-in duration-500">
             {/*}  6. QR코드 박스 배경/테두리 변경*/}
             <div
