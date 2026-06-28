@@ -152,8 +152,12 @@ describe('createOperatorInviteToken — operator-invite API 클라이언트 테�
 
   it('성공 시 POST /sessions/:groupId/invite-operator 호출 처리함', async () => {
     const expiresAt = Date.now() + 300_000;
+    // BE 응답 envelope { status, data } — 구현이 response.data.data 언래핑함
     mockPost.mockResolvedValue({
-      data: { token: 'jwt-invite-token', expiresAt },
+      data: {
+        status: 'success',
+        data: { token: 'jwt-invite-token', expiresAt },
+      },
     });
 
     const result = await createOperatorInviteToken('group-abc');
@@ -192,8 +196,12 @@ describe('joinAsOperator — join-as-operator API 클라이언트 테스트 수�
   });
 
   it('성공 시 POST /sessions/join-as-operator 호출 처리함', async () => {
+    // BE 응답 envelope { status, data } — 구현이 response.data.data 언래핑함
     mockPost.mockResolvedValue({
-      data: { groupId: 'group-xyz', experimentMode: 'DUAL_2PC' },
+      data: {
+        status: 'success',
+        data: { groupId: 'group-xyz', experimentMode: 'DUAL_2PC' },
+      },
     });
 
     const result = await joinAsOperator('valid-jwt-token');

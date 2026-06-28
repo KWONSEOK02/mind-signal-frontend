@@ -83,22 +83,25 @@ const AdminForcePairModal: React.FC<AdminForcePairModalProps> = ({
         return;
       }
       const status = axiosError.response?.status;
+      // BE AppError 메시지를 우선 표시함 — 400을 무조건 '이메일 형식'으로 오매핑하지 않음
+      // (예: 이미 PAIRED된 세션 재페어링 시 '현재 세션 상태(PAIRED)에서는...' 그대로 노출)
+      const beMessage = axiosError.response?.data?.message;
       switch (status) {
         case 401:
-          setError('재로그인 후 다시 시도 필요함.');
+          setError(beMessage ?? '재로그인 후 다시 시도 필요함.');
           break;
         case 403:
-          setError('관리자 권한이 필요함.');
+          setError(beMessage ?? '관리자 권한이 필요함.');
           break;
         case 404:
-          setError('대상 사용자 또는 토큰 불일치 발생함.');
+          setError(beMessage ?? '대상 사용자 또는 토큰 불일치 발생함.');
           break;
         case 400:
-          setError('이메일 형식 확인 필요함.');
+          setError(beMessage ?? '이메일 형식 확인 필요함.');
           break;
         default:
           // network down (response=undefined) + 5xx 모두 default 분기 처리함
-          setError('요청 처리 실패함. 다시 시도 필요함.');
+          setError(beMessage ?? '요청 처리 실패함. 다시 시도 필요함.');
       }
     } finally {
       // abort 후 stale finally가 새 state 덮어쓰지 않도록 가드 처리함

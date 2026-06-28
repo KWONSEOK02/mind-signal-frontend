@@ -325,6 +325,41 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
   }, []);
 
   /**
+   * DUAL_2PC 소켓 룸 합류 + 리스너 등록만 수행함 (HTTP spawn 없음).
+   * 측정은 그룹 단위 startDualByGroup으로 트리거되고, FE는 이 메서드로 룸에 합류해
+   * aligned_pair를 수신함 — handleStartExperiment(DUAL_2PC)에서 호출.
+   */
+  const joinDualRoom = useCallback(() => {
+    if (!isDual2pc || !groupId) return;
+    setDualSessionState?.('joining');
+    setIsMeasuring(true);
+
+    const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
+    emitJoinRoom(groupId);
+    registerDualListeners(groupId);
+
+    const completeHandler = (
+      payload: MeasurementCompletePayload & { groupId?: string }
+    ) => {
+      if ((payload.groupId ?? null) !== groupId) return; // 다른 그룹 무시함
+      setIsMeasuring(false);
+      setDualSessionState?.('completed');
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+    completeHandlerRef.current = completeHandler;
+    socket.on('measurement-complete', completeHandler);
+  }, [
+    isDual2pc,
+    groupId,
+    setDualSessionState,
+    emitJoinRoom,
+    registerDualListeners,
+  ]);
+
+  /**
    * 측정 시작 처리함
    *
    * DUAL_2PC: 202 Accepted 수신 → setIsMeasuring(true) 즉시 금지 (v3 N-5)
@@ -505,6 +540,7 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
     elapsedSeconds,
     roomJoined,
     startMeasurement,
+    joinDualRoom,
     stopMeasurement,
   };
 };
