@@ -312,6 +312,40 @@ describe('useSignal DUAL_2PC — join-room emit + stimulus 테스트 수행함',
     expect(result.current.currentMetrics2?.stress).toBe(subject2Wave.delta);
   });
 
+  it('aligned_pair subject_2에 비유한 값(NaN) 포함 시 currentMetrics2 미갱신 처리됨 (차트 깨짐 방지)', async () => {
+    const { result } = renderHook(() =>
+      useSignal('session-abc', {
+        experimentMode: 'DUAL_2PC',
+        groupId: 'group-xyz',
+        setDualSessionState: mockSetDualSessionState,
+      })
+    );
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    const alignedPairHandler = getSocketHandler('aligned_pair');
+
+    act(() => {
+      alignedPairHandler!({
+        groupId: 'group-xyz',
+        timestamp_ms: Date.now(),
+        subject_1: null,
+        subject_2: {
+          delta: NaN,
+          theta: 0.7,
+          alpha: 0.8,
+          beta: 0.9,
+          gamma: 1.0,
+        },
+      });
+    });
+
+    // NaN 한 번이라도 들어오면 currentMetrics2는 null 유지 (차트로 전파 차단)
+    expect(result.current.currentMetrics2).toBeNull();
+  });
+
   it('aligned_pair 수신 시 다른 groupId이면 currentMetrics 미업데이트 처리됨', async () => {
     const { result } = renderHook(() =>
       useSignal('session-abc', {

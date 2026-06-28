@@ -91,6 +91,34 @@ interface UseSignalOptions {
 }
 
 /**
+ * WavePower를 EmotivMetrics로 변환함 (간이 변환). 비유한(NaN/Infinity) 값이
+ * 하나라도 있으면 null 반환해 차트 깨짐을 방지함 — eeg-live 경로 finite 검증과 정합.
+ * subject_1/subject_2 동일 적용 (CodeRabbit #60).
+ *
+ * @param wave - 5대역 파워 값
+ * @returns EmotivMetrics 또는 비유한 값 포함 시 null
+ */
+const wavePowerToEmotivMetrics = (wave: WavePower): EmotivMetrics | null => {
+  if (
+    !Number.isFinite(wave.delta) ||
+    !Number.isFinite(wave.theta) ||
+    !Number.isFinite(wave.alpha) ||
+    !Number.isFinite(wave.beta) ||
+    !Number.isFinite(wave.gamma)
+  ) {
+    return null;
+  }
+  return {
+    focus: wave.beta,
+    engagement: wave.alpha,
+    interest: wave.theta,
+    excitement: wave.gamma,
+    stress: wave.delta,
+    relaxation: wave.alpha,
+  };
+};
+
+/**
  * [Feature] sessionId 기반 실시간 EEG 측정 제어 훅 정의함
  * HTTP POST 1회로 측정 트리거 후 Socket.io eeg-live 이벤트로 데이터 수신함
  *
@@ -241,33 +269,21 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
         subject_2,
       }: AlignedPairPayload) => {
         if (incomingGid !== gid) return; // 다른 그룹 이벤트 무시함
-        // subject_1 데이터 기준으로 currentMetrics 업데이트 (EEG 시각화용)
-        // WavePower → EmotivMetrics 매핑 (알파/베타 기반 간이 변환)
+        // subject_1 데이터 기준으로 currentMetrics 업데이트함 (finite 검증, CodeRabbit #60)
         if (subject_1) {
-          const metrics: EmotivMetrics = {
-            focus: subject_1.beta,
-            engagement: subject_1.alpha,
-            interest: subject_1.theta,
-            excitement: subject_1.gamma,
-            stress: subject_1.delta,
-            relaxation: subject_1.alpha,
-          };
-          setCurrentMetrics(metrics);
-          setLastReceivedTime(new Date().toLocaleTimeString());
+          const metrics = wavePowerToEmotivMetrics(subject_1);
+          if (metrics) {
+            setCurrentMetrics(metrics);
+            setLastReceivedTime(new Date().toLocaleTimeString());
+          }
         }
-        // subject_2(노트북 B) 데이터 → currentMetrics2 변환함 (단일 헤드셋 지원)
-        // subject_1 매핑과 동일 (간이 변환). ponytail: 6줄 인라인 미러, 헬퍼 불필요.
+        // subject_2(노트북 B) 데이터 → currentMetrics2 업데이트함 (단일 헤드셋 지원)
         if (subject_2) {
-          const metrics2: EmotivMetrics = {
-            focus: subject_2.beta,
-            engagement: subject_2.alpha,
-            interest: subject_2.theta,
-            excitement: subject_2.gamma,
-            stress: subject_2.delta,
-            relaxation: subject_2.alpha,
-          };
-          setCurrentMetrics2(metrics2);
-          setLastReceivedTime(new Date().toLocaleTimeString());
+          const metrics2 = wavePowerToEmotivMetrics(subject_2);
+          if (metrics2) {
+            setCurrentMetrics2(metrics2);
+            setLastReceivedTime(new Date().toLocaleTimeString());
+          }
         }
       };
 
