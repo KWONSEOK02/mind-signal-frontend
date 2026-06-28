@@ -91,6 +91,34 @@ interface UseSignalOptions {
 }
 
 /**
+ * WavePower를 EmotivMetrics로 변환함 (간이 변환). 비유한(NaN/Infinity) 값이
+ * 하나라도 있으면 null 반환해 차트 깨짐을 방지함 — eeg-live 경로 finite 검증과 정합.
+ * subject_1/subject_2 동일 적용 (CodeRabbit #60).
+ *
+ * @param wave - 5대역 파워 값
+ * @returns EmotivMetrics 또는 비유한 값 포함 시 null
+ */
+const wavePowerToEmotivMetrics = (wave: WavePower): EmotivMetrics | null => {
+  if (
+    !Number.isFinite(wave.delta) ||
+    !Number.isFinite(wave.theta) ||
+    !Number.isFinite(wave.alpha) ||
+    !Number.isFinite(wave.beta) ||
+    !Number.isFinite(wave.gamma)
+  ) {
+    return null;
+  }
+  return {
+    focus: wave.beta,
+    engagement: wave.alpha,
+    interest: wave.theta,
+    excitement: wave.gamma,
+    stress: wave.delta,
+    relaxation: wave.alpha,
+  };
+};
+
+/**
  * [Feature] sessionId 기반 실시간 EEG 측정 제어 훅 정의함
  * HTTP POST 1회로 측정 트리거 후 Socket.io eeg-live 이벤트로 데이터 수신함
  *
@@ -104,6 +132,10 @@ interface UseSignalOptions {
 const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [currentMetrics, setCurrentMetrics] = useState<EmotivMetrics | null>(
+    null
+  );
+  // 단일 헤드셋 지원 — subject 2(노트북 B) 메트릭 상태 정의함
+  const [currentMetrics2, setCurrentMetrics2] = useState<EmotivMetrics | null>(
     null
   );
   const [lastReceivedTime, setLastReceivedTime] = useState<string | null>(null);
@@ -237,23 +269,21 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
         subject_2,
       }: AlignedPairPayload) => {
         if (incomingGid !== gid) return; // 다른 그룹 이벤트 무시함
-        // subject_1 데이터 기준으로 currentMetrics 업데이트 (EEG 시각화용)
-        // WavePower → EmotivMetrics 매핑 (알파/베타 기반 간이 변환)
+        // subject_1 데이터 기준으로 currentMetrics 업데이트함 (finite 검증, CodeRabbit #60)
         if (subject_1) {
-          const metrics: EmotivMetrics = {
-            focus: subject_1.beta,
-            engagement: subject_1.alpha,
-            interest: subject_1.theta,
-            excitement: subject_1.gamma,
-            stress: subject_1.delta,
-            relaxation: subject_1.alpha,
-          };
-          setCurrentMetrics(metrics);
-          setLastReceivedTime(new Date().toLocaleTimeString());
+          const metrics = wavePowerToEmotivMetrics(subject_1);
+          if (metrics) {
+            setCurrentMetrics(metrics);
+            setLastReceivedTime(new Date().toLocaleTimeString());
+          }
         }
-        // subject_2 수신 확인 로그 (향후 두 subject 동시 차트 지원 시 확장)
+        // subject_2(노트북 B) 데이터 → currentMetrics2 업데이트함 (단일 헤드셋 지원)
         if (subject_2) {
-          console.info('aligned_pair subject_2 수신 완료함');
+          const metrics2 = wavePowerToEmotivMetrics(subject_2);
+          if (metrics2) {
+            setCurrentMetrics2(metrics2);
+            setLastReceivedTime(new Date().toLocaleTimeString());
+          }
         }
       };
 
@@ -293,6 +323,41 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
       alignedPairHandlerRef.current = null;
     }
   }, []);
+
+  /**
+   * DUAL_2PC 소켓 룸 합류 + 리스너 등록만 수행함 (HTTP spawn 없음).
+   * 측정은 그룹 단위 startDualByGroup으로 트리거되고, FE는 이 메서드로 룸에 합류해
+   * aligned_pair를 수신함 — handleStartExperiment(DUAL_2PC)에서 호출.
+   */
+  const joinDualRoom = useCallback(() => {
+    if (!isDual2pc || !groupId) return;
+    setDualSessionState?.('joining');
+    setIsMeasuring(true);
+
+    const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
+    emitJoinRoom(groupId);
+    registerDualListeners(groupId);
+
+    const completeHandler = (
+      payload: MeasurementCompletePayload & { groupId?: string }
+    ) => {
+      if ((payload.groupId ?? null) !== groupId) return; // 다른 그룹 무시함
+      setIsMeasuring(false);
+      setDualSessionState?.('completed');
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+    completeHandlerRef.current = completeHandler;
+    socket.on('measurement-complete', completeHandler);
+  }, [
+    isDual2pc,
+    groupId,
+    setDualSessionState,
+    emitJoinRoom,
+    registerDualListeners,
+  ]);
 
   /**
    * 측정 시작 처리함
@@ -470,10 +535,12 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
   return {
     isMeasuring,
     currentMetrics,
+    currentMetrics2,
     lastReceivedTime,
     elapsedSeconds,
     roomJoined,
     startMeasurement,
+    joinDualRoom,
     stopMeasurement,
   };
 };

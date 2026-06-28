@@ -96,11 +96,13 @@ export default sessionApi;
 export async function createOperatorInviteToken(
   groupId: string
 ): Promise<{ token: string; expiresAt: number }> {
-  // POST /api/sessions/:groupId/invite-operator (authenticate 미들웨어 적용)
-  const response = await api.post<{ token: string; expiresAt: number }>(
-    `/sessions/${groupId}/invite-operator`
-  );
-  return response.data;
+  // POST /api/sessions/:groupId/invite-operator — 응답 envelope { status, data } 언래핑함
+  // (BE controller가 res.json({ status, data: { token, expiresAt } }) 반환 — data.data가 실제 페이로드)
+  const response = await api.post<{
+    status: string;
+    data: { token: string; expiresAt: number };
+  }>(`/sessions/${groupId}/invite-operator`);
+  return response.data.data;
 }
 
 /**
@@ -113,10 +115,10 @@ export async function createOperatorInviteToken(
 export async function joinAsOperator(
   token: string
 ): Promise<{ groupId: string; experimentMode: 'DUAL_2PC' }> {
-  // POST /api/sessions/join-as-operator (authenticate 미적용 — JWT body 검증만)
+  // POST /api/sessions/join-as-operator — 응답 envelope { status, data } 언래핑함
   const response = await api.post<{
-    groupId: string;
-    experimentMode: 'DUAL_2PC';
+    status: string;
+    data: { groupId: string; experimentMode: 'DUAL_2PC' };
   }>('/sessions/join-as-operator', { token });
-  return response.data;
+  return response.data.data;
 }

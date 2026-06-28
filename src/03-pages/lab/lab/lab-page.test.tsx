@@ -34,10 +34,24 @@ vi.mock('@/05-features/signals', () => ({
     isMeasuring: false,
     elapsedSeconds: 0,
     currentMetrics: null,
+    currentMetrics2: null,
     startMeasurement: vi.fn(),
     stopMeasurement: vi.fn(),
+    joinDualRoom: vi.fn(),
   })),
   SignalMeasurer: () => null,
+}));
+
+/**
+ * next/navigation mock 수행함 — useSearchParams의 groupId를 테스트에서 제어함 (F2).
+ * vi.hoisted로 mock 함수를 끌어올려 factory 내부 참조 안전성 보장함.
+ */
+const { mockSearchParamsGet } = vi.hoisted(() => ({
+  mockSearchParamsGet: vi.fn((_key: string): string | null => null),
+}));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  useSearchParams: () => ({ get: mockSearchParamsGet }),
 }));
 
 /**
@@ -162,7 +176,7 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
     ).toBeInTheDocument();
   });
 
-  it('DUAL_2PC 모드 + groupId 있음 + partnerConnected=false → 파트너 PC 초대 QR 버튼 표시 처리됨', async () => {
+  it('DUAL_2PC 모드 + 페어링 완료 + partnerConnected=false → operator 합류(이 PC) 버튼 표시 처리됨', async () => {
     // useDualSession: 파트너 미연결 상태 mock 설정함
     (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
       state: 'waiting',
@@ -172,8 +186,8 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
       setDualSessionState: vi.fn(),
     });
 
-    // usePairing: groupId 있음 + 페어링 완료 상태 mock 설정함
-    // groupId 존재 시 표준 페어링 분기 통과하여 파트너 초대 QR 표시함
+    // usePairing: 페어링 완료(양쪽 PAIRED) 상태 mock 설정함
+    // pairedSubjects 충족 시 operator 합류(이 PC) 원클릭 버튼 표시함 (QR 제거됨)
     (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
       groupId: 'group-paired',
       pairingCode: null,
@@ -208,10 +222,8 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
     const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
     await user.click(dual2pcBtn);
 
-    // groupId 있고 partnerConnected=false이므로 파트너 PC 초대 QR 버튼 표시 확인함
-    expect(
-      screen.getByRole('button', { name: /파트너 PC 초대/ })
-    ).toBeInTheDocument();
+    // 페어링 완료 + partnerConnected=false이므로 operator 합류(이 PC) 버튼 표시 확인함
+    expect(screen.getByTestId('operator-self-join')).toBeInTheDocument();
   });
 
   it('DUAL_2PC 모드 + groupId 없음 + 페어링 미완료 → Subject 연결 QR 생성 버튼 표시 처리됨', async () => {
@@ -644,5 +656,145 @@ describe('LabPage DUAL_2PC inFlight 인디케이터 render 검증 수행함', ()
     await user.click(dual2pcBtn);
 
     expect(screen.queryByText(/등록 시도 중/)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * F2 — groupId provenance (신선한 pairing 우선, stale URL 표류 차단)
+ *
+ * 차트 0건 표류 근본원인 중 하나: 이전 operator-join 리다이렉트가 남긴
+ * stale ?groupId= 가 새 페어링 그룹을 덮어써 BE/FE 그룹ID가 어긋남.
+ * fix 전 RED(stale URL로 startDualByGroup 호출), fix 후 GREEN(pairing 우선).
+ */
+describe('LabPage F2 — groupId provenance (신선한 pairing 우선)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+    mockSearchParamsGet.mockReturnValue(null);
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'ready',
+      partnerConnected: true,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'fresh-pairing-group',
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [
+        { id: 'session-1', subjectIndex: 1 },
+        { id: 'session-2', subjectIndex: 2 },
+      ],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'PAIRED',
+      subjectIndex: null,
+      sessionId: null,
+    });
+  });
+
+  it('stale URL ?groupId= 가 있어도 신선한 pairing groupId로 측정 시작함', async () => {
+    // URL에 옛 그룹이 남아 있는 상황 재현함
+    mockSearchParamsGet.mockReturnValue('stale-url-group');
+
+    const measurementApi = await import('@/07-shared/api/signal');
+    const startDualByGroupMock = vi.mocked(
+      measurementApi.default.startDualByGroup
+    );
+
+    const user = userEvent.setup();
+    renderLabPage();
+
+    const settingsBtn = screen
+      .getAllByRole('button')
+      .find((b) => b.querySelector('svg.lucide-settings'));
+    if (settingsBtn) await user.click(settingsBtn);
+    const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
+    await user.click(dual2pcBtn);
+
+    const startBtn = screen.getByRole('button', { name: /실험 시작/ });
+    await user.click(startBtn);
+
+    // 신선한 pairing 그룹으로 호출되어야 함 (stale URL 무시)
+    expect(startDualByGroupMock).toHaveBeenCalledWith('fresh-pairing-group');
+    expect(startDualByGroupMock).not.toHaveBeenCalledWith('stale-url-group');
+  });
+});
+
+/**
+ * F3 — 실험 시작 중복 클릭 가드
+ *
+ * 더블클릭 시 두 번째 start가 BE 전이 가드로 400을 받아 dev 오버레이를 유발하던 버그.
+ * fix 전 RED(startDualByGroup 2회 호출), fix 후 GREEN(1회만).
+ */
+describe('LabPage F3 — 실험 시작 중복 클릭 가드', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+    mockSearchParamsGet.mockReturnValue(null);
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'ready',
+      partnerConnected: true,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'group-guard',
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [
+        { id: 'session-1', subjectIndex: 1 },
+        { id: 'session-2', subjectIndex: 2 },
+      ],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'PAIRED',
+      subjectIndex: null,
+      sessionId: null,
+    });
+  });
+
+  it('실험 시작 더블클릭 시 startDualByGroup은 1회만 호출됨', async () => {
+    const measurementApi = await import('@/07-shared/api/signal');
+    const startDualByGroupMock = vi.mocked(
+      measurementApi.default.startDualByGroup
+    );
+    // 시작 호출을 pending 상태로 유지함 — resolve되면 finally가 가드 ref를 해제하므로
+    // 가드 작동 검증을 위해 미해결 Promise 반환함
+    startDualByGroupMock.mockImplementation(
+      () => new Promise(() => {}) as never
+    );
+
+    const user = userEvent.setup();
+    renderLabPage();
+
+    const settingsBtn = screen
+      .getAllByRole('button')
+      .find((b) => b.querySelector('svg.lucide-settings'));
+    if (settingsBtn) await user.click(settingsBtn);
+    const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
+    await user.click(dual2pcBtn);
+
+    const startBtn = screen.getByRole('button', { name: /실험 시작/ });
+    await user.click(startBtn);
+    await user.click(startBtn);
+
+    expect(startDualByGroupMock).toHaveBeenCalledTimes(1);
   });
 });
