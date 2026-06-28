@@ -869,16 +869,33 @@ describe('LabPage CR — 측정 시작 실패 visible error', () => {
     expect(await screen.findByText(/측정 시작 실패/)).toBeInTheDocument();
   });
 
-  it('startDualByGroup 400(중복) 실패는 error 안 띄움', async () => {
+  it('startDualByGroup 400(이미 MEASURING 기대 메시지)는 error 안 띄움', async () => {
     const measurementApi = await import('@/07-shared/api/signal');
     vi.mocked(measurementApi.default.startDualByGroup).mockRejectedValue({
-      response: { status: 400 },
+      response: {
+        status: 400,
+        data: {
+          message:
+            '그룹 내 전이 불가 세션이 존재하여 측정을 시작할 수 없습니다.',
+        },
+      },
     });
 
     await openDual2pcAndStart();
     await new Promise((r) => setTimeout(r, 50));
 
     expect(screen.queryByText(/측정 시작 실패/)).not.toBeInTheDocument();
+  });
+
+  it('startDualByGroup 400(예상 외 메시지)는 visible error 표시함', async () => {
+    const measurementApi = await import('@/07-shared/api/signal');
+    vi.mocked(measurementApi.default.startDualByGroup).mockRejectedValue({
+      response: { status: 400, data: { message: '잘못된 요청입니다.' } },
+    });
+
+    await openDual2pcAndStart();
+
+    expect(await screen.findByText(/잘못된 요청입니다/)).toBeInTheDocument();
   });
 });
 

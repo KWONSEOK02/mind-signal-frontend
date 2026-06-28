@@ -200,14 +200,20 @@ const LabPage = () => {
         .catch((err: unknown) => {
           const status = (err as { response?: { status?: number } })?.response
             ?.status;
-          // 중복 클릭/이미 MEASURING 등 기대 가능한 400만 무시함 (dev 오버레이 회피)
-          if (status === 400) {
-            console.warn('DUAL_2PC 측정 시작 중복 호출 무시:', err);
-            return;
-          }
-          // 401/500/네트워크 등은 버튼 근처 visible error로 노출함 (CodeRabbit #60)
           const beMsg = (err as { response?: { data?: { message?: string } } })
             ?.response?.data?.message;
+          // "지금 시작 불가"인 기대 가능한 400(이미 MEASURING/모드 불일치)만 무시함
+          // (F3 더블클릭 + dev 오버레이 회피). 그 외 400 및 401/500/네트워크는 모두
+          // visible error로 노출함 — 400 전체를 삼키지 않음 (CodeRabbit #61).
+          const isExpectedStartBlock =
+            status === 400 &&
+            !!beMsg &&
+            (beMsg.includes('측정을 시작할 수 없습니다') ||
+              beMsg.includes('DUAL_2PC 모드만'));
+          if (isExpectedStartBlock) {
+            console.warn('DUAL_2PC 측정 시작 차단(기대):', err);
+            return;
+          }
           setStartError(beMsg ?? '측정 시작 실패 — 다시 시도 필요함.');
         })
         .finally(() => {
