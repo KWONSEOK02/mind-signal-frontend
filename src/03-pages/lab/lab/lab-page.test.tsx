@@ -390,18 +390,22 @@ describe('LabPage Phase 17.6 fallback 버튼 render + 클릭 검증 수행함', 
       value: 1280,
     });
 
-    // usePairing: groupId 있는 상태 mock 설정함 (fallback 버튼 표시 전제)
+    // usePairing: fallback 전제 — showFallback은 양쪽 PAIRED + assign-group 이후에만
+    // true가 되므로 pairedSubjects는 [1,2](isAllPaired)여야 현실적임.
     (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
       groupId: 'test-group-fallback',
       pairingCode: null,
       timeLeft: 300,
-      pairedSubjects: [],
-      isAllPaired: false,
-      sessions: [],
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [
+        { id: 'session-1', subjectIndex: 1 },
+        { id: 'session-2', subjectIndex: 2 },
+      ],
       startPairing: vi.fn(),
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
-      status: 'IDLE',
+      status: 'PAIRED',
       subjectIndex: null,
       sessionId: null,
     });
@@ -493,6 +497,68 @@ describe('LabPage Phase 17.6 fallback 버튼 render + 클릭 검증 수행함', 
     await waitFor(() => {
       expect(screen.getByText(/대기 상태가 아닙니다/)).toBeInTheDocument();
     });
+  });
+});
+
+/**
+ * 회귀 재현 — DUAL_2PC 첫 Subject QR 조기 소멸 (CodeRabbit lab-page.tsx:344)
+ *
+ * startPairing이 세션 생성 직후 groupId를 세팅하면, !groupId 기준 분기 때문에
+ * subject가 스캔하기 전에 Subject 연결 QR 버튼이 파트너 초대로 전환되던 버그.
+ * fix 전 RED(파트너 초대 버튼으로 전환), fix 후 GREEN(Subject 버튼 유지).
+ */
+describe('LabPage DUAL_2PC 첫 Subject QR 조기 소멸 회귀', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+  });
+
+  it('groupId 세팅됨 + 페어링 미완료면 Subject 연결 QR 버튼 유지(파트너 초대 전환 안 됨)', async () => {
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'invited',
+      partnerConnected: false,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    // 세션 생성 직후: groupId 세팅됨, 아직 subject PAIRED 0
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'gid-midpair',
+      pairingCode: 'token-1',
+      timeLeft: 300,
+      pairedSubjects: [],
+      isAllPaired: false,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'CREATED',
+      subjectIndex: null,
+      sessionId: null,
+    });
+
+    const user = userEvent.setup();
+    renderLabPage();
+
+    const settingsBtn = screen
+      .getAllByRole('button')
+      .find((btn) => btn.querySelector('svg.lucide-settings'));
+    if (settingsBtn) await user.click(settingsBtn);
+    const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
+    await user.click(dual2pcBtn);
+
+    // 페어링 중이므로 Subject 연결 QR 버튼이 유지돼야 함
+    expect(
+      screen.getByRole('button', { name: /Subject 0\d 연결 QR 생성/ })
+    ).toBeInTheDocument();
+    // 파트너 PC 초대로 조기 전환되면 안 됨
+    expect(
+      screen.queryByRole('button', { name: /파트너 PC 초대/ })
+    ).not.toBeInTheDocument();
   });
 });
 

@@ -318,8 +318,9 @@ const LabPage = () => {
 
     // DUAL_2PC 모드 처리 분기함
     if (mode === 'DUAL_2PC') {
-      // 그룹 미생성 + 피실험자 미충족 시 표준 페어링 버튼 표시함
-      if (!groupId && pairedSubjects.length < currentConfig.targetCount) {
+      // 페어링 미완료(subject 미충족) 시 Subject 연결 QR 버튼 표시함.
+      // groupId는 세션 생성 직후 채워지므로 단계 신호로 쓰면 첫 QR이 조기 소멸함 — pairedSubjects 기준 사용.
+      if (pairedSubjects.length < currentConfig.targetCount) {
         const nextSubjectNum = pairedSubjects.length + 1;
         const buttonText = `Subject 0${nextSubjectNum} 연결 QR 생성`;
         return (
@@ -575,7 +576,7 @@ const LabPage = () => {
         {isQRVisible &&
         !isAllPaired &&
         (mode !== 'DUAL_2PC' ||
-          (!groupId && pairedSubjects.length < currentConfig.targetCount)) ? (
+          pairedSubjects.length < currentConfig.targetCount) ? (
           <section className="animate-in fade-in zoom-in duration-500">
             {/*}  6. QR코드 박스 배경/테두리 변경*/}
             <div
