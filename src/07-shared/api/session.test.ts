@@ -56,6 +56,26 @@ describe('sessionApi — 세션 API 통합 테스트 수행함', () => {
       });
     });
 
+    it('experimentMode 전달 시 body에 포함 처리함 (DUAL_2PC 생성 경로)', async () => {
+      mockPost.mockResolvedValue(mockResponse);
+
+      await sessionApi.createdPairing('existing-group', 'DUAL_2PC');
+
+      expect(mockPost).toHaveBeenCalledWith('/sessions', {
+        groupId: 'existing-group',
+        experimentMode: 'DUAL_2PC',
+      });
+    });
+
+    it('experimentMode 미전달 시 body에 키 자체 없음', async () => {
+      mockPost.mockResolvedValue(mockResponse);
+
+      await sessionApi.createdPairing();
+
+      const receivedBody = mockPost.mock.calls[0][1] as Record<string, unknown>;
+      expect(receivedBody).not.toHaveProperty('experimentMode');
+    });
+
     it('API 실패 시 에러가 전파 처리됨', async () => {
       mockPost.mockRejectedValue(new Error('Network error'));
 

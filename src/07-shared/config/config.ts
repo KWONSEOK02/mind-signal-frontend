@@ -41,6 +41,12 @@ const envSchema = z.object({
 
   /** Kakao JS SDK 앱 키 (로컬 개발 환경에서는 미설정 허용) */
   NEXT_PUBLIC_KAKAO_JS_KEY: z.string().optional().default(''),
+
+  /**
+   * Operator PC 기준 origin (파트너 초대 QR URL 생성용)
+   * 미설정 시 브라우저 window.location.origin 폴백 사용함
+   */
+  NEXT_PUBLIC_OPERATOR_ORIGIN: z.string().optional().default(''),
 });
 
 /**
@@ -56,6 +62,7 @@ const parsedEnv = envSchema.safeParse({
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
   NEXT_PUBLIC_KAKAO_CLIENT_ID: process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID,
   NEXT_PUBLIC_KAKAO_JS_KEY: process.env.NEXT_PUBLIC_KAKAO_JS_KEY,
+  NEXT_PUBLIC_OPERATOR_ORIGIN: process.env.NEXT_PUBLIC_OPERATOR_ORIGIN,
 });
 
 if (!parsedEnv.success) {
@@ -100,6 +107,12 @@ export const config = {
     title: 'Mind Signal',
     description: '뇌파 분석 및 매칭 서비스',
   },
+
+  /**
+   * Operator PC 기준 origin (파트너 초대 QR URL 생성용)
+   * 비어 있으면 컴포넌트에서 window.location.origin 폴백 처리함
+   */
+  operatorOrigin: env.NEXT_PUBLIC_OPERATOR_ORIGIN,
 } as const;
 
 export default config;

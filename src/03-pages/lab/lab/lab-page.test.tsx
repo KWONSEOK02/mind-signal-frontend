@@ -54,6 +54,20 @@ vi.mock('@/07-shared/api/dual-trigger', () => ({
 }));
 
 /**
+ * measurementApi mock 수행함 — 네트워크 호출 방지함
+ */
+vi.mock('@/07-shared/api/signal', () => ({
+  default: {
+    startMeasurement: vi
+      .fn()
+      .mockResolvedValue({ data: { status: 'success' } }),
+    startDualByGroup: vi
+      .fn()
+      .mockResolvedValue({ data: { status: 'success' } }),
+  },
+}));
+
+/**
  * authApi mock 수행함 — UIProvider 내부 refreshUser 호출 방지함
  */
 vi.mock('@/07-shared/api/auth', () => ({
@@ -113,7 +127,6 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
       status: 'IDLE',
-      role: null,
       subjectIndex: null,
       sessionId: null,
     });
@@ -149,7 +162,7 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
     ).toBeInTheDocument();
   });
 
-  it('DUAL_2PC 모드 + partnerConnected=false → 파트너 PC 초대 QR 버튼 표시 처리됨', async () => {
+  it('DUAL_2PC 모드 + groupId 있음 + partnerConnected=false → 파트너 PC 초대 QR 버튼 표시 처리됨', async () => {
     // useDualSession: 파트너 미연결 상태 mock 설정함
     (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
       state: 'waiting',
@@ -159,19 +172,22 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
       setDualSessionState: vi.fn(),
     });
 
-    // usePairing: 미연결 상태 mock 설정함
+    // usePairing: groupId 있음 + 페어링 완료 상태 mock 설정함
+    // groupId 존재 시 표준 페어링 분기 통과하여 파트너 초대 QR 표시함
     (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
-      groupId: null,
+      groupId: 'group-paired',
       pairingCode: null,
       timeLeft: 300,
-      pairedSubjects: [],
-      isAllPaired: false,
-      sessions: [],
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [
+        { id: 'session-1', subjectIndex: 1 },
+        { id: 'session-2', subjectIndex: 2 },
+      ],
       startPairing: vi.fn(),
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
-      status: 'IDLE',
-      role: null,
+      status: 'PAIRED',
       subjectIndex: null,
       sessionId: null,
     });
@@ -192,9 +208,57 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
     const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
     await user.click(dual2pcBtn);
 
-    // partnerConnected=false이므로 파트너 PC 초대 QR 버튼 표시 확인함
+    // groupId 있고 partnerConnected=false이므로 파트너 PC 초대 QR 버튼 표시 확인함
     expect(
       screen.getByRole('button', { name: /파트너 PC 초대/ })
+    ).toBeInTheDocument();
+  });
+
+  it('DUAL_2PC 모드 + groupId 없음 + 페어링 미완료 → Subject 연결 QR 생성 버튼 표시 처리됨', async () => {
+    // useDualSession: 파트너 미연결 상태 mock 설정함
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'idle',
+      partnerConnected: false,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+
+    // usePairing: groupId 없음, 페어링 0명 상태 mock 설정함
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: null,
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [],
+      isAllPaired: false,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'IDLE',
+      subjectIndex: null,
+      sessionId: null,
+    });
+
+    const user = userEvent.setup();
+    renderLabPage();
+
+    // 설정 버튼 클릭하여 모드 드롭다운 열기 수행함
+    const allButtons = screen.getAllByRole('button');
+    const settingsBtnByIcon = allButtons.find((btn) =>
+      btn.querySelector('svg.lucide-settings')
+    );
+    if (settingsBtnByIcon) {
+      await user.click(settingsBtnByIcon);
+    }
+
+    // DUAL 2PC 모드 선택 수행함
+    const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
+    await user.click(dual2pcBtn);
+
+    // groupId 없으므로 Subject 01 연결 QR 생성 버튼 표시 확인함
+    expect(
+      screen.getByRole('button', { name: /Subject 01 연결 QR 생성/ })
     ).toBeInTheDocument();
   });
 
@@ -223,7 +287,6 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
       status: 'PAIRED',
-      role: 'OPERATOR',
       subjectIndex: null,
       sessionId: null,
     });
@@ -234,6 +297,76 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
     expect(
       screen.getByRole('button', { name: /실험 시작/ })
     ).toBeInTheDocument();
+  });
+});
+
+/**
+ * D4-FE: DUAL_2PC 실험 시작 시 startDualByGroup 호출 테스트 수행함
+ */
+describe('LabPage D4-FE — DUAL_2PC 실험 시작 startDualByGroup 호출 검증 수행함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+  });
+
+  it('DUAL_2PC + partnerConnected=true 시 실험 시작 클릭 → startDualByGroup 호출 처리됨', async () => {
+    const measurementApi = await import('@/07-shared/api/signal');
+    const startDualByGroupMock = vi.mocked(
+      measurementApi.default.startDualByGroup
+    );
+
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'ready',
+      partnerConnected: true,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+
+    // groupId 있는 상태 mock 설정함 (pairingGroupId 반환)
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'group-dual-2pc',
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [
+        { id: 'session-1', subjectIndex: 1 },
+        { id: 'session-2', subjectIndex: 2 },
+      ],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'PAIRED',
+      subjectIndex: null,
+      sessionId: null,
+    });
+
+    const user = userEvent.setup();
+    renderLabPage();
+
+    // DUAL 2PC 모드 선택 수행함
+    const allButtons = screen.getAllByRole('button');
+    const settingsBtnByIcon = allButtons.find((btn) =>
+      btn.querySelector('svg.lucide-settings')
+    );
+    if (settingsBtnByIcon) {
+      await user.click(settingsBtnByIcon);
+    }
+    const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
+    await user.click(dual2pcBtn);
+
+    // 실험 시작 버튼 클릭 수행함
+    const startBtn = screen.getByRole('button', { name: /실험 시작/ });
+    await user.click(startBtn);
+
+    // startDualByGroup('group-dual-2pc') 호출 확인함
+    expect(startDualByGroupMock).toHaveBeenCalledWith('group-dual-2pc');
   });
 });
 
@@ -257,19 +390,22 @@ describe('LabPage Phase 17.6 fallback 버튼 render + 클릭 검증 수행함', 
       value: 1280,
     });
 
-    // usePairing: groupId 있는 상태 mock 설정함 (fallback 버튼 표시 전제)
+    // usePairing: fallback 전제 — showFallback은 양쪽 PAIRED + assign-group 이후에만
+    // true가 되므로 pairedSubjects는 [1,2](isAllPaired)여야 현실적임.
     (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
       groupId: 'test-group-fallback',
       pairingCode: null,
       timeLeft: 300,
-      pairedSubjects: [],
-      isAllPaired: false,
-      sessions: [],
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [
+        { id: 'session-1', subjectIndex: 1 },
+        { id: 'session-2', subjectIndex: 2 },
+      ],
       startPairing: vi.fn(),
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
-      status: 'IDLE',
-      role: null,
+      status: 'PAIRED',
       subjectIndex: null,
       sessionId: null,
     });
@@ -361,5 +497,152 @@ describe('LabPage Phase 17.6 fallback 버튼 render + 클릭 검증 수행함', 
     await waitFor(() => {
       expect(screen.getByText(/대기 상태가 아닙니다/)).toBeInTheDocument();
     });
+  });
+});
+
+/**
+ * 회귀 재현 — DUAL_2PC 첫 Subject QR 조기 소멸 (CodeRabbit lab-page.tsx:344)
+ *
+ * startPairing이 세션 생성 직후 groupId를 세팅하면, !groupId 기준 분기 때문에
+ * subject가 스캔하기 전에 Subject 연결 QR 버튼이 파트너 초대로 전환되던 버그.
+ * fix 전 RED(파트너 초대 버튼으로 전환), fix 후 GREEN(Subject 버튼 유지).
+ */
+describe('LabPage DUAL_2PC 첫 Subject QR 조기 소멸 회귀', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+  });
+
+  it('groupId 세팅됨 + 페어링 미완료면 Subject 연결 QR 버튼 유지(파트너 초대 전환 안 됨)', async () => {
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'invited',
+      partnerConnected: false,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    // 세션 생성 직후: groupId 세팅됨, 아직 subject PAIRED 0
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'gid-midpair',
+      pairingCode: 'token-1',
+      timeLeft: 300,
+      pairedSubjects: [],
+      isAllPaired: false,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'CREATED',
+      subjectIndex: null,
+      sessionId: null,
+    });
+
+    const user = userEvent.setup();
+    renderLabPage();
+
+    const settingsBtn = screen
+      .getAllByRole('button')
+      .find((btn) => btn.querySelector('svg.lucide-settings'));
+    if (settingsBtn) await user.click(settingsBtn);
+    const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
+    await user.click(dual2pcBtn);
+
+    // 페어링 중이므로 Subject 연결 QR 버튼이 유지돼야 함
+    expect(
+      screen.getByRole('button', { name: /Subject 0\d 연결 QR 생성/ })
+    ).toBeInTheDocument();
+    // 파트너 PC 초대로 조기 전환되면 안 됨
+    expect(
+      screen.queryByRole('button', { name: /파트너 PC 초대/ })
+    ).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * inFlight 인디케이터 테스트 수행함
+ *
+ * DUAL_2PC 등록 진행 중(registryStatus.inFlight=true, partnerConnected=false)일 때
+ * System Phase 박스에 "등록 시도 중..." 시각 피드백 노출 검증함.
+ */
+describe('LabPage DUAL_2PC inFlight 인디케이터 render 검증 수행함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'group-inflight',
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [],
+      isAllPaired: false,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'IDLE',
+      subjectIndex: null,
+      sessionId: null,
+    });
+  });
+
+  it('inFlight=true + partnerConnected=false → "등록 시도 중..." 표시 처리됨', async () => {
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'invited',
+      partnerConnected: false,
+      registryStatus: {
+        ready: false,
+        registered: 0,
+        attempts: 1,
+        inFlight: true,
+      },
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+
+    const user = userEvent.setup();
+    renderLabPage();
+
+    const settingsBtn = screen
+      .getAllByRole('button')
+      .find((btn) => btn.querySelector('svg.lucide-settings'));
+    if (settingsBtn) await user.click(settingsBtn);
+    const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
+    await user.click(dual2pcBtn);
+
+    expect(screen.getByText(/등록 시도 중/)).toBeInTheDocument();
+  });
+
+  it('inFlight=false → "등록 시도 중..." 미표시 처리됨', async () => {
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'invited',
+      partnerConnected: false,
+      registryStatus: {
+        ready: false,
+        registered: 0,
+        attempts: 0,
+        inFlight: false,
+      },
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+
+    const user = userEvent.setup();
+    renderLabPage();
+
+    const settingsBtn = screen
+      .getAllByRole('button')
+      .find((btn) => btn.querySelector('svg.lucide-settings'));
+    if (settingsBtn) await user.click(settingsBtn);
+    const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
+    await user.click(dual2pcBtn);
+
+    expect(screen.queryByText(/등록 시도 중/)).not.toBeInTheDocument();
   });
 });

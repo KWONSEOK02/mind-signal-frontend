@@ -38,6 +38,17 @@ const measurementApi = {
     api.post<MeasurementResponse>(
       `/measurements/sessions/${sessionId}/eeg/stream:start`
     ),
+
+  /**
+   * DUAL_2PC 모드에서 groupId 기반으로 EEG 스트림 측정 시작 요청 수행함
+   * 202 Accepted 반환 후 양쪽 PC가 동기화 측정 시작함
+   */
+  startDualByGroup: (
+    groupId: string
+  ): Promise<AxiosResponse<MeasurementResponse>> =>
+    api.post<MeasurementResponse>(
+      `/measurements/groups/${groupId}/eeg/stream:start`
+    ),
 };
 
 export default measurementApi;

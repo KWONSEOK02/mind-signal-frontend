@@ -84,11 +84,6 @@ describe('usePairing — 페어링 훅 단위 테스트 수행함', () => {
       expect(result.current.pairingCode).toBeNull();
     });
 
-    it('role이 null로 초기화 처리됨', () => {
-      const { result } = renderHook(() => usePairing(2));
-      expect(result.current.role).toBeNull();
-    });
-
     it('subjectIndex가 null로 초기화 처리됨', () => {
       const { result } = renderHook(() => usePairing(2));
       expect(result.current.subjectIndex).toBeNull();
@@ -133,17 +128,6 @@ describe('usePairing — 페어링 훅 단위 테스트 수행함', () => {
       });
 
       expect(result.current.status).toBe(SESSION_STATUS.PAIRED);
-    });
-
-    it('성공 응답 시 role이 SUBJECT로 설정 처리됨', async () => {
-      mockVerifyPairing.mockResolvedValue(mockSuccessResponse);
-      const { result } = renderHook(() => usePairing(2));
-
-      await act(async () => {
-        await result.current.requestPairing('valid-token');
-      });
-
-      expect(result.current.role).toBe('SUBJECT');
     });
 
     it('성공 응답 시 groupId가 응답 값으로 설정 처리됨', async () => {
@@ -345,24 +329,6 @@ describe('usePairing — 페어링 훅 단위 테스트 수행함', () => {
       });
 
       expect(result.current.sessionId).toBeNull();
-    });
-
-    it('resetStatus 호출 후에도 role은 초기화되지 않고 기존 값을 유지함', async () => {
-      // resetStatus 구현에 setRole 호출이 포함되지 않으므로 role은 유지됨
-      mockVerifyPairing.mockResolvedValue(mockSuccessResponse);
-      const { result } = renderHook(() => usePairing(2));
-
-      await act(async () => {
-        await result.current.requestPairing('valid-token');
-      });
-      expect(result.current.role).toBe('SUBJECT');
-
-      act(() => {
-        result.current.resetStatus();
-      });
-
-      // resetStatus는 role을 초기화하지 않으므로 SUBJECT 유지 처리됨
-      expect(result.current.role).toBe('SUBJECT');
     });
 
     it('resetStatus 호출 시 subjectIndex가 null로 복원 처리됨', async () => {
