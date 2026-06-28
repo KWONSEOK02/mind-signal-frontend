@@ -607,9 +607,11 @@ const LabPage = () => {
           <SignalComparisonWidget
             subject1Metrics={subject1Signal.currentMetrics}
             subject2Metrics={
-              currentConfig.targetCount > 1
-                ? subject2Signal.currentMetrics
-                : null
+              mode === 'DUAL_2PC'
+                ? subject1Signal.currentMetrics2
+                : currentConfig.targetCount > 1
+                  ? subject2Signal.currentMetrics
+                  : null
             }
           />
         </section>
