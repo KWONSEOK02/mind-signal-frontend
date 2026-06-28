@@ -127,7 +127,6 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
       status: 'IDLE',
-      role: null,
       subjectIndex: null,
       sessionId: null,
     });
@@ -189,7 +188,6 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
       status: 'PAIRED',
-      role: 'OPERATOR',
       subjectIndex: null,
       sessionId: null,
     });
@@ -238,7 +236,6 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
       status: 'IDLE',
-      role: null,
       subjectIndex: null,
       sessionId: null,
     });
@@ -290,7 +287,6 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
       status: 'PAIRED',
-      role: 'OPERATOR',
       subjectIndex: null,
       sessionId: null,
     });
@@ -347,7 +343,6 @@ describe('LabPage D4-FE — DUAL_2PC 실험 시작 startDualByGroup 호출 검�
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
       status: 'PAIRED',
-      role: 'OPERATOR',
       subjectIndex: null,
       sessionId: null,
     });
@@ -407,7 +402,6 @@ describe('LabPage Phase 17.6 fallback 버튼 render + 클릭 검증 수행함', 
       resetStatus: vi.fn(),
       requestPairing: vi.fn(),
       status: 'IDLE',
-      role: null,
       subjectIndex: null,
       sessionId: null,
     });
@@ -499,5 +493,90 @@ describe('LabPage Phase 17.6 fallback 버튼 render + 클릭 검증 수행함', 
     await waitFor(() => {
       expect(screen.getByText(/대기 상태가 아닙니다/)).toBeInTheDocument();
     });
+  });
+});
+
+/**
+ * inFlight 인디케이터 테스트 수행함
+ *
+ * DUAL_2PC 등록 진행 중(registryStatus.inFlight=true, partnerConnected=false)일 때
+ * System Phase 박스에 "등록 시도 중..." 시각 피드백 노출 검증함.
+ */
+describe('LabPage DUAL_2PC inFlight 인디케이터 render 검증 수행함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'group-inflight',
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [],
+      isAllPaired: false,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'IDLE',
+      subjectIndex: null,
+      sessionId: null,
+    });
+  });
+
+  it('inFlight=true + partnerConnected=false → "등록 시도 중..." 표시 처리됨', async () => {
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'invited',
+      partnerConnected: false,
+      registryStatus: {
+        ready: false,
+        registered: 0,
+        attempts: 1,
+        inFlight: true,
+      },
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+
+    const user = userEvent.setup();
+    renderLabPage();
+
+    const settingsBtn = screen
+      .getAllByRole('button')
+      .find((btn) => btn.querySelector('svg.lucide-settings'));
+    if (settingsBtn) await user.click(settingsBtn);
+    const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
+    await user.click(dual2pcBtn);
+
+    expect(screen.getByText(/등록 시도 중/)).toBeInTheDocument();
+  });
+
+  it('inFlight=false → "등록 시도 중..." 미표시 처리됨', async () => {
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'invited',
+      partnerConnected: false,
+      registryStatus: {
+        ready: false,
+        registered: 0,
+        attempts: 0,
+        inFlight: false,
+      },
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+
+    const user = userEvent.setup();
+    renderLabPage();
+
+    const settingsBtn = screen
+      .getAllByRole('button')
+      .find((btn) => btn.querySelector('svg.lucide-settings'));
+    if (settingsBtn) await user.click(settingsBtn);
+    const dual2pcBtn = await screen.findByText(/DUAL 2PC 모드/i);
+    await user.click(dual2pcBtn);
+
+    expect(screen.queryByText(/등록 시도 중/)).not.toBeInTheDocument();
   });
 });

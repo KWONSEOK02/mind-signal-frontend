@@ -115,7 +115,7 @@ const LabPage = () => {
     sessions,
     startPairing,
     resetStatus,
-  } = usePairing(currentConfig.targetCount);
+  } = usePairing(currentConfig.targetCount, mode);
 
   // groupId: URL 파라미터 우선, 없으면 페어링에서 가져옴
   const groupId = urlGroupId ?? pairingGroupId;
@@ -721,6 +721,15 @@ const LabPage = () => {
                   ? '2PC 동기화 측정 모드. 파트너 PC가 합류해야 실험 시작 가능함.'
                   : `운영자 채널 활성화 완료됨. ${currentConfig.targetCount}명의 피실험자가 합류해야 실험 시작 버튼이 활성화됨.`}
               </p>
+              {/* DUAL_2PC 등록 진행 중(inFlight) 시각 피드백 — 시스템이 동작 중임을 표시함 */}
+              {mode === 'DUAL_2PC' &&
+              !partnerConnected &&
+              registryStatus?.inFlight ? (
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span>등록 시도 중...</span>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

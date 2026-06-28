@@ -52,7 +52,7 @@ describe('Reproduce: startPairing이 BE 400 응답 시 동작 박제함', () => 
 
   beforeEach(() => {
     vi.useFakeTimers();
-    engine = new PairingStep('DUAL');
+    engine = new PairingStep();
     onStatusUpdate = vi.fn();
     onTimeUpdate = vi.fn();
     vi.clearAllMocks();
@@ -136,7 +136,7 @@ describe('Reproduce: startPairing이 BE 400 응답 시 동작 박제함', () => 
 
     // assert: engine이 createdPairing에 undefined를 전달함
     // (session.ts 계층에서 undefined → null 치환이 일어나는 지점)
-    expect(mockCreatedPairing).toHaveBeenCalledWith(undefined);
+    expect(mockCreatedPairing).toHaveBeenCalledWith(undefined, 'DUAL');
   });
 
   /**
@@ -221,7 +221,7 @@ describe('Reproduce: startPairing이 BE 400 응답 시 동작 박제함', () => 
 
     // assert: `null || undefined` = undefined → createdPairing(undefined) 호출됨
     // session.ts에서 undefined → null 치환 발생 지점은 session.repro 테스트에서 박제
-    expect(mockCreatedPairing).toHaveBeenCalledWith(undefined);
+    expect(mockCreatedPairing).toHaveBeenCalledWith(undefined, 'DUAL');
   });
 });
 
@@ -241,7 +241,7 @@ describe('DUAL 모드 QR 버그 — 400 응답 후 폴링/타이머 미시작 �
 
   beforeEach(() => {
     vi.useFakeTimers();
-    engine = new PairingStep('DUAL');
+    engine = new PairingStep();
     onStatusUpdate = vi.fn();
     onTimeUpdate = vi.fn();
     vi.clearAllMocks();

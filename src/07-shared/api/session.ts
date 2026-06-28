@@ -45,8 +45,11 @@ const sessionApi = {
   /**
    * 운영자용 새로운 그룹 실험 세션 생성 요청 수행함
    */
-  createdPairing: (groupId?: string) =>
-    api.post<PairingResponse>('/sessions', groupId ? { groupId } : {}),
+  createdPairing: (groupId?: string, experimentMode?: string) =>
+    api.post<PairingResponse>('/sessions', {
+      ...(groupId ? { groupId } : {}),
+      ...(experimentMode ? { experimentMode } : {}),
+    }),
 
   /**
    * 피실험자용 토큰 기반 그룹 합류 요청 수행함
