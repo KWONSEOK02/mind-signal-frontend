@@ -177,6 +177,8 @@ const LabPage = () => {
 
   // DUAL_2PC 측정 시작 in-flight 가드 — 더블클릭 중복 start 차단함 (F3)
   const startPendingRef = useRef(false);
+  // 측정 시작 실패 메시지 — 401/500/네트워크 등 기대 못 한 오류만 노출함 (CodeRabbit #60)
+  const [startError, setStartError] = useState<string | null>(null);
 
   /**
    * 모든 활성화된 피실험자의 데이터 측정 시작 수행함
@@ -190,13 +192,23 @@ const LabPage = () => {
       // 이미 MEASURING 전이 가드로 400 반환 → dev 오버레이 유발하므로 사전 차단함.
       if (startPendingRef.current) return;
       startPendingRef.current = true;
+      setStartError(null);
       // FE 소켓 룸 합류 + aligned_pair 리스너 등록함 (차트 수신 위해 필수)
       subject1Signal.joinDualRoom();
       measurementApi
         .startDualByGroup(groupId)
         .catch((err: unknown) => {
-          // 이미 MEASURING(중복) 등 비치명 실패 — console.warn으로 dev 오버레이 회피함
-          console.warn('DUAL_2PC 측정 시작 호출 결과:', err);
+          const status = (err as { response?: { status?: number } })?.response
+            ?.status;
+          // 중복 클릭/이미 MEASURING 등 기대 가능한 400만 무시함 (dev 오버레이 회피)
+          if (status === 400) {
+            console.warn('DUAL_2PC 측정 시작 중복 호출 무시:', err);
+            return;
+          }
+          // 401/500/네트워크 등은 버튼 근처 visible error로 노출함 (CodeRabbit #60)
+          const beMsg = (err as { response?: { data?: { message?: string } } })
+            ?.response?.data?.message;
+          setStartError(beMsg ?? '측정 시작 실패 — 다시 시도 필요함.');
         })
         .finally(() => {
           startPendingRef.current = false;
@@ -353,13 +365,18 @@ const LabPage = () => {
 
     if (mode === 'DUAL_2PC' ? partnerConnected : isAllPaired) {
       return (
-        <button
-          onClick={handleStartExperiment}
-          className="group relative inline-flex items-center cursor-pointer gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20"
-        >
-          <Play size={20} fill="currentColor" />
-          <span>실험 시작</span>
-        </button>
+        <div className="flex flex-col gap-3 items-center">
+          <button
+            onClick={handleStartExperiment}
+            className="group relative inline-flex items-center cursor-pointer gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20"
+          >
+            <Play size={20} fill="currentColor" />
+            <span>실험 시작</span>
+          </button>
+          {startError ? (
+            <p className="text-xs text-rose-500 max-w-md">{startError}</p>
+          ) : null}
+        </div>
       );
     }
 

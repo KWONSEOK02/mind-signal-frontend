@@ -93,6 +93,15 @@ vi.mock('@/07-shared/api/auth', () => ({
   },
 }));
 
+/**
+ * operator self-join API mock — handleOperatorSelfJoin 클릭 경로 테스트용 (CodeRabbit #60)
+ */
+vi.mock('@/07-shared/api/session', () => ({
+  default: {},
+  createOperatorInviteToken: vi.fn(),
+  joinAsOperator: vi.fn(),
+}));
+
 import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
 import { usePairing } from '@/05-features/sessions';
 import LabPage from './lab-page';
@@ -796,5 +805,158 @@ describe('LabPage F3 — 실험 시작 중복 클릭 가드', () => {
     await user.click(startBtn);
 
     expect(startDualByGroupMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * CodeRabbit #60 — 측정 시작 실패를 전부 비치명으로 삼키지 않음
+ * 400(중복/MEASURING)만 무시하고 401/500/네트워크는 visible error로 노출함.
+ */
+describe('LabPage CR — 측정 시작 실패 visible error', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+    mockSearchParamsGet.mockReturnValue(null);
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'ready',
+      partnerConnected: true,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'group-err',
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [
+        { id: 's1', subjectIndex: 1 },
+        { id: 's2', subjectIndex: 2 },
+      ],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'PAIRED',
+      subjectIndex: null,
+      sessionId: null,
+    });
+  });
+
+  const openDual2pcAndStart = async () => {
+    const user = userEvent.setup();
+    renderLabPage();
+    const settingsBtn = screen
+      .getAllByRole('button')
+      .find((b) => b.querySelector('svg.lucide-settings'));
+    if (settingsBtn) await user.click(settingsBtn);
+    await user.click(await screen.findByText(/DUAL 2PC 모드/i));
+    await user.click(screen.getByRole('button', { name: /실험 시작/ }));
+  };
+
+  it('startDualByGroup 500 실패 시 visible error 표시함', async () => {
+    const measurementApi = await import('@/07-shared/api/signal');
+    vi.mocked(measurementApi.default.startDualByGroup).mockRejectedValue({
+      response: { status: 500 },
+    });
+
+    await openDual2pcAndStart();
+
+    expect(await screen.findByText(/측정 시작 실패/)).toBeInTheDocument();
+  });
+
+  it('startDualByGroup 400(중복) 실패는 error 안 띄움', async () => {
+    const measurementApi = await import('@/07-shared/api/signal');
+    vi.mocked(measurementApi.default.startDualByGroup).mockRejectedValue({
+      response: { status: 400 },
+    });
+
+    await openDual2pcAndStart();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(screen.queryByText(/측정 시작 실패/)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * CodeRabbit #60 — operator self-join 클릭 동작 커버리지
+ * 버튼 표시뿐 아니라 클릭 후 pending(합류 중...) + BE 오류 메시지 노출을 검증함.
+ */
+describe('LabPage CR — operator self-join 클릭 경로', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+    mockSearchParamsGet.mockReturnValue(null);
+    // 페어링 완료 + partnerConnected=false → operator 합류(이 PC) 버튼 노출
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'waiting',
+      partnerConnected: false,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'group-selfjoin',
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [
+        { id: 's1', subjectIndex: 1 },
+        { id: 's2', subjectIndex: 2 },
+      ],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'PAIRED',
+      subjectIndex: null,
+      sessionId: null,
+    });
+  });
+
+  const openDual2pcAndClickJoin = async () => {
+    const user = userEvent.setup();
+    renderLabPage();
+    const settingsBtn = screen
+      .getAllByRole('button')
+      .find((b) => b.querySelector('svg.lucide-settings'));
+    if (settingsBtn) await user.click(settingsBtn);
+    await user.click(await screen.findByText(/DUAL 2PC 모드/i));
+    await user.click(screen.getByTestId('operator-self-join'));
+  };
+
+  it('합류 클릭 시 합류 중... pending 표시함', async () => {
+    const sessionMod = await import('@/07-shared/api/session');
+    // invite 토큰 발급이 진행 중인 동안 pending 상태 유지
+    vi.mocked(sessionMod.createOperatorInviteToken).mockReturnValue(
+      new Promise(() => {}) as never
+    );
+
+    await openDual2pcAndClickJoin();
+
+    expect(await screen.findByText(/합류 중/)).toBeInTheDocument();
+  });
+
+  it('합류 실패 시 BE 오류 메시지 노출함', async () => {
+    const sessionMod = await import('@/07-shared/api/session');
+    vi.mocked(sessionMod.createOperatorInviteToken).mockResolvedValue({
+      token: 'tok',
+      expiresAt: 9999999999999,
+    });
+    vi.mocked(sessionMod.joinAsOperator).mockRejectedValue({
+      response: { data: { message: 'operator 합류 거부됨' } },
+    });
+
+    await openDual2pcAndClickJoin();
+
+    expect(await screen.findByText(/operator 합류 거부됨/)).toBeInTheDocument();
   });
 });
