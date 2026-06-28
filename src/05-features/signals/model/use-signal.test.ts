@@ -270,6 +270,48 @@ describe('useSignal DUAL_2PC — join-room emit + stimulus 테스트 수행함',
     expect(result.current.currentMetrics?.stress).toBe(subject1Wave.delta);
   });
 
+  it('aligned_pair subject_1:null + subject_2 수신 시 currentMetrics2만 업데이트됨 (단일 헤드셋)', async () => {
+    const { result } = renderHook(() =>
+      useSignal('session-abc', {
+        experimentMode: 'DUAL_2PC',
+        groupId: 'group-xyz',
+        setDualSessionState: mockSetDualSessionState,
+      })
+    );
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    const alignedPairHandler = getSocketHandler('aligned_pair');
+    expect(alignedPairHandler).not.toBeNull();
+
+    const subject2Wave = {
+      delta: 0.6,
+      theta: 0.7,
+      alpha: 0.8,
+      beta: 0.9,
+      gamma: 1.0,
+    };
+
+    act(() => {
+      // 노트북 B(subject 2)만 측정 — subject_1 없음
+      alignedPairHandler!({
+        groupId: 'group-xyz',
+        timestamp_ms: Date.now(),
+        subject_1: null,
+        subject_2: subject2Wave,
+      });
+    });
+
+    // subject_1 없음 → currentMetrics는 null 유지, subject_2 → currentMetrics2 업데이트됨
+    expect(result.current.currentMetrics).toBeNull();
+    expect(result.current.currentMetrics2).not.toBeNull();
+    expect(result.current.currentMetrics2?.focus).toBe(subject2Wave.beta);
+    expect(result.current.currentMetrics2?.excitement).toBe(subject2Wave.gamma);
+    expect(result.current.currentMetrics2?.stress).toBe(subject2Wave.delta);
+  });
+
   it('aligned_pair 수신 시 다른 groupId이면 currentMetrics 미업데이트 처리됨', async () => {
     const { result } = renderHook(() =>
       useSignal('session-abc', {

@@ -106,6 +106,10 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
   const [currentMetrics, setCurrentMetrics] = useState<EmotivMetrics | null>(
     null
   );
+  // 단일 헤드셋 지원 — subject 2(노트북 B) 메트릭 상태 정의함
+  const [currentMetrics2, setCurrentMetrics2] = useState<EmotivMetrics | null>(
+    null
+  );
   const [lastReceivedTime, setLastReceivedTime] = useState<string | null>(null);
   // 측정 경과 시간(초) 상태 정의함
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -251,9 +255,19 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
           setCurrentMetrics(metrics);
           setLastReceivedTime(new Date().toLocaleTimeString());
         }
-        // subject_2 수신 확인 로그 (향후 두 subject 동시 차트 지원 시 확장)
+        // subject_2(노트북 B) 데이터 → currentMetrics2 변환함 (단일 헤드셋 지원)
+        // subject_1 매핑과 동일 (간이 변환). ponytail: 6줄 인라인 미러, 헬퍼 불필요.
         if (subject_2) {
-          console.info('aligned_pair subject_2 수신 완료함');
+          const metrics2: EmotivMetrics = {
+            focus: subject_2.beta,
+            engagement: subject_2.alpha,
+            interest: subject_2.theta,
+            excitement: subject_2.gamma,
+            stress: subject_2.delta,
+            relaxation: subject_2.alpha,
+          };
+          setCurrentMetrics2(metrics2);
+          setLastReceivedTime(new Date().toLocaleTimeString());
         }
       };
 
@@ -470,6 +484,7 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
   return {
     isMeasuring,
     currentMetrics,
+    currentMetrics2,
     lastReceivedTime,
     elapsedSeconds,
     roomJoined,
