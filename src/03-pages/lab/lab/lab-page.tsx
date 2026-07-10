@@ -640,6 +640,14 @@ const LabPage = () => {
                   ? subject2Signal.currentMetrics
                   : null
             }
+            lastSampleAt1={subject1Signal.lastSampleAt1}
+            lastSampleAt2={
+              mode === 'DUAL_2PC'
+                ? subject1Signal.lastSampleAt2
+                : currentConfig.targetCount > 1
+                  ? subject2Signal.lastSampleAt1
+                  : null
+            }
           />
         </section>
 
