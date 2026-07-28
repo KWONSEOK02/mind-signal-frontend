@@ -8,7 +8,7 @@ import React, {
   useRef,
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useSignal } from '@/05-features/signals';
+import { OperatorStreamHealthBanner, useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
 import {
@@ -17,6 +17,10 @@ import {
 } from '@/07-shared/api/session';
 import { postDualTrigger } from '@/07-shared/api/dual-trigger';
 import measurementApi from '@/07-shared/api/signal';
+import {
+  readOperatorSocketSession,
+  saveOperatorSocketSession,
+} from '@/07-shared/lib/operator-socket-session.lib';
 import { DualSessionBanner } from '@/04-widgets/dual-session-banner';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
@@ -74,11 +78,32 @@ const LabPage = () => {
   const [mode, setMode] = useState<'DUAL' | 'BTI' | 'SEQUENTIAL' | 'DUAL_2PC'>(
     'DUAL'
   );
+  const [operatorSocketSessionVersion, setOperatorSocketSessionVersion] =
+    useState(0);
+  // 운영자 합류 전에는 토큰 부재가 정상이므로 경보 채널 배너를 띄우지 않음
+  const [hasOperatorSocketSession, setHasOperatorSocketSession] =
+    useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // DUAL_2PC 초대 QR 표시 여부 상태 정의함
 
   // URL query param에서 groupId 파싱 (operator-join 합류 후 리다이렉트 처리)
   const urlGroupId = searchParams?.get('groupId') ?? null;
+
+  /**
+   * 초대 운영자 탭에 저장된 실험 모드를 대시보드 상태로 복원함
+   */
+  useEffect(() => {
+    if (!urlGroupId) {
+      setHasOperatorSocketSession(false);
+      return;
+    }
+
+    const operatorSession = readOperatorSocketSession(urlGroupId);
+    setHasOperatorSocketSession(Boolean(operatorSession));
+    if (operatorSession?.experimentMode === 'DUAL_2PC') {
+      setMode('DUAL_2PC');
+    }
+  }, [urlGroupId]);
 
   /**
    * 브라우저 환경 및 화면 너비를 감지하여 모바일 모드 여부 결정함
@@ -310,7 +335,19 @@ const LabPage = () => {
     setSelfJoinError(null);
     try {
       const { token } = await createOperatorInviteToken(groupId);
-      await joinAsOperator(token);
+      const operatorSession = await joinAsOperator(token);
+      try {
+        saveOperatorSocketSession(operatorSession.groupId, {
+          socketToken: operatorSession.socketToken,
+          socketTokenExpiresAt: operatorSession.socketTokenExpiresAt,
+          experimentMode: operatorSession.experimentMode,
+        });
+        setOperatorSocketSessionVersion((version) => version + 1);
+        setHasOperatorSocketSession(true);
+      } catch (storageError) {
+        // 저장 실패가 실험 진행을 차단하지 않도록 경고만 기록함
+        console.warn('운영자 소켓 세션 저장 실패함:', storageError);
+      }
       // operatorJoined=true → 자동 트리거 → use-dual-session 폴링이 partnerConnected 전이
     } catch (err) {
       // 실제 오류를 삼키지 않고 콘솔 기록 + BE 메시지 우선 노출함 (진단 가능성 확보)
@@ -486,6 +523,11 @@ const LabPage = () => {
         experimentMode={mode}
         state={dualState}
         partnerConnected={partnerConnected}
+      />
+      <OperatorStreamHealthBanner
+        groupId={groupId}
+        enabled={mode === 'DUAL_2PC' && hasOperatorSocketSession}
+        refreshKey={operatorSocketSessionVersion}
       />
 
       <div className="max-w-[1600px] mx-auto space-y-10">

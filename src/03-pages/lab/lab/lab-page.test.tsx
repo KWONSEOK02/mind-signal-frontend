@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { UIProvider } from '@/app/providers/ui-context';
+import { saveOperatorSocketSession } from '@/07-shared/lib/operator-socket-session.lib';
 
 /**
  * [R-1 반영] lab-page.tsx:13은 `@/05-features/sessions/model/use-dual-session`
@@ -40,6 +41,7 @@ vi.mock('@/05-features/signals', () => ({
     joinDualRoom: vi.fn(),
   })),
   SignalMeasurer: () => null,
+  OperatorStreamHealthBanner: () => null,
 }));
 
 /**
@@ -47,7 +49,10 @@ vi.mock('@/05-features/signals', () => ({
  * vi.hoisted로 mock 함수를 끌어올려 factory 내부 참조 안전성 보장함.
  */
 const { mockSearchParamsGet } = vi.hoisted(() => ({
-  mockSearchParamsGet: vi.fn((_key: string): string | null => null),
+  mockSearchParamsGet: vi.fn((key: string): string | null => {
+    void key;
+    return null;
+  }),
 }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
@@ -975,5 +980,54 @@ describe('LabPage CR — operator self-join 클릭 경로', () => {
     await openDual2pcAndClickJoin();
 
     expect(await screen.findByText(/operator 합류 거부됨/)).toBeInTheDocument();
+  });
+});
+
+describe('LabPage 초대 운영자 experimentMode 복원 처리함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessionStorage.clear();
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+    mockSearchParamsGet.mockImplementation((key: string) =>
+      key === 'groupId' ? 'joined-group' : null
+    );
+    saveOperatorSocketSession('joined-group', {
+      socketToken: 'operator-socket-token',
+      socketTokenExpiresAt: Date.now() + 60_000,
+      experimentMode: 'DUAL_2PC',
+    });
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'waiting',
+      partnerConnected: false,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: null,
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [],
+      isAllPaired: false,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'IDLE',
+      subjectIndex: null,
+      sessionId: null,
+    });
+  });
+
+  it('저장된 DUAL_2PC 모드를 대시보드 소켓 경로에 반영함', async () => {
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(useDualSession).toHaveBeenCalledWith('joined-group', 'DUAL_2PC');
+    });
   });
 });
