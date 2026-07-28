@@ -112,13 +112,21 @@ export async function createOperatorInviteToken(
  * @returns 그룹 ID + 실험 모드 확인 응답
  * @throws ApiError 401 — 토큰 검증 실패 또는 만료 시
  */
-export async function joinAsOperator(
-  token: string
-): Promise<{ groupId: string; experimentMode: 'DUAL_2PC' }> {
+export async function joinAsOperator(token: string): Promise<{
+  groupId: string;
+  experimentMode: 'DUAL_2PC';
+  socketToken: string;
+  socketTokenExpiresAt: number;
+}> {
   // POST /api/sessions/join-as-operator — 응답 envelope { status, data } 언래핑함
   const response = await api.post<{
     status: string;
-    data: { groupId: string; experimentMode: 'DUAL_2PC' };
+    data: {
+      groupId: string;
+      experimentMode: 'DUAL_2PC';
+      socketToken: string;
+      socketTokenExpiresAt: number;
+    };
   }>('/sessions/join-as-operator', { token });
   return response.data.data;
 }

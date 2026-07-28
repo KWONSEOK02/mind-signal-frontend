@@ -200,7 +200,12 @@ describe('joinAsOperator — join-as-operator API 클라이언트 테스트 수�
     mockPost.mockResolvedValue({
       data: {
         status: 'success',
-        data: { groupId: 'group-xyz', experimentMode: 'DUAL_2PC' },
+        data: {
+          groupId: 'group-xyz',
+          experimentMode: 'DUAL_2PC',
+          socketToken: 'operator-socket-token',
+          socketTokenExpiresAt: 1_900_000_000_000,
+        },
       },
     });
 
@@ -211,6 +216,8 @@ describe('joinAsOperator — join-as-operator API 클라이언트 테스트 수�
     });
     expect(result.groupId).toBe('group-xyz');
     expect(result.experimentMode).toBe('DUAL_2PC');
+    expect(result.socketToken).toBe('operator-socket-token');
+    expect(result.socketTokenExpiresAt).toBe(1_900_000_000_000);
   });
 
   it('401 응답 시 에러가 전파 처리됨 (만료 토큰)', async () => {
