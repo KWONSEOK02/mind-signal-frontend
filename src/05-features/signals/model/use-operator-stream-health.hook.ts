@@ -235,6 +235,10 @@ export function useOperatorStreamHealth(
         clearScheduledTimeout(connectionTimeoutId);
         connectionTimeoutId = null;
       }
+      // 직전 실패로 예약된 재시도와 ack 타임아웃을 정리함.
+      // 남겨두면 재연결 직후 합류와 겹쳐 중복 emit되고 시도 횟수가 어긋남
+      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+      timeoutIds.clear();
       joinAttemptCount = 0;
       joinOperatorRoom();
     };

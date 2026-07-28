@@ -80,6 +80,9 @@ const LabPage = () => {
   );
   const [operatorSocketSessionVersion, setOperatorSocketSessionVersion] =
     useState(0);
+  // 운영자 합류 전에는 토큰 부재가 정상이므로 경보 채널 배너를 띄우지 않음
+  const [hasOperatorSocketSession, setHasOperatorSocketSession] =
+    useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // DUAL_2PC 초대 QR 표시 여부 상태 정의함
 
@@ -90,9 +93,13 @@ const LabPage = () => {
    * 초대 운영자 탭에 저장된 실험 모드를 대시보드 상태로 복원함
    */
   useEffect(() => {
-    if (!urlGroupId) return;
+    if (!urlGroupId) {
+      setHasOperatorSocketSession(false);
+      return;
+    }
 
     const operatorSession = readOperatorSocketSession(urlGroupId);
+    setHasOperatorSocketSession(Boolean(operatorSession));
     if (operatorSession?.experimentMode === 'DUAL_2PC') {
       setMode('DUAL_2PC');
     }
@@ -336,6 +343,7 @@ const LabPage = () => {
           experimentMode: operatorSession.experimentMode,
         });
         setOperatorSocketSessionVersion((version) => version + 1);
+        setHasOperatorSocketSession(true);
       } catch (storageError) {
         // 저장 실패가 실험 진행을 차단하지 않도록 경고만 기록함
         console.warn('운영자 소켓 세션 저장 실패함:', storageError);
@@ -518,7 +526,7 @@ const LabPage = () => {
       />
       <OperatorStreamHealthBanner
         groupId={groupId}
-        enabled={mode === 'DUAL_2PC'}
+        enabled={mode === 'DUAL_2PC' && hasOperatorSocketSession}
         refreshKey={operatorSocketSessionVersion}
       />
 

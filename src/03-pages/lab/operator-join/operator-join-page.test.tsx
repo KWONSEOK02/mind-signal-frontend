@@ -112,6 +112,27 @@ describe('OperatorJoinPage — 유효 토큰 합류 처리 테스트 수행함',
     expect(mockRouter.asPath).not.toContain('operator-socket-token');
   });
 
+  it('소켓 세션 저장에 실패해도 대시보드로 이동함', async () => {
+    // 시크릿 모드 등으로 sessionStorage가 차단돼도 합류 흐름을 막지 않음
+    mockJoinAsOperator.mockResolvedValue({
+      groupId: 'group-abc',
+      experimentMode: 'DUAL_2PC',
+      socketToken: 'operator-socket-token',
+      socketTokenExpiresAt: 1_900_000_000_000,
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
+      throw new DOMException('storage blocked');
+    });
+
+    render(<OperatorJoinPage />);
+    fireEvent.click(screen.getByText(/합류하기/i));
+
+    await waitFor(() => {
+      expect(mockRouter.asPath).toBe('/lab?groupId=group-abc');
+    });
+    expect(readOperatorSocketSession('group-abc')).toBeNull();
+  });
+
   it('합류 중 로딩 상태 표시 처리됨', async () => {
     // 응답을 지연시켜 로딩 상태 확인함
     mockJoinAsOperator.mockImplementation(
