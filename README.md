@@ -139,7 +139,7 @@ mind-signal-frontend/
 ├── .gitignore              # Git이 무시할 파일 및 폴더 목록
 ├── .prettierignore         # Prettier가 무시할 파일 및 폴더 목록
 ├── .prettierrc             # Prettier 설정 파일
-├── jest.config.js          # Jest 테스트 설정 파일
+├── vitest.config.ts        # Vitest 테스트 설정 파일
 ├── next-env.d.ts           # Next.js 환경 정의 파일
 ├── next.config.ts          # Next.js 설정 파일
 ├── package-lock.json       # 패키지 의존성 잠금 파일
