@@ -62,11 +62,20 @@ interface WavePower {
  * aligned_pair 이벤트 페이로드 구조 정의함 (PLAN L153, v8 H-1)
  * subject_0 키 사용 금지 — subject_1/subject_2 1-based 통일
  */
+/**
+ * 한 subject의 한 시점 샘플 — waves(대역 파워)와 metrics(EMOTIV 지표 6종).
+ * metrics는 구버전 BE 프레임에서 없을 수 있어 optional임.
+ */
+interface SubjectSample {
+  waves: WavePower;
+  metrics?: EmotivMetrics;
+}
+
 interface AlignedPairPayload {
   groupId: string;
   timestamp_ms: number;
-  subject_1: WavePower | null;
-  subject_2: WavePower | null;
+  subject_1: SubjectSample | null;
+  subject_2: SubjectSample | null;
 }
 
 /**
@@ -91,6 +100,41 @@ interface UseSignalOptions {
 }
 
 /**
+ * WavePower를 EmotivMetrics로 변환함 (간이 변환). 비유한(NaN/Infinity) 값이
+ * 하나라도 있으면 null 반환해 차트 깨짐을 방지함 — eeg-live 경로 finite 검증과 정합.
+ * subject_1/subject_2 동일 적용 (CodeRabbit #60).
+ *
+ * @param wave - 5대역 파워 값
+ * @returns EmotivMetrics 또는 비유한 값 포함 시 null
+ */
+const METRIC_KEYS = [
+  'focus',
+  'engagement',
+  'interest',
+  'excitement',
+  'stress',
+  'relaxation',
+] as const;
+
+/**
+ * aligned_pair가 실어 보낸 EMOTIV 지표를 검증함.
+ *
+ * 과거에는 metrics가 계약에 없어 대역 파워(waves)를 지표 자리에 끼워 넣었음
+ * (stress에 delta, engagement과 relaxation 둘 다 alpha). delta는 약 1000 스케일이라
+ * 차트 X축 domain [0,100]에서 포화돼 stress 막대만 꽉 찼음 (2026-07-10 수정).
+ *
+ * @param metrics - 서버가 보낸 지표 6종. 구버전 프레임에서는 undefined임
+ * @returns 6종이 모두 유한수면 그대로 반환, 아니면 null 반환
+ */
+const sanitizeMetrics = (
+  metrics: EmotivMetrics | undefined
+): EmotivMetrics | null => {
+  if (!metrics) return null;
+  if (!METRIC_KEYS.every((k) => Number.isFinite(metrics[k]))) return null;
+  return metrics;
+};
+
+/**
  * [Feature] sessionId 기반 실시간 EEG 측정 제어 훅 정의함
  * HTTP POST 1회로 측정 트리거 후 Socket.io eeg-live 이벤트로 데이터 수신함
  *
@@ -106,7 +150,15 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
   const [currentMetrics, setCurrentMetrics] = useState<EmotivMetrics | null>(
     null
   );
+  // 단일 헤드셋 지원 — subject 2(노트북 B) 메트릭 상태 정의함
+  const [currentMetrics2, setCurrentMetrics2] = useState<EmotivMetrics | null>(
+    null
+  );
   const [lastReceivedTime, setLastReceivedTime] = useState<string | null>(null);
+  // subject별 마지막 샘플 수신 시각(epoch ms) — LIVE 배지 신선도 판정용임.
+  // 공용 lastReceivedTime만 쓰면 한쪽만 살아 있어도 양쪽이 LIVE로 보임 (2026-07-10 수정).
+  const [lastSampleAt1, setLastSampleAt1] = useState<number | null>(null);
+  const [lastSampleAt2, setLastSampleAt2] = useState<number | null>(null);
   // 측정 경과 시간(초) 상태 정의함
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   // 소켓 룸 합류 완료 여부 상태 정의함
@@ -237,23 +289,23 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
         subject_2,
       }: AlignedPairPayload) => {
         if (incomingGid !== gid) return; // 다른 그룹 이벤트 무시함
-        // subject_1 데이터 기준으로 currentMetrics 업데이트 (EEG 시각화용)
-        // WavePower → EmotivMetrics 매핑 (알파/베타 기반 간이 변환)
+        // subject_1 데이터 기준으로 currentMetrics 업데이트함 (finite 검증, CodeRabbit #60)
         if (subject_1) {
-          const metrics: EmotivMetrics = {
-            focus: subject_1.beta,
-            engagement: subject_1.alpha,
-            interest: subject_1.theta,
-            excitement: subject_1.gamma,
-            stress: subject_1.delta,
-            relaxation: subject_1.alpha,
-          };
-          setCurrentMetrics(metrics);
-          setLastReceivedTime(new Date().toLocaleTimeString());
+          const metrics = sanitizeMetrics(subject_1.metrics);
+          if (metrics) {
+            setCurrentMetrics(metrics);
+            setLastSampleAt1(Date.now());
+            setLastReceivedTime(new Date().toLocaleTimeString());
+          }
         }
-        // subject_2 수신 확인 로그 (향후 두 subject 동시 차트 지원 시 확장)
+        // subject_2(노트북 B) 데이터 → currentMetrics2 업데이트함 (단일 헤드셋 지원)
         if (subject_2) {
-          console.info('aligned_pair subject_2 수신 완료함');
+          const metrics2 = sanitizeMetrics(subject_2.metrics);
+          if (metrics2) {
+            setCurrentMetrics2(metrics2);
+            setLastSampleAt2(Date.now());
+            setLastReceivedTime(new Date().toLocaleTimeString());
+          }
         }
       };
 
@@ -293,6 +345,41 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
       alignedPairHandlerRef.current = null;
     }
   }, []);
+
+  /**
+   * DUAL_2PC 소켓 룸 합류 + 리스너 등록만 수행함 (HTTP spawn 없음).
+   * 측정은 그룹 단위 startDualByGroup으로 트리거되고, FE는 이 메서드로 룸에 합류해
+   * aligned_pair를 수신함 — handleStartExperiment(DUAL_2PC)에서 호출.
+   */
+  const joinDualRoom = useCallback(() => {
+    if (!isDual2pc || !groupId) return;
+    setDualSessionState?.('joining');
+    setIsMeasuring(true);
+
+    const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
+    emitJoinRoom(groupId);
+    registerDualListeners(groupId);
+
+    const completeHandler = (
+      payload: MeasurementCompletePayload & { groupId?: string }
+    ) => {
+      if ((payload.groupId ?? null) !== groupId) return; // 다른 그룹 무시함
+      setIsMeasuring(false);
+      setDualSessionState?.('completed');
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+    completeHandlerRef.current = completeHandler;
+    socket.on('measurement-complete', completeHandler);
+  }, [
+    isDual2pc,
+    groupId,
+    setDualSessionState,
+    emitJoinRoom,
+    registerDualListeners,
+  ]);
 
   /**
    * 측정 시작 처리함
@@ -357,6 +444,7 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
           )
             return;
           setCurrentMetrics(data);
+          setLastSampleAt1(Date.now());
           setLastReceivedTime(new Date().toLocaleTimeString());
         };
 
@@ -470,10 +558,14 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
   return {
     isMeasuring,
     currentMetrics,
+    currentMetrics2,
     lastReceivedTime,
+    lastSampleAt1,
+    lastSampleAt2,
     elapsedSeconds,
     roomJoined,
     startMeasurement,
+    joinDualRoom,
     stopMeasurement,
   };
 };

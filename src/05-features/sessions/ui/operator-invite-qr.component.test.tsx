@@ -35,12 +35,14 @@ vi.mock('lucide-react', () => ({
 }));
 
 // config 모킹 처리함 — baseUrl에 /api suffix 포함하여 origin 추출 로직 검증
+// operatorOrigin 빈 문자열 → window.location.origin 폴백 동작 검증
 vi.mock('@/07-shared/config/config', () => ({
   config: {
     api: {
       baseUrl: 'https://test-backend.example.com/api',
       socketUrl: 'https://test-backend.example.com',
     },
+    operatorOrigin: '',
   },
 }));
 
@@ -82,7 +84,8 @@ describe('OperatorInviteQr — token 전달 및 QR URL 구성 테스트 수행�
     expect(screen.queryByTestId('qr-svg')).not.toBeNull();
   });
 
-  it('QR URL이 config.api.baseUrl에서 /api suffix 제거된 origin 사용 처리됨', async () => {
+  it('operatorOrigin 빈 문자열 시 window.location.origin 기반 QR URL 생성 처리됨', async () => {
+    // config.operatorOrigin='' → window.location.origin 폴백 사용 검증함
     mockCreateToken.mockResolvedValue({
       token: 'invite-jwt-abc',
       expiresAt: Date.now() + 300_000,
@@ -95,14 +98,14 @@ describe('OperatorInviteQr — token 전달 및 QR URL 구성 테스트 수행�
     const qrEl = screen.getByTestId('qr-svg');
     const qrValue = qrEl.getAttribute('data-value') ?? '';
 
-    // /api suffix 제거 후 origin 사용 검증함 (PLAN buildQrUrl 로직)
-    expect(qrValue).toContain(
-      'https://test-backend.example.com/lab/operator-join'
-    );
+    // window.location.origin 기반 operator-join 경로 포함 검증함
+    expect(qrValue).toContain('/lab/operator-join');
     expect(qrValue).toContain('token=invite-jwt-abc');
     expect(qrValue).toContain('groupId=group-123');
     // /api/lab 패턴 미사용 검증함
     expect(qrValue).not.toContain('/api/lab');
+    // config.api.baseUrl의 test-backend.example.com 미사용 검증함 (폴백은 window origin)
+    expect(qrValue).not.toContain('test-backend.example.com/lab');
   });
 
   it('토큰 발급 성공 후 5:00 카운트다운 타이머 표시 처리됨', async () => {
@@ -202,5 +205,27 @@ describe('OperatorInviteQr — token 전달 및 QR URL 구성 테스트 수행�
     });
 
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('operatorOrigin 빈 문자열 시 window.location.origin 폴백 URL 사용 처리됨', async () => {
+    // jsdom 기본 window.location.origin = http://localhost 사용함
+    mockCreateToken.mockResolvedValue({
+      token: 'invite-jwt-fallback',
+      expiresAt: Date.now() + 300_000,
+    });
+
+    await act(async () => {
+      render(<OperatorInviteQr groupId="group-fallback" />);
+    });
+
+    const qrEl = screen.getByTestId('qr-svg');
+    const qrValue = qrEl.getAttribute('data-value') ?? '';
+
+    // window.location.origin(http://localhost) 기반 URL 생성 검증함
+    expect(qrValue).toContain('/lab/operator-join');
+    expect(qrValue).toContain('token=invite-jwt-fallback');
+    expect(qrValue).toContain('groupId=group-fallback');
+    // test-backend.example.com 미사용 검증함 (operatorOrigin 폴백이 아닌 window 폴백 사용)
+    expect(qrValue).not.toContain('test-backend.example.com/lab');
   });
 });

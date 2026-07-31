@@ -13,7 +13,7 @@
  *   start-e2e-dual-2pc.bat 은 해당 값을 자동 설정함.
  *   npx playwright test dual-2pc.spec.ts --reporter=list
  *
- * @see .plans/16-2pc-expansion/PLAN.md Scenario 1-3 (L855-894)
+ * @see .plans/SESSION-W104-2pc-expansion/PLAN.md Scenario 1-3 (L855-894)
  * @see PLAN R9-M: DUAL_2PC_REGISTRATION_TIMEOUT_MS=5000 override
  */
 

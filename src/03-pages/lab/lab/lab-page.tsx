@@ -5,13 +5,22 @@ import React, {
   useSyncExternalStore,
   useCallback,
   useEffect,
+  useRef,
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useSignal } from '@/05-features/signals';
+import { OperatorStreamHealthBanner, useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
-import { OperatorInviteQr } from '@/05-features/sessions/ui/operator-invite-qr.component';
 import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
+import {
+  createOperatorInviteToken,
+  joinAsOperator,
+} from '@/07-shared/api/session';
 import { postDualTrigger } from '@/07-shared/api/dual-trigger';
+import measurementApi from '@/07-shared/api/signal';
+import {
+  readOperatorSocketSession,
+  saveOperatorSocketSession,
+} from '@/07-shared/lib/operator-socket-session.lib';
 import { DualSessionBanner } from '@/04-widgets/dual-session-banner';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
@@ -34,7 +43,6 @@ import {
   Square,
   X,
   CheckCircle2,
-  QrCode,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -70,12 +78,32 @@ const LabPage = () => {
   const [mode, setMode] = useState<'DUAL' | 'BTI' | 'SEQUENTIAL' | 'DUAL_2PC'>(
     'DUAL'
   );
+  const [operatorSocketSessionVersion, setOperatorSocketSessionVersion] =
+    useState(0);
+  // 운영자 합류 전에는 토큰 부재가 정상이므로 경보 채널 배너를 띄우지 않음
+  const [hasOperatorSocketSession, setHasOperatorSocketSession] =
+    useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // DUAL_2PC 초대 QR 표시 여부 상태 정의함
-  const [isDual2pcQrVisible, setIsDual2pcQrVisible] = useState(false);
 
   // URL query param에서 groupId 파싱 (operator-join 합류 후 리다이렉트 처리)
   const urlGroupId = searchParams?.get('groupId') ?? null;
+
+  /**
+   * 초대 운영자 탭에 저장된 실험 모드를 대시보드 상태로 복원함
+   */
+  useEffect(() => {
+    if (!urlGroupId) {
+      setHasOperatorSocketSession(false);
+      return;
+    }
+
+    const operatorSession = readOperatorSocketSession(urlGroupId);
+    setHasOperatorSocketSession(Boolean(operatorSession));
+    if (operatorSession?.experimentMode === 'DUAL_2PC') {
+      setMode('DUAL_2PC');
+    }
+  }, [urlGroupId]);
 
   /**
    * 브라우저 환경 및 화면 너비를 감지하여 모바일 모드 여부 결정함
@@ -114,10 +142,11 @@ const LabPage = () => {
     sessions,
     startPairing,
     resetStatus,
-  } = usePairing(currentConfig.targetCount);
+  } = usePairing(currentConfig.targetCount, mode);
 
-  // groupId: URL 파라미터 우선, 없으면 페어링에서 가져옴
-  const groupId = urlGroupId ?? pairingGroupId;
+  // groupId: 로컬 신규 페어링 우선, 없으면(순수 합류 PC) URL 파라미터 사용 (F2).
+  // stale URL ?groupId= 가 새 페어링을 덮어쓰는 그룹ID 표류를 차단함.
+  const groupId = pairingGroupId ?? urlGroupId;
 
   // DUAL_2PC 세션 상태 머신 훅 구독함 (Phase 16 FE-4)
   const {
@@ -171,15 +200,63 @@ const LabPage = () => {
   });
   const subject2Signal = useSignal(sessions[1]?.id ?? null);
 
+  // DUAL_2PC 측정 시작 in-flight 가드 — 더블클릭 중복 start 차단함 (F3)
+  const startPendingRef = useRef(false);
+  // 측정 시작 실패 메시지 — 401/500/네트워크 등 기대 못 한 오류만 노출함 (CodeRabbit #60)
+  const [startError, setStartError] = useState<string | null>(null);
+
   /**
    * 모든 활성화된 피실험자의 데이터 측정 시작 수행함
+   * DUAL_2PC: groupId 기반 일괄 시작 API 호출함
+   * 나머지 모드: 세션 ID 기반 개별 시작 수행함
    */
   const handleStartExperiment = useCallback(() => {
+    if (mode === 'DUAL_2PC') {
+      if (!groupId) return;
+      // 중복 클릭 가드 — 진행 중 재클릭은 무시함 (F3). 중복 start는 BE에서
+      // 이미 MEASURING 전이 가드로 400 반환 → dev 오버레이 유발하므로 사전 차단함.
+      if (startPendingRef.current) return;
+      startPendingRef.current = true;
+      setStartError(null);
+      // FE 소켓 룸 합류 + aligned_pair 리스너 등록함 (차트 수신 위해 필수)
+      subject1Signal.joinDualRoom();
+      measurementApi
+        .startDualByGroup(groupId)
+        .catch((err: unknown) => {
+          const status = (err as { response?: { status?: number } })?.response
+            ?.status;
+          const beMsg = (err as { response?: { data?: { message?: string } } })
+            ?.response?.data?.message;
+          // "지금 시작 불가"인 기대 가능한 400(이미 MEASURING/모드 불일치)만 무시함
+          // (F3 더블클릭 + dev 오버레이 회피). 그 외 400 및 401/500/네트워크는 모두
+          // visible error로 노출함 — 400 전체를 삼키지 않음 (CodeRabbit #61).
+          const isExpectedStartBlock =
+            status === 400 &&
+            !!beMsg &&
+            (beMsg.includes('측정을 시작할 수 없습니다') ||
+              beMsg.includes('DUAL_2PC 모드만'));
+          if (isExpectedStartBlock) {
+            console.warn('DUAL_2PC 측정 시작 차단(기대):', err);
+            return;
+          }
+          setStartError(beMsg ?? '측정 시작 실패 — 다시 시도 필요함.');
+        })
+        .finally(() => {
+          startPendingRef.current = false;
+        });
+      return;
+    }
     subject1Signal.startMeasurement();
-    if (currentConfig.targetCount > 1 && mode !== 'DUAL_2PC') {
+    if (currentConfig.targetCount > 1) {
       subject2Signal.startMeasurement();
     }
-  }, [subject1Signal, subject2Signal, currentConfig.targetCount, mode]);
+  }, [
+    subject1Signal,
+    subject2Signal,
+    currentConfig.targetCount,
+    mode,
+    groupId,
+  ]);
 
   /**
    * 두 subject 측정 완료 시 결과 페이지 이동 수행함
@@ -223,8 +300,9 @@ const LabPage = () => {
       setMode(newMode);
       resetStatus();
       setIsQRVisible(false);
-      setIsDual2pcQrVisible(false);
       setIsSettingsOpen(false);
+      setSelfJoinError(null);
+      setSelfJoinPending(false);
     },
     [resetStatus]
   );
@@ -239,6 +317,46 @@ const LabPage = () => {
     // subject2는 BE가 groupId로 일괄 처리하므로 소켓 정리만 수행함
     if (currentConfig.targetCount > 1) {
       void subject2Signal.stopMeasurement();
+    }
+  };
+
+  // operator 자가 합류 상태 정의함 (단일 PC 데모 — invite+join 원클릭)
+  const [selfJoinPending, setSelfJoinPending] = useState(false);
+  const [selfJoinError, setSelfJoinError] = useState<string | null>(null);
+
+  /**
+   * operator가 이 PC에서 직접 그룹에 합류함 — invite-operator 토큰 발급 후
+   * join-as-operator를 한 번에 호출함 (2번째 탭/QR 없이). 단일 PC 강제 페어링
+   * 데모 동선 단축 + operatorJoined 충족으로 자동 트리거 발동시킴.
+   */
+  const handleOperatorSelfJoin = async () => {
+    if (!groupId) return;
+    setSelfJoinPending(true);
+    setSelfJoinError(null);
+    try {
+      const { token } = await createOperatorInviteToken(groupId);
+      const operatorSession = await joinAsOperator(token);
+      try {
+        saveOperatorSocketSession(operatorSession.groupId, {
+          socketToken: operatorSession.socketToken,
+          socketTokenExpiresAt: operatorSession.socketTokenExpiresAt,
+          experimentMode: operatorSession.experimentMode,
+        });
+        setOperatorSocketSessionVersion((version) => version + 1);
+        setHasOperatorSocketSession(true);
+      } catch (storageError) {
+        // 저장 실패가 실험 진행을 차단하지 않도록 경고만 기록함
+        console.warn('운영자 소켓 세션 저장 실패함:', storageError);
+      }
+      // operatorJoined=true → 자동 트리거 → use-dual-session 폴링이 partnerConnected 전이
+    } catch (err) {
+      // 실제 오류를 삼키지 않고 콘솔 기록 + BE 메시지 우선 노출함 (진단 가능성 확보)
+      console.error('[handleOperatorSelfJoin]', err);
+      const beMsg = (err as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
+      setSelfJoinError(beMsg ?? 'operator 합류 실패 — 다시 시도 필요함.');
+    } finally {
+      setSelfJoinPending(false);
     }
   };
 
@@ -290,57 +408,85 @@ const LabPage = () => {
 
     if (mode === 'DUAL_2PC' ? partnerConnected : isAllPaired) {
       return (
-        <button
-          onClick={handleStartExperiment}
-          className="group relative inline-flex items-center cursor-pointer gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20"
-        >
-          <Play size={20} fill="currentColor" />
-          <span>실험 시작</span>
-        </button>
+        <div className="flex flex-col gap-3 items-center">
+          <button
+            onClick={handleStartExperiment}
+            className="group relative inline-flex items-center cursor-pointer gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20"
+          >
+            <Play size={20} fill="currentColor" />
+            <span>실험 시작</span>
+          </button>
+          {startError ? (
+            <p className="text-xs text-rose-500 max-w-md">{startError}</p>
+          ) : null}
+        </div>
       );
     }
 
-    // DUAL_2PC 모드: 폴백 노출 + 파트너 PC 초대 QR 버튼 표시함 (PLAN L175)
+    // DUAL_2PC 모드 처리 분기함
     if (mode === 'DUAL_2PC') {
-      // showFallback=true → QR 버튼 + 수동 재연결 버튼 병렬 노출함
-      if (showFallback) {
+      // 페어링 미완료(subject 미충족) 시 Subject 연결 QR 버튼 표시함.
+      // groupId는 세션 생성 직후 채워지므로 단계 신호로 쓰면 첫 QR이 조기 소멸함 — pairedSubjects 기준 사용.
+      if (pairedSubjects.length < currentConfig.targetCount) {
+        const nextSubjectNum = pairedSubjects.length + 1;
+        const buttonText = `Subject 0${nextSubjectNum} 연결 QR 생성`;
         return (
-          <div className="flex flex-col gap-3 items-center">
-            <button
-              onClick={() => setIsDual2pcQrVisible((prev) => !prev)}
-              className="group relative inline-flex items-center cursor-pointer gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-violet-500/20"
-            >
-              {isDual2pcQrVisible ? <X size={20} /> : <QrCode size={20} />}
-              <span>{isDual2pcQrVisible ? '닫기' : '파트너 PC 초대 QR'}</span>
-            </button>
-            <button
-              onClick={() => void handleManualTrigger()}
-              disabled={manualTriggerPending || !!registryStatus?.ready}
-              className={`text-sm ${
-                manualTriggerError ? 'text-rose-500' : 'text-amber-500'
-              } underline disabled:opacity-50`}
-            >
-              {manualTriggerPending
-                ? '연결 시도 중...'
-                : '엔진 연결이 지연됩니다. 다시 연결 시도'}
-            </button>
-            {manualTriggerError ? (
-              <p className="text-xs text-rose-500 max-w-md">
-                {manualTriggerError}
-              </p>
-            ) : null}
-          </div>
+          <button
+            onClick={() => {
+              if (isQRVisible) {
+                resetStatus();
+                setIsQRVisible(false);
+              } else {
+                startPairing();
+                setIsQRVisible(true);
+              }
+            }}
+            className="group relative inline-flex items-center cursor-pointer gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-indigo-500/20"
+          >
+            {isQRVisible ? <X size={20} /> : <PlusCircle size={20} />}
+            <span>{isQRVisible ? '닫기' : buttonText}</span>
+          </button>
         );
       }
 
+      // 페어링 완료 후 operator 합류(이 PC 원클릭) 1차 + 파트너 PC 초대 QR(2-PC) 보조 표시함
       return (
-        <button
-          onClick={() => setIsDual2pcQrVisible((prev) => !prev)}
-          className="group relative inline-flex items-center cursor-pointer gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-violet-500/20"
-        >
-          {isDual2pcQrVisible ? <X size={20} /> : <QrCode size={20} />}
-          <span>{isDual2pcQrVisible ? '닫기' : '파트너 PC 초대 QR'}</span>
-        </button>
+        <div className="flex flex-col gap-3 items-center">
+          <button
+            data-testid="operator-self-join"
+            onClick={() => void handleOperatorSelfJoin()}
+            disabled={selfJoinPending}
+            className="group relative inline-flex items-center cursor-pointer gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+          >
+            <CheckCircle2 size={20} />
+            <span>
+              {selfJoinPending ? '합류 중...' : 'operator 합류 (이 PC)'}
+            </span>
+          </button>
+          {selfJoinError ? (
+            <p className="text-xs text-rose-500 max-w-md">{selfJoinError}</p>
+          ) : null}
+          {showFallback ? (
+            <>
+              <button
+                onClick={() => void handleManualTrigger()}
+                disabled={manualTriggerPending || !!registryStatus?.ready}
+                className={`text-sm ${
+                  manualTriggerError ? 'text-rose-500' : 'text-amber-500'
+                } underline disabled:opacity-50`}
+              >
+                {manualTriggerPending
+                  ? '연결 시도 중...'
+                  : '엔진 연결이 지연됩니다. 다시 연결 시도'}
+              </button>
+              {manualTriggerError ? (
+                <p className="text-xs text-rose-500 max-w-md">
+                  {manualTriggerError}
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </div>
       );
     }
 
@@ -377,6 +523,11 @@ const LabPage = () => {
         experimentMode={mode}
         state={dualState}
         partnerConnected={partnerConnected}
+      />
+      <OperatorStreamHealthBanner
+        groupId={groupId}
+        enabled={mode === 'DUAL_2PC' && hasOperatorSocketSession}
+        refreshKey={operatorSocketSessionVersion}
       />
 
       <div className="max-w-[1600px] mx-auto space-y-10">
@@ -490,49 +641,11 @@ const LabPage = () => {
           </div>
         </header>
 
-        {/* DUAL_2PC 파트너 PC 초대 QR 표시 (PLAN L175-180) */}
-        {mode === 'DUAL_2PC' && isDual2pcQrVisible && groupId ? (
-          <section className="animate-in fade-in zoom-in duration-500">
-            <div
-              className={`p-8 rounded-[2.5rem] border backdrop-blur-sm flex flex-col items-center gap-6 ${
-                isDark
-                  ? 'bg-violet-500/5 border-violet-500/20'
-                  : 'bg-white/80 border-violet-100 shadow-sm'
-              }`}
-            >
-              <p
-                className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-violet-400' : 'text-violet-600'}`}
-              >
-                DUAL 2PC · 파트너 PC 초대
-              </p>
-              <OperatorInviteQr
-                groupId={groupId}
-                isDark={isDark}
-                onClose={() => setIsDual2pcQrVisible(false)}
-              />
-            </div>
-          </section>
-        ) : null}
-
-        {/* DUAL_2PC groupId 없을 때 안내 메시지 */}
-        {mode === 'DUAL_2PC' && isDual2pcQrVisible && !groupId ? (
-          <section className="animate-in fade-in zoom-in duration-500">
-            <div
-              className={`p-8 rounded-[2.5rem] border text-center ${
-                isDark
-                  ? 'bg-white/[0.02] border-white/5 text-slate-400'
-                  : 'bg-white border-slate-200 text-slate-600'
-              }`}
-            >
-              <p className="text-sm font-bold">
-                먼저 Subject를 페어링하여 groupId를 생성해야 함
-              </p>
-            </div>
-          </section>
-        ) : null}
-
-        {/* 기존 페어링 QR — DUAL_2PC 이외 모드에서만 표시함 */}
-        {isQRVisible && !isAllPaired && mode !== 'DUAL_2PC' ? (
+        {/* 기존 페어링 QR — DUAL_2PC 포함 페어링 진행 중 표시함 */}
+        {isQRVisible &&
+        !isAllPaired &&
+        (mode !== 'DUAL_2PC' ||
+          pairedSubjects.length < currentConfig.targetCount) ? (
           <section className="animate-in fade-in zoom-in duration-500">
             {/*}  6. QR코드 박스 배경/테두리 변경*/}
             <div
@@ -563,9 +676,19 @@ const LabPage = () => {
           <SignalComparisonWidget
             subject1Metrics={subject1Signal.currentMetrics}
             subject2Metrics={
-              currentConfig.targetCount > 1
-                ? subject2Signal.currentMetrics
-                : null
+              mode === 'DUAL_2PC'
+                ? subject1Signal.currentMetrics2
+                : currentConfig.targetCount > 1
+                  ? subject2Signal.currentMetrics
+                  : null
+            }
+            lastSampleAt1={subject1Signal.lastSampleAt1}
+            lastSampleAt2={
+              mode === 'DUAL_2PC'
+                ? subject1Signal.lastSampleAt2
+                : currentConfig.targetCount > 1
+                  ? subject2Signal.lastSampleAt1
+                  : null
             }
           />
         </section>
@@ -678,6 +801,15 @@ const LabPage = () => {
                   ? '2PC 동기화 측정 모드. 파트너 PC가 합류해야 실험 시작 가능함.'
                   : `운영자 채널 활성화 완료됨. ${currentConfig.targetCount}명의 피실험자가 합류해야 실험 시작 버튼이 활성화됨.`}
               </p>
+              {/* DUAL_2PC 등록 진행 중(inFlight) 시각 피드백 — 시스템이 동작 중임을 표시함 */}
+              {mode === 'DUAL_2PC' &&
+              !partnerConnected &&
+              registryStatus?.inFlight ? (
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span>등록 시도 중...</span>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

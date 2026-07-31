@@ -3,6 +3,7 @@
 import React, { useState, useSyncExternalStore } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { joinAsOperator } from '@/07-shared/api/session';
+import { saveOperatorSocketSession } from '@/07-shared/lib/operator-socket-session.lib';
 import { AlertCircle, LogIn } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -45,6 +46,16 @@ const OperatorJoinPage = () => {
 
     try {
       const result = await joinAsOperator(token);
+      try {
+        saveOperatorSocketSession(result.groupId, {
+          socketToken: result.socketToken,
+          socketTokenExpiresAt: result.socketTokenExpiresAt,
+          experimentMode: result.experimentMode,
+        });
+      } catch (storageError) {
+        // 저장 실패가 대시보드 진입을 차단하지 않도록 경고만 기록함
+        console.warn('운영자 소켓 세션 저장 실패함:', storageError);
+      }
       // 성공 시 운영자 대시보드로 이동 (PLAN L138)
       router.push(`/lab?groupId=${result.groupId}`);
     } catch (err: unknown) {

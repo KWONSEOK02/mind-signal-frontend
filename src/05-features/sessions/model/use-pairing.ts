@@ -1,24 +1,25 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  UserRole,
-  PairingSessionStatus,
-  PairingData,
-  SESSION_STATUS,
-} from '@/07-shared';
+import { PairingSessionStatus, PairingData, SESSION_STATUS } from '@/07-shared';
 import { sessionApi } from '@/07-shared/api';
 import { AxiosError } from 'axios';
+import type { ExperimentMode } from '@/07-shared/constants/experiment';
 import { PairingStep } from './pairing-engine';
 
 /**
- * [Feature] 설정된 인원수에 따라 순차적 페어링을 제어하는 훅 정의함
+ * [Feature] 설정된 인원수와 실험 모드에 따라 순차적 페어링을 제어하는 훅 정의함
+ *
+ * @param targetSubjectCount - 목표 피실험자 수 (기본 2)
+ * @param mode - 실험 모드 — 세션 생성 시 experimentMode로 전달함 (기본 DUAL)
  */
-const usePairing = (targetSubjectCount: number = 2) => {
+const usePairing = (
+  targetSubjectCount: number = 2,
+  mode: ExperimentMode = 'DUAL'
+) => {
   const [status, setStatus] = useState<PairingSessionStatus>(
     SESSION_STATUS.IDLE
   );
   const [groupId, setGroupId] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
-  const [role, setRole] = useState<UserRole | null>(null);
   const [subjectIndex, setSubjectIndex] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(300);
   const [pairedSubjects, setPairedSubjects] = useState<number[]>([]);
@@ -58,7 +59,8 @@ const usePairing = (targetSubjectCount: number = 2) => {
             }
           },
           (time) => setTimeLeft(time),
-          groupId // 보존된 groupId 전달함
+          groupId, // 보존된 groupId 전달함
+          mode // 현재 실험 모드 전달함 (세션 experimentMode 결정)
         )
         .then((data) => {
           // 최초 생성된 그룹 ID 보존 수행함
@@ -66,13 +68,12 @@ const usePairing = (targetSubjectCount: number = 2) => {
             setGroupId(data.groupId);
           }
           setPairingCode(data.pairingToken);
-          setRole('OPERATOR');
           setStatus(SESSION_STATUS.CREATED);
         });
     } catch {
       setStatus(SESSION_STATUS.ERROR);
     }
-  }, [targetSubjectCount, pairedSubjects.length, groupId]);
+  }, [targetSubjectCount, pairedSubjects.length, groupId, mode]);
 
   /**
    * 참가자 완료 상태 감지하여 자동 다음 단계 전환 수행함
@@ -107,7 +108,6 @@ const usePairing = (targetSubjectCount: number = 2) => {
       setGroupId(data.groupId);
       setSubjectIndex(data.subjectIndex ?? 1);
       setSessionId(data.id);
-      setRole('SUBJECT');
       setStatus(SESSION_STATUS.PAIRED);
 
       return { success: true };
@@ -152,7 +152,6 @@ const usePairing = (targetSubjectCount: number = 2) => {
     status,
     groupId,
     pairingCode,
-    role,
     subjectIndex,
     timeLeft,
     pairedSubjects,

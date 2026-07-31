@@ -20,8 +20,7 @@ export interface RegistryStatus {
     | 'both_failed'
     | 'invalid_secret'
     | 'not_pending_mode'
-    | 'group_id_conflict'
-    | 'precondition_unmet';
+    | 'group_id_conflict';
   startedAt?: number;
   finishedAt?: number;
 }

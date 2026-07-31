@@ -23,68 +23,11 @@ interface GroupPollResponse {
 }
 
 /**
- * SEQUENTIAL 모드에서 피실험자별 상태 정의함
- * - WAITING: 연결 대기 중
- * - PAIRED: 페어링 완료 (Subject 1이 측정 중인 동안 Subject 2가 유지하는 상태)
- * - MEASURING: 측정 진행 중
- * - COMPLETED: 측정 완료
- */
-export type SequentialSubjectState =
-  | 'WAITING'
-  | 'PAIRED'
-  | 'MEASURING'
-  | 'COMPLETED';
-
-/**
- * SEQUENTIAL 모드 전환 가능 여부를 판단하는 순수 함수 정의함
- * subject 1이 MEASURING인 동안 subject 2는 PAIRED 상태를 유지함
- */
-export function canTransitionSequential(
-  subjectIndex: 1 | 2,
-  from: SequentialSubjectState,
-  to: SequentialSubjectState,
-  otherSubjectState: SequentialSubjectState
-): boolean {
-  if (subjectIndex === 1) {
-    // Subject 1은 WAITING → PAIRED → MEASURING → COMPLETED 순서로만 전환 가능함
-    const allowed: Partial<
-      Record<SequentialSubjectState, SequentialSubjectState[]>
-    > = {
-      WAITING: ['PAIRED'],
-      PAIRED: ['MEASURING'],
-      MEASURING: ['COMPLETED'],
-    };
-    return (allowed[from] ?? []).includes(to);
-  }
-
-  if (subjectIndex === 2) {
-    // Subject 2는 Subject 1이 COMPLETED된 뒤에만 MEASURING 전환 가능함
-    // (순차 측정 설계 의도: Subject 1 선행 → 완료 → Subject 2 시작, 겹침 금지)
-    if (to === 'MEASURING') {
-      return from === 'PAIRED' && otherSubjectState === 'COMPLETED';
-    }
-    if (to === 'COMPLETED') {
-      return from === 'MEASURING';
-    }
-    // WAITING → PAIRED는 항상 허용함
-    if (from === 'WAITING' && to === 'PAIRED') return true;
-  }
-
-  return false;
-}
-
-/**
  * [Model] 단일 피실험자 페어링 단계를 수행하는 독립 엔진 정의함
  */
 export class PairingStep {
   private pollingId: NodeJS.Timeout | null = null;
   private timerId: NodeJS.Timeout | null = null;
-  /** 현재 실험 모드 — SEQUENTIAL이면 상태 전환 로직 달라짐 */
-  readonly mode: ExperimentMode;
-
-  constructor(mode: ExperimentMode = 'DUAL') {
-    this.mode = mode;
-  }
 
   /**
    * 실행 중인 모든 타이머 및 폴링 자원 해제 수행함
@@ -104,12 +47,17 @@ export class PairingStep {
   async execute(
     onStatusUpdate: (status: PairingSessionStatus, data?: PairingData) => void,
     onTimeUpdate: (timeLeft: number) => void,
-    groupId?: string | null
+    groupId?: string | null,
+    mode: ExperimentMode = 'DUAL'
   ) {
     this.clear();
     try {
-      // 전달받은 groupId가 존재하면 API 호출 시 포함하여 기존 그룹 재사용함
-      const response = await sessionApi.createdPairing(groupId || undefined);
+      // groupId 존재 시 기존 그룹 재사용함. mode는 세션 생성 시 experimentMode로 전달함
+      // (미전달 시 기본 DUAL — BE도 미제공 시 default DUAL 적용)
+      const response = await sessionApi.createdPairing(
+        groupId || undefined,
+        mode
+      );
       const { data } = response.data;
 
       const expiry = new Date(data.expiresAt).getTime();

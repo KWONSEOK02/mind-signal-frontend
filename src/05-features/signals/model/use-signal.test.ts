@@ -236,19 +236,29 @@ describe('useSignal DUAL_2PC — join-room emit + stimulus 테스트 수행함',
     const alignedPairHandler = getSocketHandler('aligned_pair');
     expect(alignedPairHandler).not.toBeNull();
 
-    const subject1Wave = {
-      delta: 0.1,
-      theta: 0.2,
-      alpha: 0.3,
-      beta: 0.4,
-      gamma: 0.5,
+    // waves와 metrics에 겹치지 않는 값을 넣어 FE가 metrics만 쓰는지 증명함.
+    // 구 동작은 waves를 지표 자리에 끼워 넣어 stress에 delta(1000 스케일)가 들어갔음.
+    const subject1 = {
+      waves: { delta: 1000, theta: 300, alpha: 200, beta: 210, gamma: 110 },
+      metrics: {
+        focus: 0.11,
+        engagement: 0.22,
+        interest: 0.33,
+        excitement: 0.44,
+        stress: 0.55,
+        relaxation: 0.66,
+      },
     };
-    const subject2Wave = {
-      delta: 0.6,
-      theta: 0.7,
-      alpha: 0.8,
-      beta: 0.9,
-      gamma: 1.0,
+    const subject2 = {
+      waves: { delta: 900, theta: 280, alpha: 190, beta: 205, gamma: 100 },
+      metrics: {
+        focus: 0.71,
+        engagement: 0.72,
+        interest: 0.73,
+        excitement: 0.74,
+        stress: 0.75,
+        relaxation: 0.76,
+      },
     };
 
     act(() => {
@@ -256,18 +266,129 @@ describe('useSignal DUAL_2PC — join-room emit + stimulus 테스트 수행함',
       alignedPairHandler!({
         groupId: 'group-xyz',
         timestamp_ms: Date.now(),
-        subject_1: subject1Wave,
-        subject_2: subject2Wave,
+        subject_1: subject1,
+        subject_2: subject2,
       });
     });
 
-    // subject_1 데이터 기반으로 currentMetrics 업데이트됨 확인함
-    expect(result.current.currentMetrics).not.toBeNull();
-    expect(result.current.currentMetrics?.focus).toBe(subject1Wave.beta);
-    expect(result.current.currentMetrics?.engagement).toBe(subject1Wave.alpha);
-    expect(result.current.currentMetrics?.interest).toBe(subject1Wave.theta);
-    expect(result.current.currentMetrics?.excitement).toBe(subject1Wave.gamma);
-    expect(result.current.currentMetrics?.stress).toBe(subject1Wave.delta);
+    // metrics를 그대로 사용함 — waves 값이 새어 들어오면 안 됨
+    expect(result.current.currentMetrics).toEqual(subject1.metrics);
+    expect(result.current.currentMetrics2).toEqual(subject2.metrics);
+    // 회귀 가드: stress에 delta가 들어가던 결함 재발 방지
+    expect(result.current.currentMetrics?.stress).not.toBe(
+      subject1.waves.delta
+    );
+    // 회귀 가드: engagement과 relaxation이 둘 다 alpha이던 결함 재발 방지
+    expect(result.current.currentMetrics?.engagement).not.toBe(
+      result.current.currentMetrics?.relaxation
+    );
+  });
+
+  it('aligned_pair에 metrics가 없으면 지표를 갱신하지 않음 (구버전 프레임 방어)', async () => {
+    const { result } = renderHook(() =>
+      useSignal('session-abc', {
+        experimentMode: 'DUAL_2PC',
+        groupId: 'group-xyz',
+        setDualSessionState: mockSetDualSessionState,
+      })
+    );
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    const alignedPairHandler = getSocketHandler('aligned_pair');
+
+    act(() => {
+      alignedPairHandler!({
+        groupId: 'group-xyz',
+        timestamp_ms: Date.now(),
+        subject_1: {
+          waves: { delta: 1000, theta: 300, alpha: 200, beta: 210, gamma: 110 },
+        },
+        subject_2: null,
+      });
+    });
+
+    // metrics 부재 시 대역 파워를 지표로 오표시하지 않고 null 유지함
+    expect(result.current.currentMetrics).toBeNull();
+  });
+
+  it('aligned_pair subject_1:null + subject_2 수신 시 currentMetrics2만 업데이트됨 (단일 헤드셋)', async () => {
+    const { result } = renderHook(() =>
+      useSignal('session-abc', {
+        experimentMode: 'DUAL_2PC',
+        groupId: 'group-xyz',
+        setDualSessionState: mockSetDualSessionState,
+      })
+    );
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    const alignedPairHandler = getSocketHandler('aligned_pair');
+    expect(alignedPairHandler).not.toBeNull();
+
+    const subject2 = {
+      waves: { delta: 900, theta: 280, alpha: 190, beta: 205, gamma: 100 },
+      metrics: {
+        focus: 0.71,
+        engagement: 0.72,
+        interest: 0.73,
+        excitement: 0.74,
+        stress: 0.75,
+        relaxation: 0.76,
+      },
+    };
+
+    act(() => {
+      // 노트북 B(subject 2)만 측정 — subject_1 없음
+      alignedPairHandler!({
+        groupId: 'group-xyz',
+        timestamp_ms: Date.now(),
+        subject_1: null,
+        subject_2: subject2,
+      });
+    });
+
+    // subject_1 없음 → currentMetrics는 null 유지, subject_2 → currentMetrics2 업데이트됨
+    expect(result.current.currentMetrics).toBeNull();
+    expect(result.current.currentMetrics2).toEqual(subject2.metrics);
+  });
+
+  it('aligned_pair subject_2에 비유한 값(NaN) 포함 시 currentMetrics2 미갱신 처리됨 (차트 깨짐 방지)', async () => {
+    const { result } = renderHook(() =>
+      useSignal('session-abc', {
+        experimentMode: 'DUAL_2PC',
+        groupId: 'group-xyz',
+        setDualSessionState: mockSetDualSessionState,
+      })
+    );
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    const alignedPairHandler = getSocketHandler('aligned_pair');
+
+    act(() => {
+      alignedPairHandler!({
+        groupId: 'group-xyz',
+        timestamp_ms: Date.now(),
+        subject_1: null,
+        subject_2: {
+          delta: NaN,
+          theta: 0.7,
+          alpha: 0.8,
+          beta: 0.9,
+          gamma: 1.0,
+        },
+      });
+    });
+
+    // NaN 한 번이라도 들어오면 currentMetrics2는 null 유지 (차트로 전파 차단)
+    expect(result.current.currentMetrics2).toBeNull();
   });
 
   it('aligned_pair 수신 시 다른 groupId이면 currentMetrics 미업데이트 처리됨', async () => {

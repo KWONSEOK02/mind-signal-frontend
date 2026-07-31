@@ -8,7 +8,7 @@
  *   MOCK_MEASUREMENT_DURATION_SECONDS=10 환경변수 + DE mock CSV 주입 모드
  *   (Phase 14 Wave 2에서 DE mock 패턴이 추가되기 전까지 test.skip 유지)
  *
- * @see .plans/14-dual-ble-resolution/PLAN.md Scenario 1 (lines 654-666)
+ * @see .plans/_archive/legacy/14-dual-ble-resolution/PLAN.md Scenario 1 (lines 654-666)
  * @see PLAN I10 Medium: Mock 측정 주입 메커니즘
  *
  * --- SKIP 조건 ---

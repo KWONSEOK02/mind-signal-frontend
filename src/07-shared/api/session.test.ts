@@ -37,14 +37,12 @@ describe('sessionApi — 세션 API 통합 테스트 수행함', () => {
       },
     };
 
-    it('groupId 없이 호출 시 POST /sessions에 null groupId 전송 처리함', async () => {
+    it('groupId 없이 호출 시 POST /sessions에 빈 객체 전송 처리함 (옵션 D)', async () => {
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await sessionApi.createdPairing();
 
-      expect(mockPost).toHaveBeenCalledWith('/sessions', {
-        groupId: null,
-      });
+      expect(mockPost).toHaveBeenCalledWith('/sessions', {});
       expect(result.data.data.groupId).toBe('group-123');
     });
 
@@ -56,6 +54,26 @@ describe('sessionApi — 세션 API 통합 테스트 수행함', () => {
       expect(mockPost).toHaveBeenCalledWith('/sessions', {
         groupId: 'existing-group',
       });
+    });
+
+    it('experimentMode 전달 시 body에 포함 처리함 (DUAL_2PC 생성 경로)', async () => {
+      mockPost.mockResolvedValue(mockResponse);
+
+      await sessionApi.createdPairing('existing-group', 'DUAL_2PC');
+
+      expect(mockPost).toHaveBeenCalledWith('/sessions', {
+        groupId: 'existing-group',
+        experimentMode: 'DUAL_2PC',
+      });
+    });
+
+    it('experimentMode 미전달 시 body에 키 자체 없음', async () => {
+      mockPost.mockResolvedValue(mockResponse);
+
+      await sessionApi.createdPairing();
+
+      const receivedBody = mockPost.mock.calls[0][1] as Record<string, unknown>;
+      expect(receivedBody).not.toHaveProperty('experimentMode');
     });
 
     it('API 실패 시 에러가 전파 처리됨', async () => {
@@ -134,8 +152,12 @@ describe('createOperatorInviteToken — operator-invite API 클라이언트 테�
 
   it('성공 시 POST /sessions/:groupId/invite-operator 호출 처리함', async () => {
     const expiresAt = Date.now() + 300_000;
+    // BE 응답 envelope { status, data } — 구현이 response.data.data 언래핑함
     mockPost.mockResolvedValue({
-      data: { token: 'jwt-invite-token', expiresAt },
+      data: {
+        status: 'success',
+        data: { token: 'jwt-invite-token', expiresAt },
+      },
     });
 
     const result = await createOperatorInviteToken('group-abc');
@@ -174,8 +196,17 @@ describe('joinAsOperator — join-as-operator API 클라이언트 테스트 수�
   });
 
   it('성공 시 POST /sessions/join-as-operator 호출 처리함', async () => {
+    // BE 응답 envelope { status, data } — 구현이 response.data.data 언래핑함
     mockPost.mockResolvedValue({
-      data: { groupId: 'group-xyz', experimentMode: 'DUAL_2PC' },
+      data: {
+        status: 'success',
+        data: {
+          groupId: 'group-xyz',
+          experimentMode: 'DUAL_2PC',
+          socketToken: 'operator-socket-token',
+          socketTokenExpiresAt: 1_900_000_000_000,
+        },
+      },
     });
 
     const result = await joinAsOperator('valid-jwt-token');
@@ -185,6 +216,8 @@ describe('joinAsOperator — join-as-operator API 클라이언트 테스트 수�
     });
     expect(result.groupId).toBe('group-xyz');
     expect(result.experimentMode).toBe('DUAL_2PC');
+    expect(result.socketToken).toBe('operator-socket-token');
+    expect(result.socketTokenExpiresAt).toBe(1_900_000_000_000);
   });
 
   it('401 응답 시 에러가 전파 처리됨 (만료 토큰)', async () => {

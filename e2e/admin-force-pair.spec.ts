@@ -5,7 +5,7 @@
  * - JWT seed: localStorage.setItem('token', 'TEST-JWT') + Bearer header assert
  * - mocks: POST /api/sessions + GET /api/sessions/group/:gid/status 폴링 + POST /api/sessions/:token/admin-pair
  *
- * @see .plans/K-dev-mode-force-pair/PLAN.md §8-2 (rev.4)
+ * @see .plans/_archive/legacy/K-dev-mode-force-pair/PLAN.md §8-2 (rev.4)
  */
 
 import { test, expect, type Page, type Route } from '@playwright/test';

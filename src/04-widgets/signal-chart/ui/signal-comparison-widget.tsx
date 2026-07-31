@@ -12,7 +12,52 @@ import { useUI } from '@/app/providers/ui-context'; //라이트, 다트모드를
 interface SignalComparisonWidgetProps {
   subject1Metrics: EmotivMetrics | null; // any를 구체적인 타입으로 수정함
   subject2Metrics: EmotivMetrics | null; // any를 구체적인 타입으로 수정함
+  /** subject 1의 마지막 샘플 수신 시각(epoch ms). 미전달 시 신선도 판정 생략함 */
+  lastSampleAt1?: number | null;
+  /** subject 2의 마지막 샘플 수신 시각(epoch ms). 미전달 시 신선도 판정 생략함 */
+  lastSampleAt2?: number | null;
 }
+
+/**
+ * 이 시간(ms) 이상 샘플이 없으면 LIVE가 아니라 STALE로 표시함.
+ * 스트림이 죽어도 마지막 metrics 객체가 남아 배지가 LIVE로 유지되던 결함을 막음
+ * (2026-07-10 라이브: subject_1이 5분 33초 먼저 끊겼으나 화면은 계속 LIVE였음).
+ */
+const STALE_THRESHOLD_MS = 20_000;
+
+/** 1초마다 현재 시각 갱신함 — 데이터가 끊겨도 배지가 STALE로 전이하게 함 */
+const useNow = (intervalMs: number): number => {
+  const [now, setNow] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
+};
+
+/** 스트림 신선도 배지 — 수신 시각 미전달 시 기존 동작(LIVE 고정) 유지함 */
+const LiveBadge = ({
+  lastSampleAt,
+  now,
+}: {
+  lastSampleAt?: number | null;
+  now: number;
+}) => {
+  const stale =
+    typeof lastSampleAt === 'number' && now - lastSampleAt > STALE_THRESHOLD_MS;
+
+  return stale ? (
+    <div className="flex items-center gap-2 text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-lg">
+      <Activity size={12} />
+      <span>STALE</span>
+    </div>
+  ) : (
+    <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg">
+      <Activity size={12} />
+      <span>LIVE</span>
+    </div>
+  );
+};
 
 /**
  * 데이터 부재 시 표시할 플레이스홀더 컴포넌트임
@@ -65,10 +110,14 @@ const SignalPlaceholder = ({
 const SignalComparisonWidget = ({
   subject1Metrics,
   subject2Metrics,
+  lastSampleAt1,
+  lastSampleAt2,
 }: SignalComparisonWidgetProps) => {
   // 전역 UI 상태에서 theme 가져와서 isDark 판단
   const { theme } = useUI();
   const isDark = theme === 'dark';
+  // 데이터가 끊겨도 배지가 STALE로 전이하도록 1초 간격 시계 사용함
+  const now = useNow(1000);
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -95,12 +144,9 @@ const SignalComparisonWidget = ({
               Subject <span className="text-indigo-500">01</span>
             </span>
           </div>
-          {subject1Metrics && (
-            <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg">
-              <Activity size={12} />
-              <span>LIVE</span>
-            </div>
-          )}
+          {subject1Metrics ? (
+            <LiveBadge lastSampleAt={lastSampleAt1} now={now} />
+          ) : null}
         </div>
 
         {subject1Metrics ? (
@@ -142,12 +188,9 @@ const SignalComparisonWidget = ({
               Subject <span className="text-rose-500">02</span>
             </span>
           </div>
-          {subject2Metrics && (
-            <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg">
-              <Activity size={12} />
-              <span>LIVE</span>
-            </div>
-          )}
+          {subject2Metrics ? (
+            <LiveBadge lastSampleAt={lastSampleAt2} now={now} />
+          ) : null}
         </div>
 
         {subject2Metrics ? (

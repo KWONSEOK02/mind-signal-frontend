@@ -45,8 +45,11 @@ const sessionApi = {
   /**
    * 운영자용 새로운 그룹 실험 세션 생성 요청 수행함
    */
-  createdPairing: (groupId?: string) =>
-    api.post<PairingResponse>('/sessions', { groupId: groupId || null }),
+  createdPairing: (groupId?: string, experimentMode?: string) =>
+    api.post<PairingResponse>('/sessions', {
+      ...(groupId ? { groupId } : {}),
+      ...(experimentMode ? { experimentMode } : {}),
+    }),
 
   /**
    * 피실험자용 토큰 기반 그룹 합류 요청 수행함
@@ -93,11 +96,13 @@ export default sessionApi;
 export async function createOperatorInviteToken(
   groupId: string
 ): Promise<{ token: string; expiresAt: number }> {
-  // POST /api/sessions/:groupId/invite-operator (authenticate 미들웨어 적용)
-  const response = await api.post<{ token: string; expiresAt: number }>(
-    `/sessions/${groupId}/invite-operator`
-  );
-  return response.data;
+  // POST /api/sessions/:groupId/invite-operator — 응답 envelope { status, data } 언래핑함
+  // (BE controller가 res.json({ status, data: { token, expiresAt } }) 반환 — data.data가 실제 페이로드)
+  const response = await api.post<{
+    status: string;
+    data: { token: string; expiresAt: number };
+  }>(`/sessions/${groupId}/invite-operator`);
+  return response.data.data;
 }
 
 /**
@@ -107,13 +112,21 @@ export async function createOperatorInviteToken(
  * @returns 그룹 ID + 실험 모드 확인 응답
  * @throws ApiError 401 — 토큰 검증 실패 또는 만료 시
  */
-export async function joinAsOperator(
-  token: string
-): Promise<{ groupId: string; experimentMode: 'DUAL_2PC' }> {
-  // POST /api/sessions/join-as-operator (authenticate 미적용 — JWT body 검증만)
+export async function joinAsOperator(token: string): Promise<{
+  groupId: string;
+  experimentMode: 'DUAL_2PC';
+  socketToken: string;
+  socketTokenExpiresAt: number;
+}> {
+  // POST /api/sessions/join-as-operator — 응답 envelope { status, data } 언래핑함
   const response = await api.post<{
-    groupId: string;
-    experimentMode: 'DUAL_2PC';
+    status: string;
+    data: {
+      groupId: string;
+      experimentMode: 'DUAL_2PC';
+      socketToken: string;
+      socketTokenExpiresAt: number;
+    };
   }>('/sessions/join-as-operator', { token });
-  return response.data;
+  return response.data.data;
 }

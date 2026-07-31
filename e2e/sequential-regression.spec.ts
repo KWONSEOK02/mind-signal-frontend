@@ -5,7 +5,7 @@
  * 기존 `e2e/sequential-measurement.spec.ts`의 happy path는 mock DE 의존 스킵 상태이므로
  * 아래 별도 spec에서 DE 없이 검증 가능한 부분(SEQUENTIAL 모드 진입 + UI)만 보완함.
  *
- * @see .plans/16-2pc-expansion/PLAN.md Scenario 4 (L896-904)
+ * @see .plans/SESSION-W104-2pc-expansion/PLAN.md Scenario 4 (L896-904)
  * @see e2e/sequential-measurement.spec.ts (기존 happy path — mock DE 완성 후 병행 활성화 예정)
  *
  * Scenario 4 Step 요약:

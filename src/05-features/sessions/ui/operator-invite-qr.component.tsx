@@ -42,12 +42,17 @@ export function OperatorInviteQr({
 
   /**
    * QR 기반 URL 구성함
-   * config.api.baseUrl 은 '/api' suffix 포함이므로 origin만 추출함
+   * config.operatorOrigin 설정 시 해당 값 우선 사용함
+   * 미설정(빈 문자열)이면 window.location.origin 폴백 처리함
    */
   const buildQrUrl = useCallback(
     (t: string) => {
-      // baseUrl 예: https://example.com/api → origin: https://example.com
-      const origin = config.api.baseUrl.replace(/\/api$/, '');
+      const origin =
+        config.operatorOrigin !== ''
+          ? config.operatorOrigin
+          : typeof window !== 'undefined'
+            ? window.location.origin
+            : config.api.baseUrl.replace(/\/api$/, '');
       return `${origin}/lab/operator-join?token=${t}&groupId=${groupId}`;
     },
     [groupId]
