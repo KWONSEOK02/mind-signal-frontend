@@ -103,7 +103,7 @@ describe('useDualSession — DUAL_2PC 세션 상태 전이 테스트 수행함',
   });
 
   it('experimentMode가 DUAL_2PC 아니면 소켓 이벤트 리스너 미등록 처리됨', () => {
-    renderHook(() => useDualSession('group-abc', 'SEQUENTIAL'));
+    renderHook(() => useDualSession('group-abc', 'BTI'));
 
     expect(mockSocketOn).not.toHaveBeenCalled();
   });

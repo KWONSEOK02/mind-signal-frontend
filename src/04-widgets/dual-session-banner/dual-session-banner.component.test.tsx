@@ -18,7 +18,7 @@ describe('DualSessionBanner — 상태별 렌더링 테스트 수행함', () => 
   it('experimentMode가 DUAL_2PC 아니면 null 반환 처리됨', () => {
     const { container } = render(
       <DualSessionBanner
-        experimentMode="SEQUENTIAL"
+        experimentMode="BTI"
         state="measuring"
         partnerConnected={true}
       />

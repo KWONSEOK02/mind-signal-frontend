@@ -424,7 +424,7 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
         completeHandlerRef.current = completeHandler;
         socket.on('measurement-complete', completeHandler);
       } else {
-        // SEQUENTIAL/DUAL/BTI 기존 경로 — 200 OK 즉시 전이 (PLAN L164-167)
+        // DUAL/BTI 기존 경로 — 200 OK 즉시 전이 (PLAN L164-167)
         setIsMeasuring(true);
 
         const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);

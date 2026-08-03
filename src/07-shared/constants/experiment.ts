@@ -6,8 +6,6 @@ export const EXPERIMENT_MODES = {
   DUAL: 'DUAL',
   /** 뇌BTI 성향 측정 모드 (Phase 1) */
   BTI: 'BTI',
-  /** 시분할 측정 모드 (1PC 환경, Phase 14 P2) */
-  SEQUENTIAL: 'SEQUENTIAL',
   /** 2PC 동기화 측정 모드 (Phase 16) */
   DUAL_2PC: 'DUAL_2PC',
 } as const;
@@ -39,17 +37,6 @@ export const EXPERIMENT_CONFIG = {
     targetCount: 1,
     title: 'Brain-BTI Analyzer',
     description: '개인별 뇌파 특성을 분석하여 성향 유형을 도출함',
-  },
-  /**
-   * 1PC 순차 측정 모드 설정임 — DUAL과 동일한 2인 페어링을 사용하되
-   * 측정은 한 장치에서 순차로 수행됨
-   */
-  SEQUENTIAL: {
-    mode: 'SEQUENTIAL' as ExperimentMode,
-    targetCount: 2,
-    title: 'Sequential Subject Monitor',
-    description:
-      '한 장치에서 두 피실험자의 데이터를 순차 측정하여 유사도를 분석함',
   },
   /**
    * 2PC 동기화 측정 모드 설정임. 값은 DUAL과 같으나 별도 항목으로 둠 —
