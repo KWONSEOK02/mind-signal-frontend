@@ -20,7 +20,7 @@ describe('analysisApi — 분석 결과 API 통합 테스트 수행함', () => {
     vi.clearAllMocks();
   });
 
-  describe('getResult', () => {
+  describe('[TS-RESULT-01] getResult', () => {
     const mockResultData = {
       groupId: 'group-123',
       matchingScore: 87.5,
