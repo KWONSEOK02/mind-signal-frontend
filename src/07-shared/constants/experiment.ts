@@ -51,6 +51,16 @@ export const EXPERIMENT_CONFIG = {
     description:
       '한 장치에서 두 피실험자의 데이터를 순차 측정하여 유사도를 분석함',
   },
+  /**
+   * 2PC 동기화 측정 모드 설정임. 값은 DUAL과 같으나 별도 항목으로 둠 —
+   * DUAL 제거 시 DUAL_2PC가 함께 깨지지 않게 하기 위함 (SESSION-W002 T2b)
+   */
+  DUAL_2PC: {
+    mode: 'DUAL_2PC' as ExperimentMode,
+    targetCount: 2,
+    title: 'Dual Subject Monitor (2PC)',
+    description: '두 대의 PC에서 두 피실험자의 데이터를 동시 측정하여 대조함',
+  },
 } as const;
 
 /** 최소 분석 가능 시간(초) — 백엔드 MIN_ANALYSIS_SECONDS와 동기화 필수 */

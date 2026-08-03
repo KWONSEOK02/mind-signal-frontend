@@ -125,10 +125,9 @@ const LabPage = () => {
 
   /**
    * 상태 기반으로 현재 실험 설정 동적 로드함
-   * DUAL_2PC는 DUAL과 동일한 targetCount=2 설정 재활용함
+   * DUAL_2PC도 자기 항목을 가지므로 분기 없이 조회함 (SESSION-W002 T2b)
    */
-  const currentConfig =
-    mode === 'DUAL_2PC' ? EXPERIMENT_CONFIG['DUAL'] : EXPERIMENT_CONFIG[mode];
+  const currentConfig = EXPERIMENT_CONFIG[mode];
 
   /**
    * 설정된 목표 인원수를 기반으로 페어링 로직 구동함
