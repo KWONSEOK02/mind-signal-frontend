@@ -17,7 +17,7 @@ describe('authApi — 인증 API 통합 테스트 수행함', () => {
     vi.clearAllMocks();
   });
 
-  describe('login', () => {
+  describe('[TS-AUTH-10][TS-AUTH-11] login', () => {
     it('POST /auth/login에 이메일+비밀번호 전송 처리함', async () => {
       mockPost.mockResolvedValue({
         data: { status: 'success', token: 'jwt-token-123' },
@@ -44,7 +44,7 @@ describe('authApi — 인증 API 통합 테스트 수행함', () => {
     });
   });
 
-  describe('signup', () => {
+  describe('[TS-AUTH-09] signup', () => {
     it('POST /auth/signup에 전체 회원가입 필드 전송 처리함', async () => {
       mockPost.mockResolvedValue({
         data: { status: 'success', token: 'new-jwt' },

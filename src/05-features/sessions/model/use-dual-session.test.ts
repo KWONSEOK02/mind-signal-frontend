@@ -228,7 +228,7 @@ describe('useDualSession — DUAL_2PC 세션 상태 전이 테스트 수행함',
  * T-FE-2: ready=false 10초 이상 지속 시 showFallback=true 전환 검증함
  * T-FE-4: DUAL_2PC 아닌 모드에서 polling 비활성 검증함
  */
-describe('useDualSession — Phase 17.6 polling 상태 전이 테스트 수행함', () => {
+describe('[TS-SESSION-18] useDualSession — Phase 17.6 polling 상태 전이 테스트 수행함', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();

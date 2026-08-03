@@ -90,7 +90,7 @@ describe('LabPage 정밀 라우팅 및 인터랙션 통합 테스트 수행함',
   });
 });
 
-describe('다중 페어링 상태 전이 및 완료 통합 테스트 수행함', () => {
+describe('[TS-SESSION-06] 다중 페어링 상태 전이 및 완료 통합 테스트 수행함', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRouter.setCurrentUrl('/lab');

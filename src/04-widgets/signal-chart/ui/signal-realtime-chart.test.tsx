@@ -6,7 +6,7 @@ import type { EmotivMetrics } from '@/07-shared/api';
 /**
  * SignalRealtimeChart — activeSubjectIndex prop 테스트 수행함
  */
-describe('SignalRealtimeChart', () => {
+describe('[TS-STREAM-01] SignalRealtimeChart', () => {
   const mockMetrics: EmotivMetrics = {
     engagement: 0.6,
     interest: 0.5,

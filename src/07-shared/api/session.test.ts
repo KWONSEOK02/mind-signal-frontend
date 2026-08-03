@@ -24,7 +24,7 @@ describe('sessionApi — 세션 API 통합 테스트 수행함', () => {
     vi.clearAllMocks();
   });
 
-  describe('createdPairing', () => {
+  describe('[TS-SESSION-01] createdPairing', () => {
     const mockResponse = {
       data: {
         status: 'success',
