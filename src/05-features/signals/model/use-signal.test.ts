@@ -76,6 +76,15 @@ describe('useSignal DUAL_2PC — join-room emit + stimulus 테스트 수행함',
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    // startMeasurement 가 join-room ack 를 기다리므로(CodeRabbit FE PR #67 Major)
+    // mock 소켓이 ack 를 돌려주지 않으면 측정 시작이 진행되지 않음
+    mockSocketEmit.mockImplementation(
+      (event: string, _payload: unknown, ack?: (r: unknown) => void) => {
+        if (event === 'join-room' && typeof ack === 'function') {
+          ack({ ok: true });
+        }
+      }
+    );
   });
 
   afterEach(() => {
@@ -133,6 +142,63 @@ describe('useSignal DUAL_2PC — join-room emit + stimulus 테스트 수행함',
     } finally {
       localStorage.removeItem('token');
     }
+  });
+
+  it('join-room ack가 거부되면 측정 시작 API를 부르지 않음 (CodeRabbit PR #67)', async () => {
+    // room 에 못 들어간 채로 측정을 시작하면 eeg-live 와 measurement-complete 가
+    // 도착하지 않아 화면이 측정 중에 갇힘. 합류 실패면 시작하지 않아야 함
+    mockSocketEmit.mockImplementation(
+      (event: string, _payload: unknown, ack?: (r: unknown) => void) => {
+        if (event === 'join-room' && typeof ack === 'function') {
+          ack({ ok: false, error: 'unauthorized' });
+        }
+      }
+    );
+
+    const { result } = renderHook(() =>
+      useSignal('session-abc', {
+        experimentMode: 'DUAL_2PC',
+        groupId: 'group-xyz',
+        setDualSessionState: mockSetDualSessionState,
+      })
+    );
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    expect(measurementApi.startMeasurement).not.toHaveBeenCalled();
+    expect(result.current.isMeasuring).toBe(false);
+  });
+
+  it('join-room emit이 측정 시작 API보다 먼저 나감 (CodeRabbit PR #67)', async () => {
+    const order: string[] = [];
+    mockSocketEmit.mockImplementation(
+      (event: string, _payload: unknown, ack?: (r: unknown) => void) => {
+        if (event === 'join-room' && typeof ack === 'function') {
+          order.push('join-room');
+          ack({ ok: true });
+        }
+      }
+    );
+    vi.mocked(measurementApi.startMeasurement).mockImplementation(async () => {
+      order.push('startMeasurement');
+      return { data: { status: 'success' } } as never;
+    });
+
+    const { result } = renderHook(() =>
+      useSignal('session-abc', {
+        experimentMode: 'DUAL_2PC',
+        groupId: 'group-xyz',
+        setDualSessionState: mockSetDualSessionState,
+      })
+    );
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    expect(order).toEqual(['join-room', 'startMeasurement']);
   });
 
   it('join-room emit 후 ack ok=true 수신 시 roomJoined=true 전이 처리됨', async () => {

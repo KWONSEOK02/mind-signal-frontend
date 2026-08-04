@@ -196,43 +196,48 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
    * join-room emit 처리함 (ack 5초 timeout + 재시도 1회) (PLAN L148, L274-281)
    * 재시도는 단일 helper 내부에서 처리하여 재귀 참조 문제 회피함
    */
-  const emitJoinRoom = useCallback((gid: string) => {
+  const emitJoinRoom = useCallback((gid: string): Promise<boolean> => {
     const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
 
-    /** 단일 emit + ack 처리 내부 helper 정의함 */
-    const doEmit = (isRetry: boolean) => {
-      let ackReceived = false;
+    return new Promise<boolean>((resolve) => {
+      /** 단일 emit + ack 처리 내부 helper 정의함 */
+      const doEmit = (isRetry: boolean) => {
+        let ackReceived = false;
 
-      const timeoutId = setTimeout(() => {
-        if (!ackReceived && !isRetry) {
-          // 5초 내 ack 없으면 재시도 1회 수행함
-          console.warn('join-room ack timeout — 재시도 1회 수행함');
-          doEmit(true);
-        } else if (!ackReceived) {
-          console.error('join-room ack 재시도도 실패함');
-        }
-      }, 5000);
-
-      // 로그인 토큰을 함께 보냄. 백엔드가 무인증 join 을 거부함 (AUTH-W001)
-      const token =
-        typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-      socket.emit(
-        'join-room',
-        { groupId: gid, token },
-        (response: JoinRoomAck) => {
-          ackReceived = true;
-          clearTimeout(timeoutId);
-          if (response.ok) {
-            setRoomJoined(true);
-          } else {
-            console.error('join-room 실패함:', response.error);
+        const timeoutId = setTimeout(() => {
+          if (!ackReceived && !isRetry) {
+            // 5초 내 ack 없으면 재시도 1회 수행함
+            console.warn('join-room ack timeout — 재시도 1회 수행함');
+            doEmit(true);
+          } else if (!ackReceived) {
+            console.error('join-room ack 재시도도 실패함');
+            resolve(false);
           }
-        }
-      );
-    };
+        }, 5000);
 
-    doEmit(false);
+        // 로그인 토큰을 함께 보냄. 백엔드가 무인증 join 을 거부함 (AUTH-W001)
+        const token =
+          typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+        socket.emit(
+          'join-room',
+          { groupId: gid, token },
+          (response: JoinRoomAck) => {
+            ackReceived = true;
+            clearTimeout(timeoutId);
+            if (response.ok) {
+              setRoomJoined(true);
+              resolve(true);
+            } else {
+              console.error('join-room 실패함:', response.error);
+              resolve(false);
+            }
+          }
+        );
+      };
+
+      doEmit(false);
+    });
   }, []);
 
   /**
@@ -426,6 +431,17 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
     if (isMeasuring || !sessionId) return;
 
     try {
+      // room 합류를 측정 시작보다 먼저 끝냄. 순서가 뒤집히면 백엔드가 즉시 발행하는
+      // room 이벤트를 놓침 — 스트림 시작이 실패하면 measurement-complete 가 바로
+      // 나가는데 그때까지 합류하지 못했으면 화면이 측정 중에 갇힘
+      // (CodeRabbit FE PR #67 Major)
+      if (groupId) {
+        const joined = await emitJoinRoom(groupId);
+        if (!joined) {
+          throw new Error('join-room 실패로 측정을 시작하지 않음');
+        }
+      }
+
       // Python 엔진 spawn 트리거 수행함
       await measurementApi.startMeasurement(sessionId);
 
@@ -436,8 +452,7 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
 
         const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
 
-        // 소켓 연결 직후 join-room emit 수행함 (PLAN L148, L276)
-        emitJoinRoom(groupId);
+        // join-room 은 위에서 이미 끝냈음 (측정 시작 전 합류)
 
         // DUAL_2PC 전용 이벤트 리스너 등록함
         registerDualListeners(groupId);
@@ -465,10 +480,7 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
 
         // 이 경로도 room 합류가 필요함. 백엔드가 전역 emit 을 그룹 room emit 으로
         // 바꿔(AUTH-W001) 합류하지 않으면 eeg-live 와 measurement-complete 가
-        // 도착하지 않음
-        if (groupId) {
-          emitJoinRoom(groupId);
-        }
+        // 도착하지 않음. 합류는 위에서 측정 시작 전에 끝냈음
 
         // eeg-live 이벤트 핸들러 등록 및 ref 보관함
         const handler = ({ sessionId: incomingId, data }: EegLivePayload) => {
