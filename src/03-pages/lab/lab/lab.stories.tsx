@@ -11,12 +11,12 @@ import LabPage from './lab-page';
  * LabPage는 다음 진입점 분기를 포함함:
  * - SSR 하이드레이션 전: 빈 슬레이트 배경만 렌더링함
  * - 모바일 환경: MobileLabView로 즉시 전환함
- * - 데스크톱 환경: 실험 모드(DUAL / BTI) 기반 운영자 대시보드 렌더링함
+ * - 데스크톱 환경: 실험 모드(DUAL_2PC / BTI) 기반 운영자 대시보드 렌더링함
  *
  * 페어링 흐름:
  * 1. 운영자가 "Subject 01 연결 QR 생성" 버튼 클릭 → POST /sessions 호출 → QR 표시
  * 2. 피실험자 QR 스캔 후 → GET /sessions/group/{groupId}/status 폴링(3초) → guestJoined=true 감지
- * 3. Subject 01 페어링 완료 → 자동으로 Subject 02 QR 생성 시작 (DUAL 모드 시)
+ * 3. Subject 01 페어링 완료 → 자동으로 Subject 02 QR 생성 시작 (2인 모드 시)
  * 4. 모든 피실험자 페어링 완료 → "실험 시작" 버튼 활성화
  * 5. "실험 시작" 클릭 → POST /signals/realtime 매 1초 호출 시작
  */
@@ -76,11 +76,11 @@ const experimentReadyHandlers = createDualSessionHandlerSet('GROUP-BETA');
 const experimentRunningHandlers = createDualSessionHandlerSet('GROUP-GAMMA');
 
 // ---------------------------------------------------------------------------
-// 1. Default — DUAL 모드 초기 유휴 상태
+// 1. Default — DUAL_2PC 모드 초기 유휴 상태
 // ---------------------------------------------------------------------------
 
 /**
- * [State] DUAL 모드(기본값)에서의 초기 유휴 상태임.
+ * [State] DUAL_2PC 모드(기본값)에서의 초기 유휴 상태임.
  *
  * - "Dual Subject Monitor" 제목이 표시됨
  * - Subject 01 / Subject 02 모두 WAITING 상태
@@ -108,14 +108,14 @@ export const Default: Story = {
  *
  * play 함수:
  * 1. 헤더 우측 Settings(SVG) 버튼 식별 및 클릭
- * 2. "DUAL 모드 (2인)" 및 "BTI 모드 (1인)" 옵션이 DOM에 존재하는지 단언함
+ * 2. "BTI 모드 (1인)" 및 "DUAL 2PC 모드" 옵션이 DOM에 존재하는지 단언함
  */
 export const SettingsOpen: Story = {
   parameters: {
     docs: {
       description: {
         story:
-          '톱니바퀴 버튼 클릭 후 실험 모드 선택 드롭다운이 노출되는 상태임. 두 가지 모드 옵션("DUAL 모드 (2인)", "BTI 모드 (1인)")이 정상적으로 렌더링되는지 확인함.',
+          '톱니바퀴 버튼 클릭 후 실험 모드 선택 드롭다운이 노출되는 상태임. 두 가지 모드 옵션("BTI 모드 (1인)", "DUAL 2PC 모드")이 정상적으로 렌더링되는지 확인함.',
       },
     },
   },
@@ -133,10 +133,11 @@ export const SettingsOpen: Story = {
     }
 
     // 드롭다운 메뉴의 두 모드 옵션이 렌더링되었는지 단언함
-    const dualOption = await canvas.findByText(/DUAL 모드 \(2인\)/i);
+    // SESSION-W002 로 DUAL 선택지가 사라져 남은 둘은 BTI 와 DUAL_2PC 임
     const btiOption = await canvas.findByText(/BTI 모드 \(1인\)/i);
-    await expect(dualOption).toBeInTheDocument();
+    const dual2pcOption = await canvas.findByText(/DUAL 2PC 모드/i);
     await expect(btiOption).toBeInTheDocument();
+    await expect(dual2pcOption).toBeInTheDocument();
   },
 };
 
@@ -335,7 +336,7 @@ export const Subject1Connected: Story = {
 // ---------------------------------------------------------------------------
 
 /**
- * [State + Interactive] DUAL 모드에서 두 피실험자가 모두 페어링 완료된 상태임.
+ * [State + Interactive] DUAL_2PC 모드에서 두 피실험자가 모두 페어링 완료된 상태임.
  *
  * MSW 핸들러:
  * - POST /sessions: Subject 01/02 순차 반환
@@ -365,6 +366,17 @@ export const ExperimentReady: Story = {
       handlers: [
         // 스토리별 독립 핸들러 사용하여 callCount 오염 방지함
         experimentReadyHandlers.handler,
+        // SESSION-W002 로 기본 모드가 DUAL_2PC 가 되면서 시작 버튼이
+        // partnerConnected 게이트 뒤로 갔다(lab-page.tsx:392). use-dual-session 의
+        // 1초 폴링이 읽는 엔드포인트를 ready 로 stub 해야 실제로 버튼이 뜬다.
+        http.get(/.*\/engine\/registry-status$/, () => {
+          return HttpResponse.json({
+            ready: true,
+            registered: 2,
+            attempts: 1,
+            inFlight: false,
+          });
+        }),
         // 상태 폴링: 즉시 두 피실험자 모두 guestJoined=true 반환하여 빠른 완료 유도함
         http.get(/.*\/sessions\/group\/.*\/status$/, () => {
           return HttpResponse.json({
@@ -396,8 +408,9 @@ export const ExperimentReady: Story = {
     );
     await expect(startBtn).toBeInTheDocument();
 
-    // 3. System Phase 텍스트가 "Experiment Ready"로 변경되었는지 단언함
-    await expect(canvas.getByText(/Experiment Ready/i)).toBeInTheDocument();
+    // 3. System Phase 텍스트 단언. DUAL_2PC 분기의 문구는 'Partner Ready' 이고
+    // 'Experiment Ready' 는 비-DUAL_2PC 분기 전용이다(lab-page.tsx:752, :757)
+    await expect(canvas.getByText(/Partner Ready/i)).toBeInTheDocument();
   },
 };
 
@@ -453,6 +466,19 @@ export const ExperimentRunning: Story = {
           });
         }),
         // 실시간 신호 전송 엔드포인트 모킹 수행함
+        // SESSION-W002: 기본 모드 DUAL_2PC 라 시작 버튼이 partnerConnected 게이트
+        // 뒤에 있고, 클릭 경로도 startDualByGroup 으로 바뀌었다
+        http.get(/.*\/engine\/registry-status$/, () => {
+          return HttpResponse.json({
+            ready: true,
+            registered: 2,
+            attempts: 1,
+            inFlight: false,
+          });
+        }),
+        http.post(/.*\/groups\/.*\/eeg\/stream:start$/, () => {
+          return HttpResponse.json({ status: 'success', data: {} });
+        }),
         http.post(/.*\/signals\/realtime$/, () => {
           return HttpResponse.json({ status: 'success' });
         }),
@@ -556,8 +582,9 @@ export const QRResetInteraction: Story = {
       await userEvent.click(settingsBtn);
     }
 
-    // 5. DUAL 모드 재선택하여 모드 변경 트리거 수행함 (QR 초기화 유도)
-    const dualModeBtn = await canvas.findByText(/DUAL 모드 \(2인\)/i);
+    // 5. BTI 모드 선택하여 모드 변경 트리거 수행함 (QR 초기화 유도)
+    // SESSION-W002 로 DUAL 선택지가 사라져 남은 비-2PC 모드로 바꿈
+    const dualModeBtn = await canvas.findByText(/BTI 모드 \(1인\)/i);
     await userEvent.click(dualModeBtn);
 
     // 6. 모드 변경으로 인해 QR이 닫히고 초기 버튼으로 복구되었는지 단언함

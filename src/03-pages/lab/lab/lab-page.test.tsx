@@ -288,7 +288,7 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
     ).toBeInTheDocument();
   });
 
-  it('기본 DUAL 모드 + isAllPaired=true → 실험 시작 버튼 표시 처리됨 (regression)', () => {
+  it('기본 DUAL_2PC 모드 + isAllPaired=true + partnerConnected=false → 시작 버튼 미표시, operator 합류 버튼 표시 (regression)', () => {
     // useDualSession: DUAL_2PC 미사용 상태 mock 설정함 (partnerConnected 무관)
     (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
       state: 'idle',
@@ -317,12 +317,16 @@ describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
       sessionId: null,
     });
 
-    // 기본 DUAL 모드에서 isAllPaired=true → 실험 시작 버튼 표시 확인함
+    // SESSION-W002 로 기본 모드가 DUAL_2PC 가 되면서 게이트가 바뀌었다.
+    // isAllPaired 단독으로는 더 이상 시작 버튼이 열리지 않고(lab-page.tsx:392)
+    // 파트너 PC 합류를 기다리는 operator 합류 버튼이 나온다.
+    // partnerConnected=true 경로의 양의 단언은 이 파일 위쪽 테스트가 덮는다.
     renderLabPage();
 
     expect(
-      screen.getByRole('button', { name: /실험 시작/ })
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: /실험 시작/ })
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('operator-self-join')).toBeInTheDocument();
   });
 });
 

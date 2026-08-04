@@ -74,7 +74,7 @@ const LabPage = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isQRVisible, setIsQRVisible] = useState(false);
   // 모드 상태 및 드롭다운 토글 상태 관리 추가함 (DUAL_2PC 추가)
-  const [mode, setMode] = useState<'DUAL' | 'BTI' | 'DUAL_2PC'>('DUAL');
+  const [mode, setMode] = useState<'BTI' | 'DUAL_2PC'>('DUAL_2PC');
   const [operatorSocketSessionVersion, setOperatorSocketSessionVersion] =
     useState(0);
   // 운영자 합류 전에는 토큰 부재가 정상이므로 경보 채널 배너를 띄우지 않음
@@ -292,7 +292,7 @@ const LabPage = () => {
    * 실험 모드 변경 시 세션 초기화 및 UI 닫기 일괄 처리함
    */
   const handleModeChange = useCallback(
-    (newMode: 'DUAL' | 'BTI' | 'DUAL_2PC') => {
+    (newMode: 'BTI' | 'DUAL_2PC') => {
       setMode(newMode);
       resetStatus();
       setIsQRVisible(false);
@@ -576,16 +576,6 @@ const LabPage = () => {
                     onClick={() => setIsSettingsOpen(false)}
                   />
                   <div className="absolute right-0 mt-3 w-56 p-2 rounded-xl bg-slate-800 border border-slate-700 shadow-xl z-50 flex flex-col gap-1">
-                    <button
-                      onClick={() => handleModeChange('DUAL')}
-                      className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
-                        mode === 'DUAL'
-                          ? 'bg-indigo-500/20 text-indigo-400'
-                          : 'text-slate-300 hover:bg-slate-700'
-                      }`}
-                    >
-                      DUAL 모드 (2인)
-                    </button>
                     <button
                       onClick={() => handleModeChange('BTI')}
                       className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${

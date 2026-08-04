@@ -2,8 +2,6 @@
  * [Shared] 실험 모드 식별자 상수 정의함
  */
 export const EXPERIMENT_MODES = {
-  /** 2인 동시 측정 모드 (Phase 1) */
-  DUAL: 'DUAL',
   /** 뇌BTI 성향 측정 모드 (Phase 1) */
   BTI: 'BTI',
   /** 2PC 동기화 측정 모드 (Phase 16) */
@@ -20,15 +18,6 @@ export type ExperimentMode =
  * [Shared] 실험 모드별 세부 설정 상수 정의함
  */
 export const EXPERIMENT_CONFIG = {
-  /**
-   * 2인용 대조 분석 실험 모드 설정임
-   */
-  DUAL: {
-    mode: 'DUAL' as ExperimentMode,
-    targetCount: 2,
-    title: 'Dual Subject Monitor',
-    description: '그룹 식별자를 통해 두 피실험자의 데이터를 대조 분석함',
-  },
   /**
    * 1인용 뇌BTI 성향 측정 모드 설정임
    */
