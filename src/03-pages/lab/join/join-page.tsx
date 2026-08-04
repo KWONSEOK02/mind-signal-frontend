@@ -57,7 +57,8 @@ const JoinPage = () => {
     elapsedSeconds,
     startMeasurement,
     stopMeasurement,
-  } = useSignal(sessionId ?? null);
+    // groupId 를 넘겨야 소켓 room 에 합류함 (AUTH-W001)
+  } = useSignal(sessionId ?? null, { groupId: groupId ?? undefined });
 
   /**
    * URL 기반 자동 페어링 로직 수행함 (새로 추가된 누락 복구 기능)

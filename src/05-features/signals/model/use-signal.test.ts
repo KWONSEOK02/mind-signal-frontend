@@ -97,12 +97,42 @@ describe('useSignal DUAL_2PC — join-room emit + stimulus 테스트 수행함',
       await result.current.startMeasurement();
     });
 
-    // join-room emit 호출 확인함
+    // join-room emit 호출 확인함.
+    // AUTH-W001 이후 payload 가 문자열이 아니라 groupId 와 token 을 담은 객체임 —
+    // 백엔드가 무인증 join 을 거부하므로 토큰 없이 보내면 room 에 못 들어감
     expect(mockSocketEmit).toHaveBeenCalledWith(
       'join-room',
-      'group-xyz',
+      expect.objectContaining({ groupId: 'group-xyz' }),
       expect.any(Function)
     );
+  });
+
+  it('join-room emit에 로컬 스토리지 토큰이 실려 나감 (AUTH-W001)', async () => {
+    // 토큰을 빠뜨리면 백엔드가 unauthorized 로 거부해 room 에 못 들어가고
+    // eeg-live 와 measurement-complete 가 도착하지 않음
+    localStorage.setItem('token', 'test-jwt-token');
+
+    try {
+      const { result } = renderHook(() =>
+        useSignal('session-abc', {
+          experimentMode: 'DUAL_2PC',
+          groupId: 'group-xyz',
+          setDualSessionState: mockSetDualSessionState,
+        })
+      );
+
+      await act(async () => {
+        await result.current.startMeasurement();
+      });
+
+      expect(mockSocketEmit).toHaveBeenCalledWith(
+        'join-room',
+        { groupId: 'group-xyz', token: 'test-jwt-token' },
+        expect.any(Function)
+      );
+    } finally {
+      localStorage.removeItem('token');
+    }
   });
 
   it('join-room emit 후 ack ok=true 수신 시 roomJoined=true 전이 처리됨', async () => {

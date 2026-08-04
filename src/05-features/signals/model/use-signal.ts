@@ -213,15 +213,23 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
         }
       }, 5000);
 
-      socket.emit('join-room', gid, (response: JoinRoomAck) => {
-        ackReceived = true;
-        clearTimeout(timeoutId);
-        if (response.ok) {
-          setRoomJoined(true);
-        } else {
-          console.error('join-room 실패함:', response.error);
+      // 로그인 토큰을 함께 보냄. 백엔드가 무인증 join 을 거부함 (AUTH-W001)
+      const token =
+        typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+      socket.emit(
+        'join-room',
+        { groupId: gid, token },
+        (response: JoinRoomAck) => {
+          ackReceived = true;
+          clearTimeout(timeoutId);
+          if (response.ok) {
+            setRoomJoined(true);
+          } else {
+            console.error('join-room 실패함:', response.error);
+          }
         }
-      });
+      );
     };
 
     doEmit(false);
@@ -454,6 +462,13 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
         setIsMeasuring(true);
 
         const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
+
+        // 이 경로도 room 합류가 필요함. 백엔드가 전역 emit 을 그룹 room emit 으로
+        // 바꿔(AUTH-W001) 합류하지 않으면 eeg-live 와 measurement-complete 가
+        // 도착하지 않음
+        if (groupId) {
+          emitJoinRoom(groupId);
+        }
 
         // eeg-live 이벤트 핸들러 등록 및 ref 보관함
         const handler = ({ sessionId: incomingId, data }: EegLivePayload) => {

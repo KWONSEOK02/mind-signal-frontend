@@ -194,7 +194,8 @@ const LabPage = () => {
     groupId,
     setDualSessionState,
   });
-  const subject2Signal = useSignal(sessions[1]?.id ?? null);
+  // groupId 를 넘겨야 소켓 room 에 합류함 (AUTH-W001)
+  const subject2Signal = useSignal(sessions[1]?.id ?? null, { groupId });
 
   // DUAL_2PC 측정 시작 in-flight 가드 — 더블클릭 중복 start 차단함 (F3)
   const startPendingRef = useRef(false);
