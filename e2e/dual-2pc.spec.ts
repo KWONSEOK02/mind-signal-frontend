@@ -87,20 +87,10 @@ test.describe('Scenario 1: DUAL_2PC Happy Path', () => {
         let token: string | null = null;
 
         if (!hasInviteBtn) {
-          // groupId가 없는 상태 — DUAL 모드로 전환하여 QR 생성 후 groupId 확보함
-          // 그 후 다시 DUAL_2PC 모드로 전환함
-          await pageA.getByText('DUAL 모드 (2인)').click().catch(() => {
-            pageA.locator('button').filter({ has: pageA.locator('svg.lucide-settings') }).click();
-          });
-
-          // 설정 다시 열고 DUAL 모드 선택
-          const settingsBtnFallback = pageA.locator('button').filter({
-            has: pageA.locator('svg.lucide-settings'),
-          });
-          await settingsBtnFallback.click();
-          await pageA.getByText('DUAL 모드 (2인)').click();
-
-          // QR 생성 버튼 클릭
+          // groupId가 없는 상태 — Subject QR 을 만들어 groupId 를 확보함.
+          // SESSION-W002 이전에는 DUAL 모드로 전환했다가 되돌아오는 우회가
+          // 있었으나, DUAL 선택지가 사라지고 DUAL_2PC 가 기본값이 되면서
+          // 모드 전환 없이 바로 QR 을 생성하면 된다.
           await pageA.getByRole('button', { name: /Subject.*QR 생성|QR 생성/i }).first().click();
           await pageA.waitForTimeout(1500);
 
