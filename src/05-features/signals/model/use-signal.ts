@@ -379,6 +379,13 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
     emitJoinRoom(groupId);
     registerDualListeners(groupId);
 
+    // 이전 등록분을 해제함. registerDualListeners 가 자기 핸들러 4개를 정리해도
+    // 이 핸들러는 여기서만 붙이므로 따로 걷어내야 함. 시작 실패 후 재시도하면
+    // 완료 이벤트 1건이 여러 핸들러에서 처리됨
+    if (completeHandlerRef.current) {
+      socket.off('measurement-complete', completeHandlerRef.current);
+    }
+
     const completeHandler = (
       payload: MeasurementCompletePayload & { groupId?: string }
     ) => {
