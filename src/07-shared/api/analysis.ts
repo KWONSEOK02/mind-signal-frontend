@@ -39,7 +39,7 @@ export interface MyResultsResponse {
   data: MyResultItem[];
 }
 
-/** SEQUENTIAL 분석 요청 body 타입 정의함 */
+/** 분석 결과 조회 API 정의함 */
 export const analysisApi = {
   /** groupId로 분석 결과 조회함 */
   getResult: (groupId: string) =>
