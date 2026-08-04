@@ -9,11 +9,11 @@ import { PairingStep } from './pairing-engine';
  * [Feature] 설정된 인원수와 실험 모드에 따라 순차적 페어링을 제어하는 훅 정의함
  *
  * @param targetSubjectCount - 목표 피실험자 수 (기본 2)
- * @param mode - 실험 모드 — 세션 생성 시 experimentMode로 전달함 (기본 DUAL)
+ * @param mode - 실험 모드 — 세션 생성 시 experimentMode로 전달함 (기본 DUAL_2PC)
  */
 const usePairing = (
   targetSubjectCount: number = 2,
-  mode: ExperimentMode = 'DUAL'
+  mode: ExperimentMode = 'DUAL_2PC'
 ) => {
   const [status, setStatus] = useState<PairingSessionStatus>(
     SESSION_STATUS.IDLE

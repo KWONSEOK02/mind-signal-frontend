@@ -25,12 +25,6 @@ import {
 } from '@/07-shared/constants/experiment';
 import type { AnalysisTier } from '@/07-shared/types';
 import MyResultsList from './my-results-list';
-import SimilarityResultView from './similarity-result-view';
-import {
-  cosinePearsonFaaSchema,
-  similaritySchemaRegistry,
-} from '@/07-shared/schemas/similarity';
-import type { CosinePearsonFaa } from '@/07-shared/schemas/similarity';
 
 interface ResultsProps {
   theme: 'light' | 'dark';
@@ -121,7 +115,10 @@ const Results: React.FC<ResultsProps> = ({
                   if (pollTimerRef.current) clearInterval(pollTimerRef.current);
 
                   // Tier 판정: isBTI인데 원래 DUAL이었으면 PARTIAL
-                  // SEQUENTIAL 결과는 tier 오탐 방지를 위해 제외함
+                  // SEQUENTIAL 결과는 tier 오탐 방지를 위해 제외함.
+                  // SESSION-W002 로 SEQUENTIAL 측정 경로는 사라졌으나 이 필터는
+                  // 남김 — analysis_mode 에는 과거 문서의 SEQUENTIAL 값이 legacy
+                  // 로 남아 있어 여전히 걸러야 함
                   if (
                     res.data.isBTI &&
                     sessionsRef.current.length >= 2 &&
@@ -185,30 +182,6 @@ const Results: React.FC<ResultsProps> = ({
       socket.off('analysis-status', handler);
     };
   }, [groupId]);
-
-  // SEQUENTIAL 모드 분기 처리 — similarity_features를 Zod 파싱함
-  if (analysisData?.analysis_mode === 'SEQUENTIAL') {
-    let parsedSimilarity: CosinePearsonFaa | null = null;
-
-    if (analysisData.similarity_features) {
-      // 알고리즘 이름 기반으로 스키마 선택함 (없으면 cosine_pearson_faa 기본 사용)
-      const algorithmKey =
-        typeof analysisData.similarity_features['algorithm'] === 'string'
-          ? analysisData.similarity_features['algorithm']
-          : 'cosine_pearson_faa';
-
-      const schema =
-        similaritySchemaRegistry[algorithmKey] ?? cosinePearsonFaaSchema;
-      const parseResult = schema.safeParse(analysisData.similarity_features);
-
-      if (parseResult.success) {
-        parsedSimilarity = parseResult.data as CosinePearsonFaa;
-      }
-      // 파싱 실패 시 parsedSimilarity는 null 유지 — fallback UI 표시됨
-    }
-
-    return <SimilarityResultView data={parsedSimilarity} theme={theme} />;
-  }
 
   const userScore = analysisData?.matchingScore ?? 0;
 

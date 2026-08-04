@@ -25,7 +25,6 @@ import { DualSessionBanner } from '@/04-widgets/dual-session-banner';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
 import MobileLabView from './ui/mobile-lab-view';
-import SequentialFlow from './sequential-flow';
 import { useUI } from '@/app/providers/ui-context'; // 다크 라이트 모드를 위해 임포트 추가
 import {
   useDevModeStore,
@@ -75,9 +74,7 @@ const LabPage = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isQRVisible, setIsQRVisible] = useState(false);
   // 모드 상태 및 드롭다운 토글 상태 관리 추가함 (DUAL_2PC 추가)
-  const [mode, setMode] = useState<'DUAL' | 'BTI' | 'SEQUENTIAL' | 'DUAL_2PC'>(
-    'DUAL'
-  );
+  const [mode, setMode] = useState<'BTI' | 'DUAL_2PC'>('DUAL_2PC');
   const [operatorSocketSessionVersion, setOperatorSocketSessionVersion] =
     useState(0);
   // 운영자 합류 전에는 토큰 부재가 정상이므로 경보 채널 배너를 띄우지 않음
@@ -125,10 +122,9 @@ const LabPage = () => {
 
   /**
    * 상태 기반으로 현재 실험 설정 동적 로드함
-   * DUAL_2PC는 DUAL과 동일한 targetCount=2 설정 재활용함
+   * DUAL_2PC도 자기 항목을 가지므로 분기 없이 조회함 (SESSION-W002 T2b)
    */
-  const currentConfig =
-    mode === 'DUAL_2PC' ? EXPERIMENT_CONFIG['DUAL'] : EXPERIMENT_CONFIG[mode];
+  const currentConfig = EXPERIMENT_CONFIG[mode];
 
   /**
    * 설정된 목표 인원수를 기반으로 페어링 로직 구동함
@@ -296,7 +292,7 @@ const LabPage = () => {
    * 실험 모드 변경 시 세션 초기화 및 UI 닫기 일괄 처리함
    */
   const handleModeChange = useCallback(
-    (newMode: 'DUAL' | 'BTI' | 'SEQUENTIAL' | 'DUAL_2PC') => {
+    (newMode: 'BTI' | 'DUAL_2PC') => {
       setMode(newMode);
       resetStatus();
       setIsQRVisible(false);
@@ -376,19 +372,6 @@ const LabPage = () => {
   }
 
   /**
-   * [모드 분기] SEQUENTIAL 모드인 경우 순차 측정 흐름 컴포넌트 렌더링함
-   * 페어링 완료 후(isAllPaired) SEQUENTIAL 플로우로 전환함
-   */
-  if (mode === 'SEQUENTIAL' && isAllPaired) {
-    return (
-      <SequentialFlow
-        sessionId1={sessions[0]?.id ?? null}
-        sessionId2={sessions[1]?.id ?? null}
-        groupId={groupId}
-      />
-    );
-  }
-
   /**
    * 상태에 따른 제어 버튼 렌더링 함수 정의함
    */
@@ -594,16 +577,6 @@ const LabPage = () => {
                   />
                   <div className="absolute right-0 mt-3 w-56 p-2 rounded-xl bg-slate-800 border border-slate-700 shadow-xl z-50 flex flex-col gap-1">
                     <button
-                      onClick={() => handleModeChange('DUAL')}
-                      className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
-                        mode === 'DUAL'
-                          ? 'bg-indigo-500/20 text-indigo-400'
-                          : 'text-slate-300 hover:bg-slate-700'
-                      }`}
-                    >
-                      DUAL 모드 (2인)
-                    </button>
-                    <button
                       onClick={() => handleModeChange('BTI')}
                       className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
                         mode === 'BTI'
@@ -612,16 +585,6 @@ const LabPage = () => {
                       }`}
                     >
                       BTI 모드 (1인)
-                    </button>
-                    <button
-                      onClick={() => handleModeChange('SEQUENTIAL')}
-                      className={`px-4 py-3 text-sm font-bold text-left rounded-lg transition-colors ${
-                        mode === 'SEQUENTIAL'
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : 'text-slate-300 hover:bg-slate-700'
-                      }`}
-                    >
-                      SEQUENTIAL 모드 (순차)
                     </button>
                     {/* DUAL_2PC 모드 선택 버튼 (PLAN L174) */}
                     <button

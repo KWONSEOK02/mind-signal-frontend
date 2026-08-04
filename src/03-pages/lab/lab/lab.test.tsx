@@ -79,8 +79,8 @@ describe('LabPage 정밀 라우팅 및 인터랙션 통합 테스트 수행함',
       await user.click(settingsBtn);
     }
 
-    // 3. 드롭다운 메뉴에 나타난 'DUAL 모드 (2인)' 버튼 클릭 수행함
-    const dualModeBtn = await screen.findByText(/DUAL 모드 \(2인\)/i);
+    // 3. 드롭다운 메뉴에 나타난 'BTI 모드 (1인)' 버튼 클릭 수행함 (SESSION-W002 로 DUAL 선택지 제거)
+    const dualModeBtn = await screen.findByText(/BTI 모드 \(1인\)/i);
     await user.click(dualModeBtn);
 
     // 4. 모드 변경 시 QR 컴포넌트가 언마운트되었는지 검증함
@@ -222,9 +222,14 @@ describe('[TS-SESSION-06] 다중 페어링 상태 전이 및 완료 통합 테�
       await vi.advanceTimersByTimeAsync(3500);
     });
 
-    // 4. 최종적으로 QR 컴포넌트가 사라지고 '실험 시작' 버튼이 노출되는지 검증함
+    // 4. 그룹 페어링 완성이 감지되고 알림되는지 검증함 (TS-SESSION-06 의 주제)
+    // SESSION-W002 로 기본 모드가 DUAL_2PC 가 되면서 완성 알림의 형태가 바뀌었다.
+    // 'Experiment Ready' 는 비-DUAL_2PC 분기 전용 문구라(lab-page.tsx:757) 도달
+    // 불가이고, 시작 버튼은 페어링이 아니라 partnerConnected 게이트 뒤다(:392).
+    // 페어링 완성 자체의 알림은 WAITING 소멸과 두 피험자 CONNECTED, 그리고
+    // 제어 영역이 operator 합류 단계로 전환되는 것이다.
     expect(screen.queryByText(/WAITING/)).toBeNull();
-    expect(screen.getByRole('button', { name: /실험 시작/i })).toBeDefined();
-    expect(screen.getByText(/Experiment Ready/i)).toBeDefined();
+    expect(screen.getAllByText(/CONNECTED/)).toHaveLength(2);
+    expect(screen.getByTestId('operator-self-join')).toBeDefined();
   });
 });

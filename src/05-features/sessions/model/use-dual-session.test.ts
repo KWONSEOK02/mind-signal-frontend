@@ -103,7 +103,7 @@ describe('useDualSession — DUAL_2PC 세션 상태 전이 테스트 수행함',
   });
 
   it('experimentMode가 DUAL_2PC 아니면 소켓 이벤트 리스너 미등록 처리됨', () => {
-    renderHook(() => useDualSession('group-abc', 'SEQUENTIAL'));
+    renderHook(() => useDualSession('group-abc', 'BTI'));
 
     expect(mockSocketOn).not.toHaveBeenCalled();
   });
@@ -313,14 +313,14 @@ describe('[TS-SESSION-18] useDualSession — Phase 17.6 polling 상태 전이 �
     // mock 초기화하여 호출 여부를 정확히 감지함
     fetchMock.mockClear();
 
-    renderHook(() => useDualSession('grp-1', 'DUAL'));
+    renderHook(() => useDualSession('grp-1', 'BTI'));
 
     // 3.5초 경과해도 폴링이 발생하지 않아야 함
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3500);
     });
 
-    // DUAL 모드에서는 registry-status 호출 없음 확인함
+    // BTI 모드에서는 registry-status 호출 없음 확인함
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -48,12 +48,12 @@ export class PairingStep {
     onStatusUpdate: (status: PairingSessionStatus, data?: PairingData) => void,
     onTimeUpdate: (timeLeft: number) => void,
     groupId?: string | null,
-    mode: ExperimentMode = 'DUAL'
+    mode: ExperimentMode = 'DUAL_2PC'
   ) {
     this.clear();
     try {
       // groupId 존재 시 기존 그룹 재사용함. mode는 세션 생성 시 experimentMode로 전달함
-      // (미전달 시 기본 DUAL — BE도 미제공 시 default DUAL 적용)
+      // (미전달 시 기본 DUAL_2PC — BE 도 미제공 시 default DUAL_2PC 적용)
       const response = await sessionApi.createdPairing(
         groupId || undefined,
         mode

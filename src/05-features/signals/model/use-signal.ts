@@ -234,6 +234,21 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
     (gid: string) => {
       const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
 
+      // 이전 등록분을 먼저 해제함. 시작이 실패한 뒤 다시 누르면 같은 소켓에
+      // 핸들러가 겹쳐 붙어 이벤트 1건이 여러 번 처리됨
+      if (dualReadyHandlerRef.current) {
+        socket.off('dual-session-ready', dualReadyHandlerRef.current);
+      }
+      if (dualFailedHandlerRef.current) {
+        socket.off('dual-session-failed', dualFailedHandlerRef.current);
+      }
+      if (stimulusHandlerRef.current) {
+        socket.off('stimulus_start', stimulusHandlerRef.current);
+      }
+      if (alignedPairHandlerRef.current) {
+        socket.off('aligned_pair', alignedPairHandlerRef.current);
+      }
+
       // dual-session-ready: 202 수신 후 BE 준비 완료 시 측정 시작 전이 (v3 N-5)
       const dualReadyHandler = ({
         groupId: incomingGid,
@@ -353,12 +368,23 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
    */
   const joinDualRoom = useCallback(() => {
     if (!isDual2pc || !groupId) return;
+    // 여기서 setIsMeasuring(true) 를 하지 않음. 룸 합류는 리스너를 붙이는
+    // 준비 단계일 뿐이고 측정이 시작된 것이 아님. 시작 전이는 아래
+    // registerDualListeners 의 dual-session-ready 핸들러가 단독으로 담당함
+    // (v3 N-5). 여기서 미리 켜면 startDualByGroup 이 실패해도 화면은 측정
+    // 중으로 보임 — DUAL_2PC 가 기본 모드가 되면서 이 경로가 기본 흐름이 됨
     setDualSessionState?.('joining');
-    setIsMeasuring(true);
 
     const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
     emitJoinRoom(groupId);
     registerDualListeners(groupId);
+
+    // 이전 등록분을 해제함. registerDualListeners 가 자기 핸들러 4개를 정리해도
+    // 이 핸들러는 여기서만 붙이므로 따로 걷어내야 함. 시작 실패 후 재시도하면
+    // 완료 이벤트 1건이 여러 핸들러에서 처리됨
+    if (completeHandlerRef.current) {
+      socket.off('measurement-complete', completeHandlerRef.current);
+    }
 
     const completeHandler = (
       payload: MeasurementCompletePayload & { groupId?: string }
@@ -424,7 +450,7 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
         completeHandlerRef.current = completeHandler;
         socket.on('measurement-complete', completeHandler);
       } else {
-        // SEQUENTIAL/DUAL/BTI 기존 경로 — 200 OK 즉시 전이 (PLAN L164-167)
+        // DUAL/BTI 기존 경로 — 200 OK 즉시 전이 (PLAN L164-167)
         setIsMeasuring(true);
 
         const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);

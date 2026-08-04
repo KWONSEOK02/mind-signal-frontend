@@ -192,10 +192,13 @@ test.describe('Admin Force-Pair — Error Path 404 (1280x720 desktop)', () => {
     await page.fill('input[name="email"]', 'nonexistent@test.com');
     await page.getByRole('button', { name: '강제 페어링' }).click();
 
-    // Next.js `__next-route-announcer__`도 role="alert" 보유 — 모달 alert만 필터링함
+    // Next.js `__next-route-announcer__`도 role="alert" 보유 — 모달 alert만 필터링함.
+    // 컴포넌트가 `beMessage ?? 기본문구` 라 BE 메시지가 오면 그쪽이 표시됨
+    // (admin-force-pair-modal.component.tsx:97). 위 mock 이 message 를 주므로
+    // 기본 문구가 아니라 그 메시지를 기대해야 함
     const alert = page
       .getByRole('alert')
-      .filter({ hasText: '대상 사용자 또는 토큰' });
+      .filter({ hasText: '대상 사용자를 찾을 수 없습니다' });
     await expect(alert).toBeVisible();
     await expect(dialog).toBeVisible();
     expect(
