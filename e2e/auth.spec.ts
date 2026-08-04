@@ -11,7 +11,7 @@ test.describe('인증 모달', () => {
   });
 
   test('로그인 버튼 클릭 시 인증 모달이 열린다', async ({ page }) => {
-    const loginButton = page.locator('button').filter({ hasText: /로그인/i }).first();
+    const loginButton = page.locator('button').filter({ hasText: /로그인/i, visible: true }).first();
     await loginButton.click();
 
     await expect(page.getByText('반갑습니다!')).toBeVisible();
@@ -20,19 +20,24 @@ test.describe('인증 모달', () => {
   });
 
   test('모달 배경 클릭 시 모달이 닫힌다', async ({ page }) => {
-    const loginButton = page.locator('button').filter({ hasText: /로그인/i }).first();
+    const loginButton = page.locator('button').filter({ hasText: /로그인/i, visible: true }).first();
     await loginButton.click();
 
     await expect(page.getByText('반갑습니다!')).toBeVisible();
 
-    // 배경(overlay) 클릭
-    await page.locator('.fixed.inset-0.bg-slate-950\\/60').click();
+    // 배경(overlay) 클릭. auth-modal.tsx 에서 바깥 컨테이너가 fixed 이고
+    // 오버레이는 absolute 임 — fixed 로 찾으면 영원히 안 잡힘.
+    // 좌상단을 찍는 이유는 오버레이 중앙이 모달 카드에 덮여 기본 중앙 클릭이
+    // 안정 상태에 도달하지 못하기 때문임. 실제 사용자의 바깥 클릭과도 같음
+    await page
+      .locator('.absolute.inset-0.bg-slate-950\\/60')
+      .click({ position: { x: 5, y: 5 } });
 
     await expect(page.getByText('반갑습니다!')).not.toBeVisible();
   });
 
   test('회원가입 탭으로 전환하면 이름/비밀번호 확인 필드가 나타난다', async ({ page }) => {
-    const loginButton = page.locator('button').filter({ hasText: /로그인/i }).first();
+    const loginButton = page.locator('button').filter({ hasText: /로그인/i, visible: true }).first();
     await loginButton.click();
 
     // 회원가입 링크 클릭
@@ -44,7 +49,7 @@ test.describe('인증 모달', () => {
   });
 
   test('비밀번호 불일치 시 에러 메시지가 표시된다', async ({ page }) => {
-    const loginButton = page.locator('button').filter({ hasText: /로그인/i }).first();
+    const loginButton = page.locator('button').filter({ hasText: /로그인/i, visible: true }).first();
     await loginButton.click();
 
     await page.getByText('회원가입').click();
@@ -60,7 +65,7 @@ test.describe('인증 모달', () => {
   });
 
   test('이메일 미입력 시 제출이 막힌다', async ({ page }) => {
-    const loginButton = page.locator('button').filter({ hasText: /로그인/i }).first();
+    const loginButton = page.locator('button').filter({ hasText: /로그인/i, visible: true }).first();
     await loginButton.click();
 
     // 이메일 비워두고 비밀번호만 입력
@@ -72,7 +77,7 @@ test.describe('인증 모달', () => {
   });
 
   test('외부 계정 로그인 버튼(구글, 카카오)이 표시된다', async ({ page }) => {
-    const loginButton = page.locator('button').filter({ hasText: /로그인/i }).first();
+    const loginButton = page.locator('button').filter({ hasText: /로그인/i, visible: true }).first();
     await loginButton.click();
 
     await expect(page.getByText('외부 계정으로 로그인하기')).toBeVisible();

@@ -19,6 +19,10 @@
 
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 
+// 2PC 는 PC 두 대의 운영자 화면을 전제하는 시나리오임. 모바일 프로젝트에서
+// 돌리면 접힌 nav 때문에 설정 버튼과 QR 버튼을 잡지 못해 항상 타임아웃남
+test.skip(({ isMobile }) => !!isMobile, '2PC 운영자 시나리오는 데스크톱 전용임');
+
 // ─────────────────────────────────────────────────────────────────
 // 공통 헬퍼 함수
 // ─────────────────────────────────────────────────────────────────
@@ -45,6 +49,10 @@ test.describe('Scenario 1: DUAL_2PC Happy Path', () => {
     '2PC Happy Path — Operator Invite + Join + 측정 시작',
     { tag: '@dual-2pc' },
     async ({ browser }) => {
+      // 이 시나리오는 두 컨텍스트로 초대와 합류와 측정 시작까지 거치고
+      // 단계별 명시 대기 합만 60초를 넘음. 기본 30초로는 구조적으로 불가함
+      test.setTimeout(180_000);
+
       // 두 독립 브라우저 컨텍스트 생성함 (node_A: 초대자, node_B: 합류자)
       let contextA: BrowserContext | null = null;
       let contextB: BrowserContext | null = null;
@@ -67,7 +75,7 @@ test.describe('Scenario 1: DUAL_2PC Happy Path', () => {
 
         // Step 1: node_A — /lab 진입 (세션 생성 UI)
         await pageA.goto('/lab');
-        await pageA.waitForLoadState('networkidle');
+        await pageA.waitForLoadState('domcontentloaded');
         await expect(pageA.locator('h1').first()).toBeVisible({ timeout: 15000 });
 
         // Step 2: node_A — DUAL_2PC 모드 전환 + 파트너 PC 초대 QR 버튼 클릭
@@ -173,7 +181,7 @@ test.describe('Scenario 1: DUAL_2PC Happy Path', () => {
         // token이 없으면 mock 값으로 대체하여 페이지 로드만 검증함
         const joinUrl = `/lab/operator-join?token=${token ?? 'MOCK_TOKEN_FOR_E2E'}&groupId=${groupId ?? 'MOCK_GROUP_ID'}`;
         await pageB.goto(joinUrl);
-        await pageB.waitForLoadState('networkidle');
+        await pageB.waitForLoadState('domcontentloaded');
 
         // 페이지 로드 확인 (h1 "Operator Join" 표시)
         await expect(pageB.locator('h1').first()).toBeVisible({ timeout: 10000 });
@@ -239,6 +247,11 @@ test.describe('Scenario 1: DUAL_2PC Happy Path', () => {
           /NetworkError/i,
           /ECONNREFUSED/i,
           /socket/i,
+          // 이 시나리오는 로그인 없이 돌아 보호 API 가 401 을 낸다. 401 은
+          // 서버 응답이지 JS 런타임 오류가 아니므로 아래 단언 대상이 아님.
+          // Scenario 2 는 처음부터 이 둘을 무시하고 있었고 여기만 빠져 있었음
+          /401/i,
+          /Unauthorized/i,
         ];
         const criticalErrorsA = consoleErrorsA.filter(
           (e) => !ignoredErrors.some((r) => r.test(e))
@@ -248,8 +261,9 @@ test.describe('Scenario 1: DUAL_2PC Happy Path', () => {
         );
 
         // 네트워크 오류(BE 미기동)는 제외하고 순수 JS 런타임 오류만 허용하지 않음
-        expect(criticalErrorsA.length).toBe(0);
-        expect(criticalErrorsB.length).toBe(0);
+        // 개수가 아니라 배열로 비교함 — 실패 시 어떤 에러인지 출력돼야 진단 가능
+        expect(criticalErrorsA).toEqual([]);
+        expect(criticalErrorsB).toEqual([]);
 
         // Step 13: 두 컨텍스트 스크린샷 저장
         await pageA.screenshot({
@@ -286,7 +300,7 @@ test.describe('Scenario 2: Invalid/Expired Token', () => {
 
       // Step 1: node_B — /lab/operator-join?token=invalid_jwt 진입
       await page.goto('/lab/operator-join?token=invalid_jwt');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // 페이지 로드 확인
       await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
@@ -319,7 +333,8 @@ test.describe('Scenario 2: Invalid/Expired Token', () => {
       const criticalErrors = consoleErrors.filter(
         (e) => !ignoredErrors.some((r) => r.test(e))
       );
-      expect(criticalErrors.length).toBe(0);
+      // 개수가 아니라 배열로 비교함 — 실패 시 어떤 에러인지 출력돼야 진단 가능
+      expect(criticalErrors).toEqual([]);
 
       await page.screenshot({
         path: 'test-results/dual-2pc-scenario2-invalid-token.png',
@@ -334,7 +349,7 @@ test.describe('Scenario 2: Invalid/Expired Token', () => {
     async ({ page }) => {
       // token 없는 URL 진입 시 FE가 즉시 에러 UI를 렌더링함
       await page.goto('/lab/operator-join');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // 합류 버튼이 없고 재발급 요청 버튼이 즉시 표시됨
       await expect(
@@ -382,13 +397,13 @@ test.describe('Scenario 3: Partial Failure — Subject 2 DE 등록 timeout', () 
         // Step 1: node_A~B — 전체 페어링 (experimentMode=DUAL_2PC)
         // node_A: DUAL_2PC 모드로 /lab 진입
         await pageA.goto('/lab');
-        await pageA.waitForLoadState('networkidle');
+        await pageA.waitForLoadState('domcontentloaded');
         await switchToDual2pcMode(pageA);
 
         // node_B: operator-join 진입 (valid token이 있어야 전체 페어링 성공)
         // BE 미기동 시나리오에서는 페어링 자체가 실패하므로 UI 상태만 검증함
         await pageB.goto('/lab/operator-join?token=MOCK_FOR_SCENARIO3&groupId=MOCK_GID');
-        await pageB.waitForLoadState('networkidle');
+        await pageB.waitForLoadState('domcontentloaded');
 
         // Step 2: node_A — "측정 시작" 클릭 (또는 파트너 연결 후 실험 시작 버튼)
         // BE + 실제 mock DE#1만 기동된 환경에서:
