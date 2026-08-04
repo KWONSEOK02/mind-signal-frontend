@@ -159,6 +159,12 @@ const Results: React.FC<ResultsProps> = ({
     if (!groupId) return;
     const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
 
+    // room 에 합류해야 analysis-status 가 도착함. 백엔드가 전역 emit 을 그룹 room
+    // emit 으로 바꿨음 (AUTH-W001)
+    const token =
+      typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    socket.emit('join-room', { groupId, token });
+
     const handler = (payload: {
       groupId: string;
       tier: AnalysisTier;
