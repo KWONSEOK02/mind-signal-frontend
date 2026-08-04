@@ -20,13 +20,9 @@ test.describe('홈 페이지', () => {
   });
 
   test('실험 시작 버튼이 존재한다', async ({ page }) => {
-    // 홈에서 lab 혹은 실험 시작으로 이동하는 버튼.
-    // visible 필터가 없으면 모바일 뷰포트에서 접힌 nav 의 "실험실" 버튼을
-    // 잡아 보이지 않는 요소를 기다리다 실패함
-    const ctaButton = page
-      .locator('button, a')
-      .filter({ hasText: /실험|시작|lab/i, visible: true })
-      .first();
+    // 홈의 기본 CTA. 텍스트로 넓게 찾으면 nav 의 "실험실" 버튼까지 잡혀
+    // 정작 CTA 가 사라져도 테스트가 통과함 — testid 로 그것만 지목함
+    const ctaButton = page.getByTestId('home-cta-lab');
     await expect(ctaButton).toBeVisible();
   });
 });
