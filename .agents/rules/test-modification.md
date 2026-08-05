@@ -11,9 +11,9 @@ E2E tests should be **happy path first, plus one core error path**. Everything e
 |---|---|---|
 | Core user flow (success scenario) | **Playwright E2E** (1 test) | full-stack integration check, regression fail-fast signal |
 | Core error response (e.g. 404) | **Playwright E2E** (1 test) | branch with high user-experience impact |
-| Other error branches (401/403/500/network/timeout) | **Vitest component test** (`vi.mock` + `mockRejectedValue`) | avoids E2E time cost, isolated verification |
+| Other HTTP error branches (401/403/500) and transport failures | **Vitest component test with an MSW handler** | matches the MSW-isolation rule below; `vi.mock` on the HTTP client would bypass it |
 | Mobile keyboard / viewport effects | **Vitest component test** (`window.innerWidth` mock) | E2E viewport gating is flaky, Playwright project filters are risky |
-| Non-axios errors / AbortController races | **Vitest component test** (`mockImplementation` + signal) | precise timing control, reproduces race scenarios |
+| Non-HTTP dependencies, AbortController races | **Vitest component test** (`vi.mock` / `mockImplementation` + signal) | `vi.mock` belongs here, not on HTTP responses — precise timing control |
 
 **Why this policy**:
 - Covering every branch in E2E is over-engineering — it raises time cost and flaky risk
@@ -141,8 +141,9 @@ afterAll(() => server.close());
 
 ```typescript
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
+import { usePairing } from '@/05-features/sessions';
 
 // vi.mock is hoisted above imports, so its factory must not close over a
 // later-initialized variable — build the mock with vi.hoisted and keep the
@@ -163,14 +164,22 @@ describe('use-pairing', () => {
   });
 
   it('3초 간격으로 세션 상태 폴링함', async () => {
-    // Arrange
+    // Arrange — the hook must actually be rendered; without this the interval
+    // never starts and the assertion below can't pass
     mockGet.mockResolvedValue({ status: 'PAIRED' });
+    const { unmount } = renderHook(() => usePairing('session-id'));
 
-    // Act — render, then advance timers
+    // Act
     vi.advanceTimersByTime(3000);
 
     // Assert
     await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2));
+
+    // Unmounting must clear the interval — no further calls after this
+    unmount();
+    const callsAtUnmount = mockGet.mock.calls.length;
+    vi.advanceTimersByTime(6000);
+    expect(mockGet).toHaveBeenCalledTimes(callsAtUnmount);
   });
 });
 ```
@@ -204,7 +213,7 @@ Before creating a new test file:
 
 When adding a new component, API function, or hook:
 
-- **Minimum**: 1 happy-path unit test + 1 edge-case unit test.
+- **Minimum**: 1 happy-path unit test + 1 error-path unit test (an edge case is not necessarily an error path — cover both when they differ).
 - **Component**: a render test + a test for the main interaction (click, submit).
 - **API function**: MSW mock + response-handling test.
 - **Polling hook**: `vi.useFakeTimers()` + verify interval behavior.

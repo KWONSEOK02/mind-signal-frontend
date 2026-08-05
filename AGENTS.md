@@ -56,7 +56,7 @@ npm run verify
 
 Conventional Commits: `{type}({scope}): {description}` (scope 소문자, description 소문자 시작·마침표 없음). 허용 type: `feat fix docs chore refactor test ci revert perf style`. 태스크 1개 = 커밋 1개. `main` 직접 커밋 금지 — 흐름은 `feat/... → PR → dev → PR → main`.
 
-브랜치명은 이 레포의 Work ID 스킴을 따름: `feat/{domain-wNNN}-{slug}` (예: `feat/session-w042-pairing-retry`; Work ID 의미는 10장 참조). 다른 타입은 `fix/`, `docs/`, `refactor/`, `chore/` 사용.
+브랜치명은 이 레포의 Work ID 스킴을 따름: `feat/{domain-wNNN}-{slug}` (예: `feat/session-w042-pairing-retry`; Work ID 의미는 10장 참조). 다른 타입은 `fix/`, `hotfix/`, `docs/`, `refactor/`, `chore/` 사용.
 
 모든 커밋은 다음 trailer로 끝남(`noreply` 주소 금지, Claude co-author 라인 금지):
 

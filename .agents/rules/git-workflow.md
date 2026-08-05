@@ -138,8 +138,9 @@ GitHub Branch protection required status checks.
 ## CI Trigger Coverage
 
 `.github/workflows/ci.yml` currently triggers on `push.branches: [main, dev]` and on
-pull requests. Feature branch pushes outside `main`/`dev` do not trigger CI — always
-open a PR to get CI validation.
+pull requests **targeting `main` or `dev`** (`pull_request.branches: [main, dev]`).
+Feature branch pushes outside `main`/`dev` do not trigger CI — always open a PR into
+`dev` or `main` to get CI validation. `commitlint.yml` runs on the same PR condition.
 
 ## No Force Push on Main
 

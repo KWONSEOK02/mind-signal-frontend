@@ -9,6 +9,7 @@ src/
 │   ├── config/     # env var parsing (config.ts — Zod, no direct process.env access)
 │   ├── types/      # shared TypeScript types (index.ts)
 │   ├── constants/  # session-status.ts, experiment.ts, etc.
+│   ├── lib/        # socket-client.ts and other shared runtime helpers
 │   └── utils/      # pure utility functions
 ├── 06-entities/    # (reserved) domain entity UI — currently unused
 ├── 05-features/    # user-facing feature slices

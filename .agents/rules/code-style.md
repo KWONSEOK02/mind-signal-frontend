@@ -47,7 +47,7 @@
 | Zod schema | `.schema.ts` | `auth.schema.ts` |
 | API module | `.api.ts` | `session.api.ts` |
 | Utility / lib | `.util.ts` or `.lib.ts` | `date.util.ts` |
-| Constants | `.constants.ts` | `session.constants.ts` |
+| Constants | `.constants.ts`, or a descriptive `.ts` when the whole file is one constant group | `session.constants.ts`, `session-status.ts` |
 | Test file (Vitest) | `.test.ts` / `.test.tsx` | `join-page.test.tsx` |
 | Storybook story | `.stories.tsx` | `join-page.stories.tsx` |
 
@@ -117,12 +117,15 @@ Always use the FSD layer alias — never relative paths that cross layer boundar
 
 ```typescript
 // ✅ Correct
-import { api } from '@/07-shared/api/base';
+import { sessionApi } from '@/07-shared/api/session';  // domain module, not base
 import { config } from '@/07-shared/config/config';
 import { Session } from '@/06-entities/sessions';
 
 // ❌ Wrong — relative path crossing layer boundary
-import { api } from '../../../07-shared/api/base';
+import { sessionApi } from '../../../07-shared/api/session';
+
+// ❌ Wrong — base.ts's `api` belongs inside a domain module, not in app code
+import { api } from '@/07-shared/api/base';
 
 // ❌ Wrong — direct process.env access (use config.ts)
 const url = process.env.NEXT_PUBLIC_API_URL;
