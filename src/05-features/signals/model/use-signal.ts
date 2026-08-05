@@ -375,6 +375,27 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
   }, []);
 
   /**
+   * measurement-complete 핸들러 교체함. 이전 등록분을 해제하지 않고 덮어쓰면
+   * 시작 실패 후 재시도 시 이전 핸들러가 소켓에 남아, 늦게 도착한 완료 이벤트가
+   * 새 측정 상태를 꺼버림 — 모든 등록 경로가 이 helper 경유함 (CodeRabbit PR #66)
+   */
+  const swapCompleteHandler = useCallback(
+    (
+      handler: (
+        payload: MeasurementCompletePayload & { groupId?: string }
+      ) => void
+    ) => {
+      const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
+      if (completeHandlerRef.current) {
+        socket.off('measurement-complete', completeHandlerRef.current);
+      }
+      completeHandlerRef.current = handler;
+      socket.on('measurement-complete', handler);
+    },
+    []
+  );
+
+  /**
    * DUAL_2PC 소켓 룸 합류 + 리스너 등록만 수행함 (HTTP spawn 없음).
    * 측정은 그룹 단위 startDualByGroup으로 트리거되고, FE는 이 메서드로 룸에 합류해
    * aligned_pair를 수신함 — handleStartExperiment(DUAL_2PC)에서 호출.
@@ -388,16 +409,8 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
     // 중으로 보임 — DUAL_2PC 가 기본 모드가 되면서 이 경로가 기본 흐름이 됨
     setDualSessionState?.('joining');
 
-    const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
     emitJoinRoom(groupId);
     registerDualListeners(groupId);
-
-    // 이전 등록분을 해제함. registerDualListeners 가 자기 핸들러 4개를 정리해도
-    // 이 핸들러는 여기서만 붙이므로 따로 걷어내야 함. 시작 실패 후 재시도하면
-    // 완료 이벤트 1건이 여러 핸들러에서 처리됨
-    if (completeHandlerRef.current) {
-      socket.off('measurement-complete', completeHandlerRef.current);
-    }
 
     const completeHandler = (
       payload: MeasurementCompletePayload & { groupId?: string }
@@ -410,14 +423,15 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
         timerRef.current = null;
       }
     };
-    completeHandlerRef.current = completeHandler;
-    socket.on('measurement-complete', completeHandler);
+    // 이전 등록분 해제 포함 교체함 — 시작 실패 후 재시도 시 중복 처리 방지
+    swapCompleteHandler(completeHandler);
   }, [
     isDual2pc,
     groupId,
     setDualSessionState,
     emitJoinRoom,
     registerDualListeners,
+    swapCompleteHandler,
   ]);
 
   /**
@@ -450,8 +464,6 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
         // setIsMeasuring(true) 호출 금지 — dual-session-ready 이벤트 대기함
         setDualSessionState?.('joining');
 
-        const socket = getSocket(config.api.socketUrl ?? config.api.baseUrl);
-
         // join-room 은 위에서 이미 끝냈음 (측정 시작 전 합류)
 
         // DUAL_2PC 전용 이벤트 리스너 등록함
@@ -470,8 +482,8 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
             timerRef.current = null;
           }
         };
-        completeHandlerRef.current = completeHandler;
-        socket.on('measurement-complete', completeHandler);
+        // 이전 등록분 해제 포함 교체함 — 재시도 시 이전 그룹 핸들러 잔존 방지
+        swapCompleteHandler(completeHandler);
       } else {
         // DUAL/BTI 기존 경로 — 200 OK 즉시 전이 (PLAN L164-167)
         setIsMeasuring(true);
@@ -517,8 +529,7 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
           }
         };
 
-        completeHandlerRef.current = completeHandler;
-        socket.on('measurement-complete', completeHandler);
+        swapCompleteHandler(completeHandler);
 
         // 경과 시간 타이머 시작함
         timerRef.current = setInterval(() => {
@@ -536,6 +547,7 @@ const useSignal = (sessionId: string | null, options?: UseSignalOptions) => {
     setDualSessionState,
     emitJoinRoom,
     registerDualListeners,
+    swapCompleteHandler,
   ]);
 
   /**
