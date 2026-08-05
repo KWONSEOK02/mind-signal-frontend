@@ -86,7 +86,10 @@ describe('PairingStep — 페어링 엔진 단위 테스트 수행함', () => {
 
       await engine.execute(onStatusUpdate, onTimeUpdate, 'existing-group');
 
-      expect(mockCreatedPairing).toHaveBeenCalledWith('existing-group', 'DUAL');
+      expect(mockCreatedPairing).toHaveBeenCalledWith(
+        'existing-group',
+        'DUAL_2PC'
+      );
     });
 
     it('타이머가 1초마다 남은 시간을 콜백으로 전달 처리함', async () => {

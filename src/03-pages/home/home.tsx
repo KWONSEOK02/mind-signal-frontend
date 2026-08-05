@@ -220,6 +220,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
           </button>
 
           <button
+            data-testid="home-cta-lab"
             onClick={() => handleNavigation('lab')}
             className="group relative px-14 py-6 bg-indigo-600 text-white rounded-3xl font-black text-xl overflow-hidden transition-all hover:bg-indigo-700 hover:scale-105 active:scale-95 shadow-[0_20px_50px_-10px_rgba(79,70,229,0.5)] cursor-pointer"
           >

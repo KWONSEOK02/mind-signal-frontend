@@ -136,7 +136,7 @@ describe('Reproduce: startPairing이 BE 400 응답 시 동작 박제함', () => 
 
     // assert: engine이 createdPairing에 undefined를 전달함
     // (session.ts 계층에서 undefined → null 치환이 일어나는 지점)
-    expect(mockCreatedPairing).toHaveBeenCalledWith(undefined, 'DUAL');
+    expect(mockCreatedPairing).toHaveBeenCalledWith(undefined, 'DUAL_2PC');
   });
 
   /**
@@ -221,7 +221,7 @@ describe('Reproduce: startPairing이 BE 400 응답 시 동작 박제함', () => 
 
     // assert: `null || undefined` = undefined → createdPairing(undefined) 호출됨
     // session.ts에서 undefined → null 치환 발생 지점은 session.repro 테스트에서 박제
-    expect(mockCreatedPairing).toHaveBeenCalledWith(undefined, 'DUAL');
+    expect(mockCreatedPairing).toHaveBeenCalledWith(undefined, 'DUAL_2PC');
   });
 });
 

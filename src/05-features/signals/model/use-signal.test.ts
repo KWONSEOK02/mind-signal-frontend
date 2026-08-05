@@ -76,6 +76,15 @@ describe('useSignal DUAL_2PC — join-room emit + stimulus 테스트 수행함',
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    // startMeasurement 가 join-room ack 를 기다리므로(CodeRabbit FE PR #67 Major)
+    // mock 소켓이 ack 를 돌려주지 않으면 측정 시작이 진행되지 않음
+    mockSocketEmit.mockImplementation(
+      (event: string, _payload: unknown, ack?: (r: unknown) => void) => {
+        if (event === 'join-room' && typeof ack === 'function') {
+          ack({ ok: true });
+        }
+      }
+    );
   });
 
   afterEach(() => {
@@ -97,12 +106,99 @@ describe('useSignal DUAL_2PC — join-room emit + stimulus 테스트 수행함',
       await result.current.startMeasurement();
     });
 
-    // join-room emit 호출 확인함
+    // join-room emit 호출 확인함.
+    // AUTH-W001 이후 payload 가 문자열이 아니라 groupId 와 token 을 담은 객체임 —
+    // 백엔드가 무인증 join 을 거부하므로 토큰 없이 보내면 room 에 못 들어감
     expect(mockSocketEmit).toHaveBeenCalledWith(
       'join-room',
-      'group-xyz',
+      expect.objectContaining({ groupId: 'group-xyz' }),
       expect.any(Function)
     );
+  });
+
+  it('join-room emit에 로컬 스토리지 토큰이 실려 나감 (AUTH-W001)', async () => {
+    // 토큰을 빠뜨리면 백엔드가 unauthorized 로 거부해 room 에 못 들어가고
+    // eeg-live 와 measurement-complete 가 도착하지 않음
+    localStorage.setItem('token', 'test-jwt-token');
+
+    try {
+      const { result } = renderHook(() =>
+        useSignal('session-abc', {
+          experimentMode: 'DUAL_2PC',
+          groupId: 'group-xyz',
+          setDualSessionState: mockSetDualSessionState,
+        })
+      );
+
+      await act(async () => {
+        await result.current.startMeasurement();
+      });
+
+      expect(mockSocketEmit).toHaveBeenCalledWith(
+        'join-room',
+        { groupId: 'group-xyz', token: 'test-jwt-token' },
+        expect.any(Function)
+      );
+    } finally {
+      localStorage.removeItem('token');
+    }
+  });
+
+  it('join-room ack가 거부되면 측정 시작 API를 부르지 않음 (CodeRabbit PR #67)', async () => {
+    // room 에 못 들어간 채로 측정을 시작하면 eeg-live 와 measurement-complete 가
+    // 도착하지 않아 화면이 측정 중에 갇힘. 합류 실패면 시작하지 않아야 함
+    mockSocketEmit.mockImplementation(
+      (event: string, _payload: unknown, ack?: (r: unknown) => void) => {
+        if (event === 'join-room' && typeof ack === 'function') {
+          ack({ ok: false, error: 'unauthorized' });
+        }
+      }
+    );
+
+    const { result } = renderHook(() =>
+      useSignal('session-abc', {
+        experimentMode: 'DUAL_2PC',
+        groupId: 'group-xyz',
+        setDualSessionState: mockSetDualSessionState,
+      })
+    );
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    expect(measurementApi.startMeasurement).not.toHaveBeenCalled();
+    expect(result.current.isMeasuring).toBe(false);
+  });
+
+  it('join-room emit이 측정 시작 API보다 먼저 나감 (CodeRabbit PR #67)', async () => {
+    const order: string[] = [];
+    mockSocketEmit.mockImplementation(
+      (event: string, _payload: unknown, ack?: (r: unknown) => void) => {
+        if (event === 'join-room' && typeof ack === 'function') {
+          order.push('join-room');
+          ack({ ok: true });
+        }
+      }
+    );
+    vi.mocked(measurementApi.startMeasurement).mockImplementation(async () => {
+      order.push('startMeasurement');
+      return { data: { status: 'success' } } as never;
+    });
+
+    const { result } = renderHook(() =>
+      useSignal('session-abc', {
+        experimentMode: 'DUAL_2PC',
+        groupId: 'group-xyz',
+        setDualSessionState: mockSetDualSessionState,
+      })
+    );
+
+    await act(async () => {
+      await result.current.startMeasurement();
+    });
+
+    expect(order).toEqual(['join-room', 'startMeasurement']);
   });
 
   it('join-room emit 후 ack ok=true 수신 시 roomJoined=true 전이 처리됨', async () => {

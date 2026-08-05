@@ -1,0 +1,9 @@
+@AGENTS.md
+@.agents/rules/architecture.md
+@.agents/rules/code-style.md
+@.agents/rules/git-workflow.md
+@.agents/rules/api-patterns.md
+@.agents/rules/react-components.md
+@.agents/rules/test-modification.md
+@.agents/rules/verification-loop.md
+@.agents/rules/documentation.md

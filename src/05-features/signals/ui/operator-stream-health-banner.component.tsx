@@ -1,10 +1,10 @@
 'use client';
 
-import { useOperatorStreamHealth } from '../model/use-operator-stream-health.hook';
+import { useOperatorStreamHealth } from '../model/use-operator-stream-health';
 import type {
   OperatorAlertChannelIssue,
   StreamHealthAlert,
-} from '../model/use-operator-stream-health.hook';
+} from '../model/use-operator-stream-health';
 
 interface OperatorStreamHealthBannerProps {
   groupId: string | null;
