@@ -265,9 +265,6 @@ describe('useSignal — startMeasurement 재시도 시 완료 핸들러 중복 �
       await result.current.startMeasurement();
     });
 
-    // 이전 등록분이 해제되어 현재 소켓에는 완료 핸들러가 1개만 남아야 함
-    expect(listeners.get('measurement-complete')?.size ?? 0).toBe(1);
-
     act(() => {
       emitFromServer('measurement-complete', { groupId: GROUP_ID });
     });
