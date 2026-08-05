@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useTapCounter } from './use-tap-counter.hook';
+import { useTapCounter } from './use-tap-counter';
 import { useDevModeStore } from './dev-mode.store';
 
 describe('use-tap-counter + dev-mode.store — FM 시나리오', () => {
