@@ -53,7 +53,7 @@
 
 ### Folder Naming
 - `kebab-case`, **plural domain nouns** — e.g. `sessions`, `neuro-chats`, `survey-responses`
-- FSD layer folders keep their number prefix as-is: `07-shared`, `05-features`, `04-widgets`, `03-pages`, `01-app`
+- FSD layer folders keep their number prefix as-is: `07-shared`, `05-features`, `04-widgets`, `03-pages`. The app layer is the exception — Next.js App Router requires the folder to be literally `app/`, so it carries no number.
 - New domain folders inside a layer: `kebab-case` plural
 
 ## Comments — Korean Noun-Form Rule (MS-specific)

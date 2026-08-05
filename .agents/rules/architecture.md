@@ -2,7 +2,7 @@
 
 ## Directory Layout (Feature-Sliced Design — numbered-prefix layers)
 
-```
+```text
 src/
 ├── 07-shared/      # reusable primitives — no business logic
 │   ├── api/        # Axios instance + JWT interceptor (base.ts is the single source)
@@ -27,7 +27,7 @@ src/
 
 ## Module Boundaries (Import Direction)
 
-```
+```text
 app → 03-pages → 04-widgets → 05-features → 06-entities → 07-shared
 ```
 
@@ -66,13 +66,13 @@ Other directional violations (e.g. `06-entities` importing `05-features`) are no
 
 ```typescript
 // ✅ Correct — path alias
-import { api } from '@/07-shared/api/base';
+import { sessionApi } from '@/07-shared/api/session';       // domain module, not base
 import { config } from '@/07-shared/config/config';
 import { SessionStatus } from '@/07-shared/constants/session-status';
 import { useSignal } from '@/05-features/signals';          // via barrel
 
 // ❌ Forbidden — relative path crossing a layer boundary
-import { api } from '../../../07-shared/api/base';
+import { sessionApi } from '../../../07-shared/api/session';
 
 // ❌ Forbidden — direct process.env access
 const url = process.env.NEXT_PUBLIC_API_URL;  // must go through config.ts
@@ -85,9 +85,9 @@ Real API modules are exported as domain-specific wrappers around `base.ts`'s `ap
 
 ## [ADR-001] Keep the numbered FSD layer names
 
-`07-shared → 06-entities → 05-features → 04-widgets → 03-pages → 01-app`
+`07-shared → 06-entities → 05-features → 04-widgets → 03-pages → app`
 
-Kept as-is with number prefixes — no rename. The rename cost/benefit didn't favor renaming a live repo.
+Kept as-is with number prefixes — no rename. The app layer is the one exception: Next.js App Router requires the folder to be literally `app/`, so it has no number. The rename cost/benefit didn't favor renaming a live repo.
 
 ## Server Actions
 

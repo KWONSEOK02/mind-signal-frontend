@@ -48,6 +48,7 @@ npm install
 
 ```bash
 cp .env.example .env.local
+cp .env.example .env.test
 ```
 
 ### 개발 서버 실행
@@ -162,7 +163,7 @@ mind-signal-frontend/
 
 이 프로젝트의 FSD (Feature-Sliced Design) 폴더 구조는 다음과 같은 원칙에 따라 README.md에 표현됩니다:
 
-- **`01-app/` 및 `07-shared/`**: 애플리케이션의 엔트리/전역 규약(예: app wiring, 전역 미들웨어, 공통 에러/설정 등)을 담는 계층입니다. **이 계층 내에서는 `01-app/`의 모든 내부 파일과 `07-shared/config/config.ts` 파일의 존재를 상세히 표기합니다.** 온보딩에 중요한 진입점이 있는 경우, README에 내부 구조를 상대적으로 상세히 표기합니다.
+- **`app/` 및 `07-shared/`**: 애플리케이션의 엔트리/전역 규약(예: app wiring, 전역 미들웨어, 공통 에러/설정 등)을 담는 계층입니다(앱 레이어는 Next.js App Router가 폴더명을 강제해 번호가 없습니다). **이 계층 내에서는 `app/`의 모든 내부 파일과 `07-shared/config/config.ts` 파일의 존재를 상세히 표기합니다.** 온보딩에 중요한 진입점이 있는 경우, README에 내부 구조를 상대적으로 상세히 표기합니다.
 - **`02-processes/` ~ `06-entities/`**: 비즈니스 도메인/기능 단위로 확장되는 계층입니다. README에는 최상위 폴더(도메인)만 노출하고, **그 하위 계층(예: `05-features/auth/` 또는 `06-entities/users/`)은 1단계 하위 폴더까지만 표시합니다.** 내부 파일 및 더 깊은 하위 폴더 구조는 원칙적으로 각 도메인의 `index.ts` (Public API)를 통해 접근하도록 합니다. 이를 통해 계층 간 결합도를 낮추고 내부 변경의 영향을 최소화합니다.
 - **세분화 기준**: 한 폴더에 파일이 증가해 가독성이 떨어지면(예: 6~8개 이상) `api/`, `model/`, `lib/` 등 하위 폴더로 점진적으로 분리하는 것을 원칙으로 합니다.
 

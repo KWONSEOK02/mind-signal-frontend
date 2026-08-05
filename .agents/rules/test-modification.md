@@ -74,7 +74,7 @@ jest.spyOn(...);
 
 On a snapshot test failure:
 
-```
+```text
 1. Read the failure diff carefully
 2. Ask "was this change intentional?"
    -> YES: run `vitest -u`, then review the .snap file's git diff
@@ -144,6 +144,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
+// vi.mock is hoisted above imports, so its factory must not close over a
+// later-initialized variable — build the mock with vi.hoisted and keep the
+// vi.mock call at top level. For per-test mocking use vi.doMock + dynamic import.
+const { mockGet } = vi.hoisted(() => ({ mockGet: vi.fn() }));
+vi.mock('@/07-shared/api/base', () => ({ api: { get: mockGet } }));
+
 // polling hook test — use fake timers
 describe('use-pairing', () => {
   beforeEach(() => {
@@ -158,14 +164,13 @@ describe('use-pairing', () => {
 
   it('3초 간격으로 세션 상태 폴링함', async () => {
     // Arrange
-    const mockApi = vi.fn().mockResolvedValue({ status: 'PAIRED' });
-    vi.mock('@/07-shared/api/base', () => ({ api: { get: mockApi } }));
+    mockGet.mockResolvedValue({ status: 'PAIRED' });
 
     // Act — render, then advance timers
     vi.advanceTimersByTime(3000);
 
     // Assert
-    await waitFor(() => expect(mockApi).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2));
   });
 });
 ```

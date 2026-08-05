@@ -35,7 +35,7 @@ Scope MUST be lowercase kebab-case (e.g. `auth`, `sessions`, `signals`, `shared`
 Description MUST start lowercase and must NOT end with a period.
 
 Examples:
-```
+```text
 feat(sessions): add pairing token-based session creation API
 fix(auth): handle JWT expiry in refresh flow
 refactor(signals): extract use-signal hook into model layer
@@ -58,7 +58,7 @@ Flow: `feat/{domain-wNNN}-{slug}` → PR → `dev` → PR → `main`.
 
 Every commit message MUST end with:
 
-```
+```text
 Co-authored-by: KWONSEOK02 <gwonseok02@gmail.com>
 ```
 
@@ -66,7 +66,7 @@ Co-authored-by: KWONSEOK02 <gwonseok02@gmail.com>
 - Claude `Co-Authored-By` line is prohibited. Use `KWONSEOK02` only.
 
 Example full commit message:
-```
+```text
 feat(sessions): add pairing token-based session creation API
 
 Co-authored-by: KWONSEOK02 <gwonseok02@gmail.com>

@@ -39,7 +39,7 @@ EEG 실험 플랫폼 프론트엔드. Next.js 16 App Router + React 19 + TypeScr
 
 ## 5. 코딩 컨벤션
 
-2-space 들여쓰기, 80자 라인, es5 trailing comma, LF, UTF-8 — Prettier가 모든 포맷을 담당하고 ESLint는 로직만 검사(0-warning 정책, `e2e/` 포함 전체 프로젝트, `public/mockServiceWorker.js`는 제외). TypeScript strict — 근거 없는 `as`/`@ts-ignore` 금지. 네이밍: 컴포넌트/타입/Enum은 PascalCase, 함수/변수는 camelCase, 모듈 상수는 SCREAMING_SNAKE_CASE. 파일: `kebab-case` + dot-role suffix(예: `signal-chart.component.tsx`, `session.api.ts`); 커스텀 훅은 접미사 없이 `use-{name}.ts`. 폴더: `kebab-case` 복수형 도메인 명사, FSD 레이어는 번호 prefix 유지.
+2-space 들여쓰기, 80자 라인, es5 trailing comma, LF, UTF-8 — Prettier가 모든 포맷을 담당하고 ESLint는 로직만 검사(0-warning 정책, `e2e/` 포함 전체 프로젝트, `public/mockServiceWorker.js`는 제외). TypeScript strict — 근거 없는 `as`/`@ts-ignore` 금지. 네이밍: 컴포넌트/타입/Enum은 PascalCase, 함수/변수는 camelCase, 모듈 상수는 SCREAMING_SNAKE_CASE. 파일: `kebab-case` + dot-role suffix(예: `signal-chart.component.tsx`, `session.api.ts`); 커스텀 훅은 접미사 없이 `use-{name}.ts`. 폴더: `kebab-case` 복수형 도메인 명사, FSD 레이어는 번호 prefix 유지(앱 레이어만 예외 — Next.js App Router가 폴더명을 `app/`으로 강제해 번호가 없음).
 
 코드 주석은 한국어 명사형 종결(`~함`, `~완료`, `~처리`, `~반환`, `~생성`, `~사용`, `~임`)로 끝냄, 존댓말/동사형 금지. 전체 규칙: `.agents/rules/code-style.md`.
 
@@ -60,7 +60,7 @@ Conventional Commits: `{type}({scope}): {description}` (scope 소문자, descrip
 
 모든 커밋은 다음 trailer로 끝남(`noreply` 주소 금지, Claude co-author 라인 금지):
 
-```
+```text
 Co-authored-by: KWONSEOK02 <gwonseok02@gmail.com>
 ```
 
@@ -72,7 +72,7 @@ Co-authored-by: KWONSEOK02 <gwonseok02@gmail.com>
 
 ## 9. 환경 변수 (`.env.local`)
 
-```
+```dotenv
 NEXT_PUBLIC_API_URL=<backend_url>
 NEXT_PUBLIC_SOCKET_URL=<backend_url>
 NEXT_PUBLIC_PAIRING_TIMEOUT=300
