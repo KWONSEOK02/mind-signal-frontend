@@ -1,5 +1,7 @@
 # mind-signal-frontend
 
+> AI 에이전트(Claude Code, Codex CLI 등) 작업 규칙은 `AGENTS.md`를 참조하세요. 이 문서는 사람(팀원·평가자) 온보딩용입니다.
+
 ## 1. 프로젝트 개요 (Project Overview)
 
 **Mind Signal Frontend**는 EEG(뇌파) 기반 2인 심리 동기화 측정 · 분석 서비스의 **프론트엔드**입니다.
@@ -113,32 +115,31 @@ mind-signal-frontend/
 │   │   ├── layout.tsx      # Next.js App Router 레이아웃
 │   │   └── page.tsx        # Next.js App Router 루트 페이지
 │   │
-│   ├── 02-processes/       # 비즈니스 프로세스 및 워크플로우 (여러 피처를 조합)
-│   │
 │   ├── 03-pages/           # 각 라우트별 실제 페이지 컨텐츠 (App Router의 page.tsx에서 임포트하여 사용)
 │   │
-│   ├── 04-widgets/         # 위젯 (Header, Footer, SurveyList 등 독립적인 UI 블록)
+│   ├── 04-widgets/         # 위젯 (Navbar, Footer, SignalChart 등 독립적인 UI 블록)
 │   │
-│   ├── 05-features/        # 특정 기능 구현 (예: 설문 제출, 페어링 시작 버튼 등 상호작용 로직)
+│   ├── 05-features/        # 특정 기능 구현 (예: 페어링, 신호 전송, 인증, 채팅 보조 등 상호작용 로직)
 │   │
-│   ├── 06-entities/        # 도메인 엔티티 (UserCard, EegGraph, SurveyQuestion 등 도메인 모델 관련 UI)
-│   │
-│   └── 07-shared/          # 범용 유틸리티, 설정, 상수 (공통 UI(Button, Input), API 클라이언트(Axios), Utils)
+│   └── 07-shared/          # 범용 유틸리티, 설정, 상수 (API 클라이언트(Axios), config, types, constants, utils)
 │       ├── api/            # 공통 API 클라이언트 또는 유틸리티
 │       ├── config/         # 환경 설정
 │       │   └── config.ts   #
-│       ├── lib/            # 공통 라이브러리, 헬퍼 함수 (예상)
-│       ├── middlewares/    # 공통 미들웨어 (예상)
-│       └── types/          # 공통 타입 정의
+│       ├── constants/      # 세션 상태·실험 모드 등 공통 상수
+│       ├── lib/            # 공통 라이브러리, 헬퍼 함수
+│       ├── types/          # 공통 타입 정의
+│       └── utils/          # 순수 유틸리티 함수
+│
+│   (`02-processes/`, `06-entities/`는 FSD 레이어 번호·경로 alias만 예약되어 있고
+│   아직 실제 폴더로 만들어지지 않음 — 생성 시 이 트리에 추가할 것)
 │
 ├── .env.example            # 환경 변수 템플릿 (Git 추적)
 ├── .env.local              # 로컬 환경 변수 (Git 추적 제외)
-├── .env.test               # 테스트 환경 변수 (Git 추적 제외)
-├── .eslint.config.mjs      # ESLint 설정 파일
 ├── .gitattributes          # Git 속성 설정 파일
 ├── .gitignore              # Git이 무시할 파일 및 폴더 목록
 ├── .prettierignore         # Prettier가 무시할 파일 및 폴더 목록
 ├── .prettierrc             # Prettier 설정 파일
+├── eslint.config.mjs       # ESLint 설정 파일
 ├── vitest.config.ts        # Vitest 테스트 설정 파일
 ├── next-env.d.ts           # Next.js 환경 정의 파일
 ├── next.config.ts          # Next.js 설정 파일
@@ -149,6 +150,7 @@ mind-signal-frontend/
 ├── public/                 # 정적 파일
 │   ├── file.svg
 │   ├── globe.svg
+│   ├── mockServiceWorker.js # MSW 자동 생성 파일
 │   ├── next.svg
 │   ├── vercel.svg
 │   └── window.svg
