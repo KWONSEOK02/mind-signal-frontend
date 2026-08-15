@@ -182,10 +182,10 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              Neuro
+              뇌파
             </span>
             <span className="text-6xl sm:text-8xl lg:text-[80px] xl:text-[100px] font-black tracking-[-0.05em] text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-400 to-purple-600 pb-3">
-              Signal
+              시그널
             </span>
           </h1>
         </div>
@@ -211,7 +211,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
 
         <div className="order-4 lg:col-start-2 lg:row-start-1 lg:row-span-4 self-center relative w-full flex justify-center lg:justify-end z-10 pointer-events-none mb-10 lg:mb-0">
           <Image
-            src="/images/home_img.png"
+            src="/Images/home_img.png"
             alt="뇌파 시그널 메인 이미지"
             width={800}
             height={800}

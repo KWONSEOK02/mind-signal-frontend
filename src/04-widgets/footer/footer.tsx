@@ -85,7 +85,7 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
                   <button
                     onClick={() => {
                       if (item.url) {
-                        window.open(item.url, '_blank');
+                        window.open(item.url, '_blank', 'noopener,noreferrer');
                       } else {
                         handleNavClick(item.id as PageType);
                       }
