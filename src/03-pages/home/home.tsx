@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { FlaskConical, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import { FlaskConical, ArrowRight, Activity } from 'lucide-react';
 import { PageType } from '@/07-shared/types';
 
 interface HomeProps {
@@ -37,7 +38,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
       if (canvas.parentElement) {
         canvas.width = canvas.parentElement.offsetWidth;
         canvas.height = canvas.parentElement.offsetHeight;
-        currentY = canvas.height / 2 - 130;
+        currentY = canvas.height / 2;
         points = [];
       }
     };
@@ -46,7 +47,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
     resize();
 
     const generateNextY = () => {
-      const centerY = canvas.height / 2 - 130;
+      const centerY = canvas.height / 2;
 
       if (sparkTargets.length > 0) {
         const target = centerY + sparkTargets[0];
@@ -142,97 +143,113 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
   };
 
   return (
-    <div className="relative pt-20 pb-32 px-6 overflow-hidden min-h-screen flex flex-col items-center">
+    <div className="relative pt-8 lg:pt-24 pb-20 lg:pb-32 px-6 overflow-hidden min-h-[calc(100vh-80px)] flex flex-col items-center justify-start lg:justify-center">
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full opacity-60"
+        />
       </div>
 
-      {/* 텍스트 및 버튼 콘텐츠 영역 */}
-      <div className="relative z-10 max-w-7xl mx-auto flex flex-col items-center text-center">
-        <div className="flex flex-col items-center gap-4 mb-10">
+      <div className="relative z-10 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-y-4 lg:gap-y-0">
+        <div className="order-1 lg:col-start-1 lg:row-start-1 flex flex-col items-center lg:items-start lg:pl-[100px] xl:pl-[150px] mb-4 lg:mb-12 w-full text-center lg:text-left">
           <div
-            className={`inline-flex items-center gap-3 px-6 py-2 rounded-full glass border cursor-default select-none ${
-              isDark ? 'border-white/10' : 'border-indigo-100'
+            className={`inline-flex items-center gap-3 px-6 py-3 rounded-full glass border cursor-default select-none ${
+              isDark
+                ? 'border-white/10 bg-white/5'
+                : 'border-indigo-100 bg-indigo-50/50'
             }`}
           >
             <span
-              className={`text-[10px] font-bold tracking-[0.2em] uppercase ${
-                isDark ? 'text-indigo-400' : 'text-indigo-600'
+              className={`text-[10px] sm:text-xs font-bold tracking-[0.1em] leading-relaxed uppercase text-center lg:text-left ${
+                isDark ? 'text-slate-300' : 'text-slate-600'
               }`}
             >
               상명대학교 휴먼AI공학전공
               <br />
-              Team_Heuro 졸업 프로젝트
+              <span className={isDark ? 'text-indigo-400' : 'text-indigo-600'}>
+                TEAM_HEURO
+              </span>{' '}
+              졸업 프로젝트
             </span>
           </div>
         </div>
 
-        <div className="relative mb-12 sm:mb-16 select-none flex flex-col items-center">
-          <h1 className="flex flex-col items-center cursor-default leading-[0.85]">
+        <div className="order-2 lg:col-start-1 lg:row-start-2 relative select-none flex flex-col items-center lg:items-start lg:pl-[100px] xl:pl-[150px] mb-4 lg:mb-6 w-full">
+          <h1 className="flex flex-col items-center lg:items-start cursor-default leading-[1.1] text-center lg:text-left">
             <span
-              className={`text-7xl md:text-[140px] font-black tracking-[-0.05em] ${
+              className={`text-6xl sm:text-8xl lg:text-[80px] xl:text-[100px] font-black tracking-[-0.05em] ${
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
               뇌파
             </span>
-            <div className="h-4 md:h-6" />
-            <span className="text-7xl md:text-[140px] font-black tracking-[-0.05em] text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-indigo-400 to-purple-500">
+            <span className="text-6xl sm:text-8xl lg:text-[80px] xl:text-[100px] font-black tracking-[-0.05em] text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-400 to-purple-600 pb-3">
               시그널
             </span>
           </h1>
         </div>
 
-        <div className="max-w-3xl space-y-3 sm:space-y-10 mb-8 sm:mb-16">
+        <div className="order-3 lg:col-start-1 lg:row-start-3 space-y-4 lg:pl-[100px] xl:pl-[150px] mb-6 lg:mb-8 w-full flex flex-col items-center lg:items-start text-center lg:text-left">
           <h2
-            className={`text-xl md:text-3xl font-black italic tracking-tight uppercase cursor-default select-none ${
+            className={`text-lg sm:text-2xl font-black italic tracking-tight uppercase cursor-default select-none ${
               isDark ? 'text-indigo-400' : 'text-indigo-600'
             }`}
           >
             뇌파 동조화 기반 우정 및 커플 궁합 테스트
           </h2>
-          <div
-            className={`space-y-4 font-bold text-base md:text-xl leading-relaxed cursor-default select-none ${
-              isDark ? 'text-slate-400' : 'text-slate-600'
+          <p
+            className={`font-medium text-sm sm:text-base md:text-lg leading-relaxed cursor-default select-none ${
+              isDark ? 'text-slate-300' : 'text-slate-600'
             }`}
           >
-            <p>
-              실시간 뇌파 동조화 분석을 통해 당신과 상대의 <br />
-              숨겨진 뇌파 매칭률을 확인하세요!
-            </p>
-          </div>
+            실시간 뇌파 동조화 분석을 통해
+            <br className="hidden sm:block" />
+            당신과 상대의 숨겨진 뇌파 매칭률을 확인하세요!
+          </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-6">
+        <div className="order-4 lg:col-start-2 lg:row-start-1 lg:row-span-4 self-center relative w-full flex justify-center lg:justify-end z-10 pointer-events-none mb-10 lg:mb-0">
+          <Image
+            src="/Images/home_img.png"
+            alt="뇌파 시그널 메인 이미지"
+            width={800}
+            height={800}
+            priority
+            className="w-full max-w-[70%] sm:max-w-sm lg:max-w-[90%] xl:max-w-full h-auto object-contain"
+          />
+        </div>
+
+        <div className="order-5 lg:col-start-1 lg:row-start-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 sm:gap-6 lg:pl-[100px] xl:pl-[150px] w-full sm:w-auto">
           <button
             onClick={() => handleNavigation('intro')}
-            className={`group px-10 py-5 glass border rounded-3xl font-black text-lg flex items-center justify-center gap-3 cursor-pointer transition-all duration-300 ${
+            className={`group w-full sm:w-auto px-8 py-4 glass border rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 ${
               isDark
                 ? 'border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-transparent'
                 : 'border-indigo-100 text-slate-700 hover:bg-indigo-100 hover:border-transparent hover:shadow-lg shadow-indigo-500/5'
             }`}
           >
-            프로젝트 소개{' '}
+            프로젝트 소개
             <ArrowRight
-              size={18}
-              className="transition-transform group-hover:translate-x-2"
+              size={16}
+              className="transition-transform group-hover:translate-x-1"
             />
           </button>
 
           <button
             data-testid="home-cta-lab"
             onClick={() => handleNavigation('lab')}
-            className="group relative px-14 py-6 bg-indigo-600 text-white rounded-3xl font-black text-xl overflow-hidden transition-all hover:bg-indigo-700 hover:scale-105 active:scale-95 shadow-[0_20px_50px_-10px_rgba(79,70,229,0.5)] cursor-pointer"
+            className="group relative w-full sm:w-auto px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm sm:text-base overflow-hidden transition-all hover:bg-indigo-700 hover:scale-105 active:scale-95 shadow-[0_10px_30px_-10px_rgba(79,70,229,0.5)] cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-            <span className="relative z-10 flex items-center gap-4">
+            <span className="relative z-10 flex items-center justify-center gap-3">
+              <Activity size={18} />
               실험실 입장
               <FlaskConical
-                size={24}
+                size={18}
                 className="group-hover:rotate-12 transition-transform duration-300"
               />
             </span>
-            <div className="absolute inset-0 border-2 border-white/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
         </div>
       </div>

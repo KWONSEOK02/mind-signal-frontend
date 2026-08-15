@@ -42,15 +42,33 @@ const Navbar: React.FC<NavbarProps> = ({
     setIsMobileMenuOpen(false); // 모바일 메뉴 닫기 수행함
   };
 
-  const navItems: { name: string; id: PageType }[] = [
+  // 기존 navItems에 '작업실' 추가 및 url 속성 정의
+  const navItems: { name: string; id: string; url?: string }[] = [
     { name: '홈', id: 'home' },
     { name: '소개', id: 'intro' },
     { name: '실험실', id: 'lab' },
+    {
+      name: '작업실',
+      id: 'workspace',
+      url: 'http://seyun4047.iptime.org:10209/',
+    }, // 추가된 부분
     { name: '결과확인', id: 'results' },
     { name: '시즌 2', id: 'expand' },
   ];
-
   const GOOGLE_FORM_URL = 'https://forms.gle/g1vY9QuH1QjBzNmm9';
+
+  const handleItemClick = (item: {
+    name: string;
+    id: PageType | string;
+    url?: string;
+  }) => {
+    if (item.url) {
+      window.open(item.url, '_blank', 'noopener,noreferrer');
+      setIsMobileMenuOpen(false);
+    } else {
+      handleNavClick(item.id as PageType);
+    }
+  };
 
   // 로그아웃 핸들러
   const handleLogout = () => {
@@ -94,7 +112,7 @@ const Navbar: React.FC<NavbarProps> = ({
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => handleNavClick(item.id)} // 함수 호출로 변경
+              onClick={() => handleItemClick(item)}
               className={`cursor-pointer text-sm font-bold transition-all hover:text-indigo-500 ${
                 currentPage === item.id
                   ? 'text-indigo-500'
@@ -200,7 +218,7 @@ const Navbar: React.FC<NavbarProps> = ({
               {navItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => handleNavClick(item.id)}
+                  onClick={() => handleItemClick(item)}
                   className={`text-left text-base font-bold transition-all ${
                     currentPage === item.id
                       ? 'text-indigo-500'
