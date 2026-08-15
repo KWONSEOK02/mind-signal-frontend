@@ -50,8 +50,8 @@
 
 ## 환경 변수
 
-실제 값은 루트 `.env`에 두고 커밋하지 않는다. 로컬 백엔드는 이 파일을 보조로
-읽으며, `mind-signal-backend/.env.<NODE_ENV>`가 있으면 그 값이 우선한다.
+실제 값은 `mind-signal-backend/.env.local`에 두고 커밋하지 않는다. CI에서는
+동일한 이름의 GitHub Secrets를 GitHub Actions 환경 변수로 주입한다.
 
 ```dotenv
 AWS_REGION=ap-northeast-2
@@ -64,3 +64,7 @@ BEDROCK_INFERENCE_PROFILE_ID=...
 `BEDROCK_INFERENCE_PROFILE_ID`가 있으면 이를 우선 호출하고, 없으면
 `BEDROCK_MODEL_ID`를 사용한다. 채팅 서비스는 위 5개 변수 외의 AWS 인증 변수나
 기본 자격 증명 체인을 사용하지 않는다.
+
+로컬에서 채팅만 확인할 때는 백엔드 `.env.local`에
+`CHAT_ONLY_MODE=true`를 설정한다. 이 모드에서는 MongoDB와 나머지 API를 시작하지
+않고 `/api/chat`만 제공한다.
