@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  CheckCircle2,
+} from 'lucide-react';
 import Image from 'next/image';
 
 interface IntroProps {
@@ -9,6 +15,18 @@ interface IntroProps {
 const Intro: React.FC<IntroProps> = ({ theme }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const isDark = theme === 'dark';
+
+  // 카페인 제한 시간과 총 소요 시간은 아래 FAQ가 다른 값을 안내하고 있어
+  // 팀 확정 전까지 공지에서 제외함 (FAQ 정본: 카페인 2시간, 전체 15분 내외)
+  const notices = [
+    '실험 당일에는 최소 6시간 이상, 8시간 이하의 정상수면을 취해주시길 권고드립니다.',
+    '실험 전날 알코올 섭취는 자제해주시길 권고드립니다.',
+    '간질 병력이 있는 경우 반드시 사전에 말씀해주시기 바랍니다.',
+    '실험 당일 머리 왁스, 스프레이 등 헤어 제품 사용을 최소화해주세요.',
+    '실험 중에는 정확한 EEG 측정을 위해 불필요한 몸, 얼굴, 눈 움직임을 최소화해주세요.',
+    '당일 컨디션이 지나치게 좋지 않은 경우 사전에 말씀해주세요.',
+    '실험 도중 불편함이 발생할 경우 언제든 중단 요청이 가능합니다.',
+  ];
 
   const faqs = [
     {
@@ -46,7 +64,8 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-32 space-y-32">
+    <div className="max-w-7xl mx-auto px-6 pt-10 pb-32 md:py-32 space-y-24 md:space-y-32">
+      {/* 1. Hero Section */}
       <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
         <div className="space-y-8 relative z-10">
           <h2
@@ -61,7 +80,7 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
               isDark ? 'text-slate-400' : 'text-slate-600'
             }`}
           >
-            뇌파 시그널 프로젝트는 인간의 무의식적 반응인{' '}
+            뇌파 시그널 프로젝트는 인간의 무의식적 반응인 <br />
             <strong
               className={`${
                 isDark ? 'text-indigo-400' : 'text-indigo-600'
@@ -69,56 +88,37 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
             >
               뇌파 동조화(Neural Sync)
             </strong>
-            친구 및 인연의 깊이를 정량적으로 분석하는 공학적 시도입니다.
+            를 통해 친구 및 인연의 깊이를 정량적으로 분석하는 공학적 시도입니다.
           </p>
         </div>
 
         <div className="relative group">
-          <div
-            className={`absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-[3rem] blur-3xl transition-opacity duration-700 ${
-              isDark
-                ? 'opacity-20 group-hover:opacity-40'
-                : 'opacity-10 group-hover:opacity-20'
-            }`}
-          />
-
-          <div
-            className={`relative p-10 md:p-16 rounded-[3rem] border backdrop-blur-sm transition-all duration-700 ${
-              isDark
-                ? 'bg-white/5 border-white/10'
-                : 'bg-slate-50 border-slate-200'
-            }`}
-          >
+          <div className="relative">
             <Image
-              src="https://framerusercontent.com/images/WUV1fZgVSOY2jdQ59SFX4Mmom0.webp?width=1430&height=1240"
+              src="/Images/emotiv_person.png"
               alt="Emotiv Insight Headset"
               width={1430}
               height={1240}
-              className="w-full h-auto object-contain drop-shadow-2xl group-hover:-translate-y-2 transition-transform duration-500 ease-out"
+              className="w-full scale-125 h-auto object-contain drop-shadow-2xl group-hover:-translate-y-2 transition-transform duration-500 ease-out"
             />
-
-            <div className="mt-12 text-center space-y-1">
+            <div className="mt-20 text-center space-y-1">
               <h4
-                className={`text-2xl font-black italic uppercase tracking-tight ${
-                  isDark ? 'text-white' : 'text-slate-900'
+                className={`text-lg font-bold uppercase tracking-tight ${
+                  isDark ? 'text-slate-500' : 'text-slate-900'
                 }`}
               >
                 Emotiv Insight
               </h4>
-              <p
-                className={`text-xs font-bold uppercase tracking-widest ${
-                  isDark ? 'text-slate-500' : 'text-slate-400'
-                }`}
-              >
-                Precision EEG Device
-              </p>
             </div>
           </div>
         </div>
       </div>
+
       <div className="space-y-12">
         <h3
-          className={`text-3xl font-black italic uppercase tracking-tighter text-center ${isDark ? 'text-white' : 'text-slate-900'}`}
+          className={`text-3xl font-black italic uppercase tracking-tighter text-center ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}
         >
           이벤트 진행 단계
         </h3>
@@ -179,12 +179,57 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
           ))}
         </div>
       </div>
+
+      <div className="space-y-12 max-w-5xl mx-auto">
+        <div className="text-center space-y-2">
+          <h3
+            className={`text-3xl font-black italic uppercase tracking-tighter flex items-center justify-center gap-3 ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}
+          >
+            <AlertCircle className="text-pink-500" size={32} /> 실험 전 공지사항
+          </h3>
+          <p className="text-slate-500 font-bold text-sm">
+            정확한 뇌파 측정과 안전한 실험 진행을 위해 꼭 확인해 주세요.
+          </p>
+        </div>
+        <div
+          className={`p-8 md:p-10 rounded-3xl border ${
+            isDark
+              ? 'bg-white/5 border-white/10'
+              : 'bg-white border-[#C6D2FF] shadow-sm'
+          }`}
+        >
+          <ul className="grid md:grid-cols-2 gap-x-8 gap-y-6">
+            {notices.map((notice, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <CheckCircle2
+                  className={`shrink-0 mt-0.5 ${
+                    isDark ? 'text-indigo-400' : 'text-indigo-500'
+                  }`}
+                  size={20}
+                />
+                <span
+                  className={`text-sm md:text-base font-medium leading-relaxed ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}
+                >
+                  {notice}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
       <div className="space-y-12 max-w-4xl mx-auto">
         <div className="text-center space-y-2">
           <h3
-            className={`text-3xl font-black italic uppercase tracking-tighter flex items-center justify-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}
+            className={`text-3xl font-black italic uppercase tracking-tighter flex items-center justify-center gap-3 ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}
           >
-            <HelpCircle className="text-indigo-500" /> FAQ
+            <HelpCircle className="text-indigo-500" size={32} /> FAQ
           </h3>
           <p className="text-slate-500 font-bold text-sm">
             실험에 대해 가장 많이 묻는 8가지 질문입니다.
@@ -194,15 +239,25 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
           {faqs.map((faq, i) => (
             <div
               key={i}
-              className={`glass rounded-2xl border ${isDark ? 'border-white/10' : 'border-indigo-200'} overflow-hidden transition-all duration-300`}
+              className={`glass rounded-2xl border ${
+                isDark ? 'border-white/10' : 'border-indigo-200'
+              } overflow-hidden transition-all duration-300`}
             >
               <button
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className={`w-full cursor-pointer p-6 flex items-center justify-between font-black text-left hover:bg-white/5 transition-colors ${openFaq === i ? 'text-indigo-500 bg-white/5' : isDark ? 'text-slate-200' : 'text-slate-800'}`}
+                className={`w-full cursor-pointer p-6 flex items-center justify-between font-black text-left hover:bg-white/5 transition-colors ${
+                  openFaq === i
+                    ? 'text-indigo-500 bg-white/5'
+                    : isDark
+                      ? 'text-slate-200'
+                      : 'text-slate-800'
+                }`}
               >
                 <div className="flex items-center gap-4">
                   <span
-                    className={`italic text-xl ${isDark ? 'text-indigo-500' : 'text-indigo-500'}`}
+                    className={`italic text-xl ${
+                      isDark ? 'text-indigo-500' : 'text-indigo-500'
+                    }`}
                   >
                     Q.
                   </span>
@@ -216,10 +271,16 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
               </button>
               {openFaq === i && (
                 <div
-                  className={`p-8 bg-white/5 border-t ${isDark ? 'border-white/5 text-slate-400' : 'border-indigo-200 text-slate-700'} font-medium leading-relaxed animate-in slide-in-from-top-4 duration-500 flex gap-4`}
+                  className={`p-8 bg-white/5 border-t ${
+                    isDark
+                      ? 'border-white/5 text-slate-400'
+                      : 'border-indigo-200 text-slate-700'
+                  } font-medium leading-relaxed animate-in slide-in-from-top-4 duration-500 flex gap-4`}
                 >
                   <span
-                    className={`italic text-xl font-black ${isDark ? 'text-purple-400' : 'text-purple-500'}`}
+                    className={`italic text-xl font-black ${
+                      isDark ? 'text-purple-400' : 'text-purple-500'
+                    }`}
                   >
                     A.
                   </span>
