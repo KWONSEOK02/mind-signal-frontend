@@ -164,14 +164,32 @@ test.describe('Scenario 1: DUAL_2PC Happy Path', () => {
 
         // Step 4a [T17-8: RC-4]: mock DE 2개에 runtime groupId 주입 → /register-dual trigger
         // groupId가 확보된 경우에만 주입 (mock DE 기동 환경 전제)
+        //
+        // X-Engine-Secret은 실 DE(server/routes/control.py)가 요구하는 계약이고
+        // mock DE도 동일하게 요구함(OPS-W010). 헤더가 없으면 422/403이 나는데
+        // Playwright의 request.post는 4xx에 reject하지 않으므로 아래 catch가
+        // 잡아주지 않는다 — 주입이 조용히 실패하므로 미설정 시 경고를 남김.
+        const engineSecret = process.env.ENGINE_SECRET_KEY ?? '';
         if (groupId) {
+          if (!engineSecret) {
+            console.warn(
+              '[e2e] ENGINE_SECRET_KEY 미설정 — mock DE groupId 주입이 실패함. ' +
+                'mock DE의 --engine-secret과 같은 값을 넣을 것'
+            );
+          }
+          const assignOptions = {
+            data: { group_id: groupId },
+            headers: { 'X-Engine-Secret': engineSecret },
+          };
           await Promise.all([
-            pageA.request.post('http://localhost:8001/control/assign-group', {
-              data: { group_id: groupId },
-            }),
-            pageA.request.post('http://localhost:8002/control/assign-group', {
-              data: { group_id: groupId },
-            }),
+            pageA.request.post(
+              'http://localhost:8001/control/assign-group',
+              assignOptions
+            ),
+            pageA.request.post(
+              'http://localhost:8002/control/assign-group',
+              assignOptions
+            ),
           ]).catch(() => {
             // mock DE 미기동 환경에서는 실패 허용 (BE 없는 환경 대비)
           });
