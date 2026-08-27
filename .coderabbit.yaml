@@ -10,6 +10,20 @@ reviews:
       - main
       - dev
   path_instructions:
+    - path: "**"
+      instructions: |
+        확정된 설계 결정이다. 아래를 되돌리라는 제안은 하지 말 것 — 근거는
+        계획 문서에 있으나 그 문서는 git 밖이라 이 레포에서 확인할 수 없다.
+
+        - vitest.config.ts 의 test.browser.api 는 port 를 고정하고 strictPort 를
+          true 로 둔다. 이것이 의도다. vitest 브라우저 모드의 기본 포트 63315 가
+          Windows 예약 포트 대역(netsh excludedportrange)에 상시 포함돼 EACCES 로
+          죽기 때문이다. strictPort 를 false 로 낮추라는 제안은 하지 말 것 —
+          조용한 포트 폴백이 정확히 그 증상을 다시 숨긴다.
+        - 사용자 노출 문구는 한글 표기가 정본이다. 히어로의 "뇌파 / 시그널" 을
+          영문으로 바꾸라고 하지 말 것. e2e/home.spec.ts 가 한글을 검증한다.
+        - public/Images 의 대문자 I 는 의도다. 소문자로 바꾸면 Vercel(Linux)에서
+          404 가 난다. 경로 대소문자를 정규화하라고 제안하지 말 것.
     - path: "src/07-shared/**"
       instructions: |
         07-shared는 최하위 레이어. 다른 레이어(05-features, 03-pages 등)를 import하면 위반.
@@ -40,3 +54,13 @@ reviews:
         테스트 간 상태 격리 여부.
 chat:
   auto_reply: true
+
+# --- 2026-08-27 추가: 프로젝트 컨텍스트 학습 ---
+# 기본 code_guidelines 패턴은 CLAUDE.md 를 읽는데 이 레포의 CLAUDE.md 는
+# `@AGENTS.md` 한 줄 import 껍데기라 실질적으로 빈 파일이었다. 직접 가리킨다.
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"
+      - ".agents/rules/*.md"
