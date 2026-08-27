@@ -124,11 +124,17 @@ Playwright Scenario 1이 `groupId`를 캡처한 직후, 실험 시작 버튼 클
 
 ```
 Playwright
-  └─ POST http://localhost:8001/control/assign-group  { group_id }
-  └─ POST http://localhost:8002/control/assign-group  { group_id }
+  └─ POST http://localhost:8001/control/assign-group  { group_id }  + X-Engine-Secret
+  └─ POST http://localhost:8002/control/assign-group  { group_id }  + X-Engine-Secret
         ↓ mock DE 내부
         └─ POST http://localhost:5000/api/engine/register-dual
 ```
+
+**Playwright 프로세스에 `ENGINE_SECRET_KEY`가 필요함** (OPS-W010). mock DE의
+`--engine-secret`과 같은 값을 넣을 것. 실 DE(`server/routes/control.py`)가 이 헤더를
+요구하므로 mock도 동일하게 요구한다. **미설정 시 주입이 조용히 실패한다** —
+Playwright의 `request.post`는 4xx에 reject하지 않아 위 `catch`가 잡아주지 않기 때문이며,
+spec이 콘솔 경고만 남긴다.
 
 **실기기 사용 시**: real DE는 launcher가 주입하는 `DUAL_2PC_GROUP_ID` env 변수로
 부팅 시점에 `/register-dual`을 직접 호출하므로 이 step이 필요 없음.
