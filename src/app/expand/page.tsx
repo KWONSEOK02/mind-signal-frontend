@@ -12,7 +12,7 @@ export default function ExpandRoutePage() {
 
   return (
     <div
-      className={`transition-colors duration-500 min-h-screen ${
+      className={`transition-colors duration-500 min-h-[calc(100vh-80px)] ${
         theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'
       }`}
     >

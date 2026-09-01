@@ -95,10 +95,11 @@ const OperatorJoinPage = () => {
   // 토큰 없음 — JWT decode 실패 에러 UI (PLAN L140)
   const isTokenMissing = !token;
 
-  if (!isClient) return <div className="min-h-screen bg-slate-950" />;
+  if (!isClient)
+    return <div className="min-h-[calc(100vh-80px)] bg-slate-950" />;
 
   return (
-    <main className="min-h-screen bg-slate-950 pt-24 pb-12 px-6">
+    <div className="min-h-[calc(100vh-80px)] bg-slate-950 pt-8 pb-12 px-6">
       <div className="max-w-md mx-auto space-y-8">
         <header className="text-center space-y-4">
           <div className="inline-flex p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 mb-2">
@@ -127,7 +128,7 @@ const OperatorJoinPage = () => {
           {/* 에러 UI (PLAN L140 — JWT decode 실패 / 만료 토큰) */}
           {(error ?? isTokenMissing) ? (
             <div className="space-y-3">
-              <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+              <div className="flex items-start gap-3 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
                 <AlertCircle size={20} className="shrink-0 mt-0.5" />
                 <p className="text-sm font-medium">
                   {error ??
@@ -149,7 +150,7 @@ const OperatorJoinPage = () => {
             <button
               onClick={handleJoin}
               disabled={isLoading}
-              className="w-full py-10 rounded-[2.5rem] bg-indigo-600 border border-indigo-400 flex flex-col items-center gap-4 hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="w-full py-10 rounded-5xl bg-indigo-600 border border-indigo-400 flex flex-col items-center gap-4 hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
             >
               <div className="p-4 rounded-full bg-white/20 text-white group-hover:scale-110 transition-transform duration-500">
                 <LogIn size={24} />
@@ -161,7 +162,7 @@ const OperatorJoinPage = () => {
           ) : null}
         </section>
       </div>
-    </main>
+    </div>
   );
 };
 

@@ -88,7 +88,7 @@ export function OperatorStreamHealthBanner({
         >
           <span
             aria-hidden="true"
-            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-rose-400 text-xs font-black text-rose-950"
+            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-rose-400 text-xs font-black text-rose-950"
           >
             !
           </span>

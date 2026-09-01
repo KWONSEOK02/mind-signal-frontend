@@ -44,7 +44,7 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({
       <div className="flex flex-col items-center gap-1.5 w-full">
         <div
           className={`flex items-center gap-1.5 font-mono text-lg font-black tracking-tighter
-          ${isExpiringSoon ? 'text-red-500 animate-pulse' : 'text-indigo-500'}`}
+          ${isExpiringSoon ? 'text-rose-500 animate-pulse' : 'text-indigo-500'}`}
         >
           {isExpiringSoon ? <AlertTriangle size={16} /> : <Timer size={16} />}
           <span>

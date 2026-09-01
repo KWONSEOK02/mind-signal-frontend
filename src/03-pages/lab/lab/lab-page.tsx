@@ -24,7 +24,6 @@ import {
 import { DualSessionBanner } from '@/04-widgets/dual-session-banner';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
-import MobileLabView from './ui/mobile-lab-view';
 import { useUI } from '@/app/providers/ui-context'; // 다크 라이트 모드를 위해 임포트 추가
 import {
   useDevModeStore,
@@ -119,6 +118,14 @@ const LabPage = () => {
     window.addEventListener('resize', checkEnvironment);
     return () => window.removeEventListener('resize', checkEnvironment);
   }, [isClient]);
+
+  /**
+   * 모바일 접속은 합류 화면으로 넘김. 기존 안내 전용 뷰가 /join 첫 화면과
+   * 같은 한 문장만 말해 화면 1개와 탭 1회가 낭비됐음 (A6)
+   */
+  useEffect(() => {
+    if (isMobile) router.replace('/join');
+  }, [isMobile, router]);
 
   /**
    * 상태 기반으로 현재 실험 설정 동적 로드함
@@ -361,15 +368,19 @@ const LabPage = () => {
   if (!isClient)
     return (
       <div
-        className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
+        className={`min-h-[calc(100vh-80px)] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
       />
     );
 
   /**
-   * [진입점 검사] 모바일 환경인 경우 실험 참여 유도 뷰로 즉시 전환함
+   * [진입점 검사] 모바일은 위 effect 가 /join 으로 보냄. 전환 사이 빈 화면 유지함
    */
   if (isMobile) {
-    return <MobileLabView />;
+    return (
+      <div
+        className={`min-h-[calc(100vh-80px)] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
+      />
+    );
   }
 
   /**
@@ -499,8 +510,8 @@ const LabPage = () => {
 
   return (
     //  1. 최상단 main 배경색을 투명하게(transparent) 하거나 테마에 맞게 변경
-    <main
-      className={`min-h-screen pt-24 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
+    <div
+      className={`min-h-[calc(100vh-80px)] pt-8 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
     >
       {/* DUAL_2PC 측정 중 상단 배너 (FE-4) — PLAN L142-145 */}
       <DualSessionBanner
@@ -613,7 +624,7 @@ const LabPage = () => {
           <section className="animate-in fade-in zoom-in duration-500">
             {/*}  6. QR코드 박스 배경/테두리 변경*/}
             <div
-              className={`p-8 rounded-[2.5rem] border backdrop-blur-sm flex flex-col items-center gap-6 ${
+              className={`p-8 rounded-5xl border backdrop-blur-sm flex flex-col items-center gap-6 ${
                 isDark
                   ? 'bg-indigo-500/5 border-indigo-500/20'
                   : 'bg-white/80 border-indigo-100 shadow-sm'
@@ -661,7 +672,7 @@ const LabPage = () => {
           <div className="lg:col-span-2">
             {/* 7. Live Connection Status 박스 배경/테두리 변경*/}
             <div
-              className={`p-8 rounded-[2rem] border space-y-4 ${
+              className={`p-8 rounded-4xl border space-y-4 ${
                 isDark
                   ? 'bg-white/[0.02] border-white/5'
                   : 'bg-white border-slate-200 shadow-sm'
@@ -723,7 +734,7 @@ const LabPage = () => {
 
           {/*  10. System Phase(우측 하단) 박스 배경/테두리 변경*/}
           <div
-            className={`p-8 rounded-[2rem] border relative overflow-hidden group ${
+            className={`p-8 rounded-4xl border relative overflow-hidden group ${
               isDark
                 ? 'bg-indigo-500/10 border-indigo-500/20'
                 : 'bg-indigo-50 border-indigo-100'
@@ -784,7 +795,7 @@ const LabPage = () => {
         pairingToken={pairingCode}
         theme={isDark ? 'dark' : 'light'}
       />
-    </main>
+    </div>
   );
 };
 

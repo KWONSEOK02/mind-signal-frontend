@@ -27,7 +27,7 @@ const SignalMeasurer: React.FC<SignalMeasurerProps> = ({
   elapsedSeconds,
 }) => {
   return (
-    <div className="p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-sm space-y-8">
+    <div className="p-8 rounded-5xl bg-white/[0.03] border border-white/10 backdrop-blur-sm space-y-8">
       {/* 상태 헤더 영역 구성함 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
