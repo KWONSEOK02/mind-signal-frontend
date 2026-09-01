@@ -122,7 +122,7 @@ const Expand: React.FC<ExpandProps> = ({ theme }) => {
               key={i}
               // 다크 모드일 때 Coming Soon 박스와 동일하게 bg-white/5, border-white/10 적용
 
-              className={`p-8 rounded-[40px] border space-y-6 group transition-all cursor-pointer ${
+              className={`p-8 rounded-5xl border space-y-6 group transition-all cursor-pointer ${
                 isDark
                   ? 'bg-white/5 border-white/10 hover:border-white/20'
                   : 'bg-white border-slate-200 hover:border-slate-300'
@@ -165,7 +165,7 @@ const Expand: React.FC<ExpandProps> = ({ theme }) => {
           ))
         ) : (
           <div
-            className={`col-span-3 py-24 text-center space-y-10 rounded-[50px] border relative overflow-hidden ${
+            className={`col-span-3 py-24 text-center space-y-10 rounded-5xl border relative overflow-hidden ${
               isDark
                 ? 'bg-white/5 border-white/10'
                 : 'bg-white border-slate-200'

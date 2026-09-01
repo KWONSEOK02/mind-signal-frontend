@@ -71,7 +71,7 @@ const SignalPlaceholder = ({
 }) => (
   //  배경색과 테두리를 테마에 맞게 변경
   <div
-    className={`flex flex-col items-center justify-center h-[300px] rounded-[2rem] border border-dashed relative overflow-hidden group transition-colors duration-500 ${
+    className={`flex flex-col items-center justify-center h-[300px] rounded-4xl border border-dashed relative overflow-hidden group transition-colors duration-500 ${
       isDark
         ? 'bg-white/[0.02] border-white/5'
         : 'bg-slate-100 border-slate-300'
@@ -152,7 +152,7 @@ const SignalComparisonWidget = ({
         {subject1Metrics ? (
           //  차트 배경 박스 테마 적용
           <div
-            className={`p-6 rounded-[2.5rem] border backdrop-blur-sm transition-all duration-500 ${
+            className={`p-6 rounded-5xl border backdrop-blur-sm transition-all duration-500 ${
               isDark
                 ? 'bg-white/[0.03] border-white/10'
                 : 'bg-white border-slate-200 shadow-sm'
@@ -196,7 +196,7 @@ const SignalComparisonWidget = ({
         {subject2Metrics ? (
           // 차트 배경 박스 테마 적용
           <div
-            className={`p-6 rounded-[2.5rem] border backdrop-blur-sm transition-all duration-500 ${
+            className={`p-6 rounded-5xl border backdrop-blur-sm transition-all duration-500 ${
               isDark
                 ? 'bg-white/[0.03] border-white/10'
                 : 'bg-white border-slate-200 shadow-sm'

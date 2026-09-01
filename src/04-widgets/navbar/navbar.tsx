@@ -81,7 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-4 cursor-pointer group"
           onClick={() => handleNavClick('home')}
         >
-          <div className="w-12 h-12 bg-slate-900 rounded-[14px] flex items-center justify-center shadow-inner relative overflow-hidden border border-white/5">
+          <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center shadow-inner relative overflow-hidden border border-white/5">
             <div className="absolute inset-0 bg-indigo-500/5 blur-xl"></div>
             <Activity
               size={24}

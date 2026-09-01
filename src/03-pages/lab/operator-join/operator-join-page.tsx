@@ -149,7 +149,7 @@ const OperatorJoinPage = () => {
             <button
               onClick={handleJoin}
               disabled={isLoading}
-              className="w-full py-10 rounded-[2.5rem] bg-indigo-600 border border-indigo-400 flex flex-col items-center gap-4 hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="w-full py-10 rounded-5xl bg-indigo-600 border border-indigo-400 flex flex-col items-center gap-4 hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
             >
               <div className="p-4 rounded-full bg-white/20 text-white group-hover:scale-110 transition-transform duration-500">
                 <LogIn size={24} />

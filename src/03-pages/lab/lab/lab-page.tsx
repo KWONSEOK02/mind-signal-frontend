@@ -613,7 +613,7 @@ const LabPage = () => {
           <section className="animate-in fade-in zoom-in duration-500">
             {/*}  6. QR코드 박스 배경/테두리 변경*/}
             <div
-              className={`p-8 rounded-[2.5rem] border backdrop-blur-sm flex flex-col items-center gap-6 ${
+              className={`p-8 rounded-5xl border backdrop-blur-sm flex flex-col items-center gap-6 ${
                 isDark
                   ? 'bg-indigo-500/5 border-indigo-500/20'
                   : 'bg-white/80 border-indigo-100 shadow-sm'
@@ -661,7 +661,7 @@ const LabPage = () => {
           <div className="lg:col-span-2">
             {/* 7. Live Connection Status 박스 배경/테두리 변경*/}
             <div
-              className={`p-8 rounded-[2rem] border space-y-4 ${
+              className={`p-8 rounded-4xl border space-y-4 ${
                 isDark
                   ? 'bg-white/[0.02] border-white/5'
                   : 'bg-white border-slate-200 shadow-sm'
@@ -723,7 +723,7 @@ const LabPage = () => {
 
           {/*  10. System Phase(우측 하단) 박스 배경/테두리 변경*/}
           <div
-            className={`p-8 rounded-[2rem] border relative overflow-hidden group ${
+            className={`p-8 rounded-4xl border relative overflow-hidden group ${
               isDark
                 ? 'bg-indigo-500/10 border-indigo-500/20'
                 : 'bg-indigo-50 border-indigo-100'

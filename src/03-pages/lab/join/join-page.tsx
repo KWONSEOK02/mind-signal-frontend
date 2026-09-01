@@ -177,7 +177,7 @@ const JoinPage = () => {
               {!isScannerOpen ? (
                 <button
                   onClick={() => setIsScannerOpen(true)}
-                  className="w-full py-10 rounded-[2.5rem] bg-white/[0.02] border border-white/10 flex flex-col items-center gap-4 hover:bg-white/[0.04] transition-all group"
+                  className="w-full py-10 rounded-5xl bg-white/[0.02] border border-white/10 flex flex-col items-center gap-4 hover:bg-white/[0.04] transition-all group"
                 >
                   <div className="p-4 rounded-full bg-indigo-500/20 text-indigo-400 group-hover:scale-110 transition-transform duration-500">
                     <LinkIcon size={24} />
@@ -197,7 +197,7 @@ const JoinPage = () => {
             </div>
           ) : (
             <div className="space-y-6 animate-in zoom-in duration-500">
-              <div className="p-8 rounded-[2.5rem] bg-indigo-600 border border-indigo-400 shadow-2xl shadow-indigo-500/20 text-white relative overflow-hidden">
+              <div className="p-8 rounded-5xl bg-indigo-600 border border-indigo-400 shadow-2xl shadow-indigo-500/20 text-white relative overflow-hidden">
                 <CheckCircle2
                   className="absolute -right-4 -top-4 text-white/10"
                   size={120}

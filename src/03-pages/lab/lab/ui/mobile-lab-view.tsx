@@ -16,7 +16,7 @@ const MobileLabView: React.FC = () => {
         {/* 장치 아이콘 및 시각적 효과 섹션 구성함 */}
         <div className="relative mx-auto w-24 h-24">
           <div className="absolute inset-0 bg-indigo-500/10 blur-3xl rounded-full animate-pulse" />
-          <div className="relative bg-slate-900 border border-slate-800 rounded-[2.5rem] p-6 shadow-2xl">
+          <div className="relative bg-slate-900 border border-slate-800 rounded-5xl p-6 shadow-2xl">
             <Smartphone className="w-full h-full text-indigo-500" />
           </div>
         </div>

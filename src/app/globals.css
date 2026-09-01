@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 
-/* 테마 소스는 UIContext state 하나다. body 는 그 아래 깔리는 바닥이라
-   앱 기본값(dark)에 맞춰 둔다 — 실제 화면 배경은 client-layout 이 칠한다. */
+/* 테마 소스는 UIContext state 하나임. body 는 그 아래 깔리는 바닥이라
+   앱 기본값(dark)에 맞춰 둠 — 실제 화면 배경은 client-layout 이 칠함. */
 :root {
   --background: #020617;
   --foreground: #ffffff;
@@ -13,14 +13,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* Figma radius/3xl(40px). v4 기본 스케일은 4xl(32px)에서 끝나 여기만 보탬.
+     나머지 6단(8·12·16·24·32·full)은 v4 기본 lg·xl·2xl·3xl·4xl·full 과 일치함. */
+  --radius-5xl: 2.5rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Geist 는 subsets:['latin'] 이라 한글 글리프가 없다. 라틴만 Geist 가 받고
-     한글은 뒤 폴백으로 넘어간다. Pretendard 는 설치돼 있을 때만 쓰이고,
-     없으면 OS 기본 고딕(macOS · Windows 순)으로 떨어진다. */
+  /* Geist 는 subsets:['latin'] 이라 한글 글리프가 없음. 라틴만 Geist 가 받고
+     한글은 뒤 폴백으로 넘어감. Pretendard 는 설치돼 있을 때만 쓰이고,
+     없으면 OS 기본 고딕(macOS · Windows 순)으로 떨어짐. */
   font-family:
     var(--font-geist-sans),
     'Pretendard',
