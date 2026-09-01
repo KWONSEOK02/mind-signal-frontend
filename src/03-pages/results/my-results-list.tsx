@@ -168,7 +168,7 @@ const MyResultsList: React.FC<MyResultsListProps> = ({
           <button
             key={item.groupId}
             onClick={() => router.push(`/results?groupId=${item.groupId}`)}
-            className={`glass text-left p-8 rounded-[32px] border cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
+            className={`text-left p-8 rounded-[32px] border cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
               isDark
                 ? 'border-white/5 hover:border-indigo-500/30 hover:shadow-indigo-500/10'
                 : 'border-indigo-100 hover:border-indigo-300 hover:shadow-indigo-100'

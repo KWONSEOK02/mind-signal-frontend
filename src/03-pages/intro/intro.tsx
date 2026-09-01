@@ -239,7 +239,7 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
           {faqs.map((faq, i) => (
             <div
               key={i}
-              className={`glass rounded-2xl border ${
+              className={`rounded-2xl border ${
                 isDark ? 'border-white/10' : 'border-indigo-200'
               } overflow-hidden transition-all duration-300`}
             >

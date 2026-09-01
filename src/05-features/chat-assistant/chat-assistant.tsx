@@ -118,7 +118,7 @@ const ChatAssistant: React.FC<{
           className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
             msg.role === 'user'
               ? 'bg-indigo-600 text-white rounded-tr-none'
-              : 'glass border border-white/5 text-slate-300 rounded-tl-none'
+              : 'border border-white/5 text-slate-300 rounded-tl-none'
           }`}
         >
           {msg.text}
