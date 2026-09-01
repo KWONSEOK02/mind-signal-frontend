@@ -155,7 +155,7 @@ const JoinPage = () => {
               {(status === SESSION_STATUS.EXPIRED ||
                 status === SESSION_STATUS.ERROR) && (
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
                     <AlertCircle size={20} className="shrink-0 mt-0.5" />
                     <p className="text-sm font-medium">
                       {status === SESSION_STATUS.EXPIRED

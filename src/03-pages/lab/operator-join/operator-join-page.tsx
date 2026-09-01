@@ -127,7 +127,7 @@ const OperatorJoinPage = () => {
           {/* 에러 UI (PLAN L140 — JWT decode 실패 / 만료 토큰) */}
           {(error ?? isTokenMissing) ? (
             <div className="space-y-3">
-              <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+              <div className="flex items-start gap-3 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
                 <AlertCircle size={20} className="shrink-0 mt-0.5" />
                 <p className="text-sm font-medium">
                   {error ??
