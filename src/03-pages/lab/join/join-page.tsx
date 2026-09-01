@@ -132,7 +132,7 @@ const JoinPage = () => {
   if (!isClient) return <div className="min-h-screen bg-slate-950" />;
 
   return (
-    <main className="min-h-screen bg-slate-950 pt-24 pb-12 px-6">
+    <div className="min-h-screen bg-slate-950 pt-8 pb-12 px-6">
       <div className="max-w-md mx-auto space-y-8">
         <header className="text-center space-y-4">
           <div className="inline-flex p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 mb-2">
@@ -321,7 +321,7 @@ const JoinPage = () => {
           </div>
         </footer>
       </div>
-    </main>
+    </div>
   );
 };
 

@@ -499,8 +499,8 @@ const LabPage = () => {
 
   return (
     //  1. 최상단 main 배경색을 투명하게(transparent) 하거나 테마에 맞게 변경
-    <main
-      className={`min-h-screen pt-24 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
+    <div
+      className={`min-h-screen pt-8 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
     >
       {/* DUAL_2PC 측정 중 상단 배너 (FE-4) — PLAN L142-145 */}
       <DualSessionBanner
@@ -784,7 +784,7 @@ const LabPage = () => {
         pairingToken={pairingCode}
         theme={isDark ? 'dark' : 'light'}
       />
-    </main>
+    </div>
   );
 };
 
