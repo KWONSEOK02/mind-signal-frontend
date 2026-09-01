@@ -1,9 +1,11 @@
 @import "tailwindcss";
 
 
+/* 테마 소스는 UIContext state 하나다. body 는 그 아래 깔리는 바닥이라
+   앱 기본값(dark)에 맞춰 둔다 — 실제 화면 배경은 client-layout 이 칠한다. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #020617;
+  --foreground: #ffffff;
 }
 
 @theme inline {
@@ -11,13 +13,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
