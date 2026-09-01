@@ -2,8 +2,11 @@
 // 사용: node scripts/capture-ui-shots.mjs before   (또는 after)
 // 전제: next dev 가 localhost:3000 에 떠 있을 것.
 //
-// ponytail: 백엔드 없이 프론트만으로 재현되는 화면만 찍는다. 측정 중·결과 리포트는
-// 라이브 상태와 인증 fixture 가 필요해 제외했다 (PLAN 6.1절).
+// 백엔드 없이 프론트만으로 결정적으로 재현되는 상태만 찍음.
+// /results 는 비로그인 잠금 상태로 들어감 — groupId 없이 접근하는 실제 도달 경로이고
+// D1·D5 영향권임. 로그인 후 결과 리포트(MS-PC-07 · MS-MO-11)와 측정 중 화면은
+// ui-context.tsx 의 refreshUser 가 /auth/me 실패 시 토큰을 지우므로 인증 fixture 가
+// 있어야 하고, 그래서 이 스크립트 범위 밖임 (PLAN 6.1절).
 
 import { chromium } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';

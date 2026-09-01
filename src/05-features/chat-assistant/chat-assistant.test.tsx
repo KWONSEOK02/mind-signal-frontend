@@ -41,7 +41,7 @@ describe('ChatAssistant — 테마 반영 회귀 검증함', () => {
     const panel = await openPanel('dark');
 
     expect(panel.className).toContain('bg-slate-900');
-    expect(panel.className).not.toContain('bg-white ');
+    expect(panel).not.toHaveClass('bg-white');
   });
 
   it('토글 버튼의 표시등 테두리가 dark: variant 대신 테마 분기를 씀', () => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 import { describe, expect, it, vi } from 'vitest';
 import { NAV_ITEMS } from '@/07-shared/constants/nav-items';
@@ -43,14 +44,37 @@ describe('내비 항목 단일 출처 회귀 검증함', () => {
     }
   });
 
-  it('외부 링크 항목이 양쪽에서 같은 URL 을 가리킴', () => {
-    const external = NAV_ITEMS.filter((i) => i.url);
+  it('외부 링크 항목을 navbar 와 footer 가 같은 URL 로 새 탭에 엶', async () => {
+    const external = NAV_ITEMS.find((i) => i.url);
+    // throw 로 좁혀야 이후 external.url 접근이 strict 를 통과함
+    if (!external?.url) throw new Error('외부 링크 항목이 없음');
 
-    expect(external.length).toBeGreaterThan(0);
-    // 정본이 하나이므로 URL 중복 정의가 존재할 수 없음
-    for (const item of external) {
-      expect(item.url).toMatch(/^https?:\/\//);
-    }
+    const openSpy = vi
+      .spyOn(window, 'open')
+      .mockImplementation(() => null as unknown as Window);
+
+    const nav = render(<Navbar {...navbarProps} />);
+    await userEvent.click(within(nav.container).getAllByText(external.name)[0]);
+    expect(openSpy).toHaveBeenCalledWith(
+      external.url,
+      '_blank',
+      'noopener,noreferrer'
+    );
+    nav.unmount();
+
+    openSpy.mockClear();
+
+    const foot = render(<Footer theme="dark" setCurrentPage={vi.fn()} />);
+    await userEvent.click(
+      within(foot.container).getByText(external.footerName ?? external.name)
+    );
+    expect(openSpy).toHaveBeenCalledWith(
+      external.url,
+      '_blank',
+      'noopener,noreferrer'
+    );
+
+    openSpy.mockRestore();
   });
 
   it('테마 토글에 스크린샷 캡처용 testid 가 있음', () => {
