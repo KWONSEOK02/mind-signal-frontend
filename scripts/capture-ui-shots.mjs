@@ -91,7 +91,7 @@ for (const screen of SCREENS) {
         }
         const file = path.join(OUT, `${id}-${theme}-${vp.w}.png`);
         await page.screenshot({ path: file, fullPage: true });
-        console.log(`  ok ${path.basename(file)}`);
+        console.info(`  ok ${path.basename(file)}`);
         ok += 1;
       }
     } catch (err) {
@@ -104,5 +104,5 @@ for (const screen of SCREENS) {
 }
 
 await browser.close();
-console.log(`\n${PHASE}: ${ok}장 생성, 실패 ${failed}건 -> ${OUT}`);
+console.info(`\n${PHASE}: ${ok}장 생성, 실패 ${failed}건 -> ${OUT}`);
 if (ok === 0) process.exit(1);
