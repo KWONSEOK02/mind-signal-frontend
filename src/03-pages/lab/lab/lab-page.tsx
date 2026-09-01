@@ -361,7 +361,7 @@ const LabPage = () => {
   if (!isClient)
     return (
       <div
-        className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
+        className={`min-h-[calc(100vh-80px)] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
       />
     );
 
@@ -500,7 +500,7 @@ const LabPage = () => {
   return (
     //  1. 최상단 main 배경색을 투명하게(transparent) 하거나 테마에 맞게 변경
     <div
-      className={`min-h-screen pt-8 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
+      className={`min-h-[calc(100vh-80px)] pt-8 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
     >
       {/* DUAL_2PC 측정 중 상단 배너 (FE-4) — PLAN L142-145 */}
       <DualSessionBanner

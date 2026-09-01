@@ -95,10 +95,11 @@ const OperatorJoinPage = () => {
   // 토큰 없음 — JWT decode 실패 에러 UI (PLAN L140)
   const isTokenMissing = !token;
 
-  if (!isClient) return <div className="min-h-screen bg-slate-950" />;
+  if (!isClient)
+    return <div className="min-h-[calc(100vh-80px)] bg-slate-950" />;
 
   return (
-    <div className="min-h-screen bg-slate-950 pt-8 pb-12 px-6">
+    <div className="min-h-[calc(100vh-80px)] bg-slate-950 pt-8 pb-12 px-6">
       <div className="max-w-md mx-auto space-y-8">
         <header className="text-center space-y-4">
           <div className="inline-flex p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 mb-2">
