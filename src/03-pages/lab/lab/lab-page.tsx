@@ -24,7 +24,6 @@ import {
 import { DualSessionBanner } from '@/04-widgets/dual-session-banner';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
-import MobileLabView from './ui/mobile-lab-view';
 import { useUI } from '@/app/providers/ui-context'; // 다크 라이트 모드를 위해 임포트 추가
 import {
   useDevModeStore,
@@ -119,6 +118,14 @@ const LabPage = () => {
     window.addEventListener('resize', checkEnvironment);
     return () => window.removeEventListener('resize', checkEnvironment);
   }, [isClient]);
+
+  /**
+   * 모바일 접속은 합류 화면으로 넘김. 기존 안내 전용 뷰가 /join 첫 화면과
+   * 같은 한 문장만 말해 화면 1개와 탭 1회가 낭비됐음 (A6)
+   */
+  useEffect(() => {
+    if (isMobile) router.replace('/join');
+  }, [isMobile, router]);
 
   /**
    * 상태 기반으로 현재 실험 설정 동적 로드함
@@ -366,10 +373,14 @@ const LabPage = () => {
     );
 
   /**
-   * [진입점 검사] 모바일 환경인 경우 실험 참여 유도 뷰로 즉시 전환함
+   * [진입점 검사] 모바일은 위 effect 가 /join 으로 보냄. 전환 사이 빈 화면 유지함
    */
   if (isMobile) {
-    return <MobileLabView />;
+    return (
+      <div
+        className={`min-h-[calc(100vh-80px)] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
+      />
+    );
   }
 
   /**
