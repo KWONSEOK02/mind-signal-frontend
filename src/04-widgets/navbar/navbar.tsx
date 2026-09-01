@@ -127,6 +127,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
           <div className="flex items-center gap-3 ml-2 pl-4 border-l border-white/10">
             <button
+              data-testid="theme-toggle"
               onClick={toggleTheme}
               className="cursor-pointer p-2 rounded-full hover:bg-white/5 transition-colors mr-1"
             >
@@ -236,6 +237,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
             <div className="flex flex-col gap-5">
               <button
+                data-testid="theme-toggle-mobile"
                 onClick={() => {
                   toggleTheme();
                   setIsMobileMenuOpen(false);
