@@ -161,7 +161,7 @@ const Intro: React.FC<IntroProps> = ({ theme }) => {
                   {item.step}
                 </span>
                 <h4
-                  className={`text-lg font-black whitespace-nowrap tracking-tight ${
+                  className={`text-lg font-black tracking-tight ${
                     isDark ? 'text-white' : 'text-slate-900'
                   }`}
                 >

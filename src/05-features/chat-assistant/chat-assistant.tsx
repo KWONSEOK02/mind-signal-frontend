@@ -17,7 +17,8 @@ interface ChatMessage {
 const ChatAssistant: React.FC<{
   theme: 'light' | 'dark';
   groupId?: string;
-}> = ({ groupId }) => {
+}> = ({ theme, groupId }) => {
+  const isDark = theme === 'dark';
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -110,7 +111,13 @@ const ChatAssistant: React.FC<{
         className={`flex gap-2 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
       >
         <div
-          className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-slate-400'}`}
+          className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs ${
+            msg.role === 'user'
+              ? 'bg-indigo-600 text-white'
+              : isDark
+                ? 'bg-white/10 text-slate-400'
+                : 'bg-slate-100 text-slate-500'
+          }`}
         >
           {msg.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
         </div>
@@ -118,7 +125,9 @@ const ChatAssistant: React.FC<{
           className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
             msg.role === 'user'
               ? 'bg-indigo-600 text-white rounded-tr-none'
-              : 'border border-white/5 text-slate-300 rounded-tl-none'
+              : isDark
+                ? 'border border-white/5 text-slate-300 rounded-tl-none'
+                : 'border border-slate-200 text-slate-700 rounded-tl-none'
           }`}
         >
           {msg.text}
@@ -137,8 +146,16 @@ const ChatAssistant: React.FC<{
 
   /** 문의하기 폼 렌더링함 */
   const renderInquiryForm = () => (
-    <div className="mx-4 mb-3 p-4 rounded-2xl border border-white/10 bg-white/5 space-y-3">
-      <div className="flex items-center gap-2 text-slate-300 text-sm font-medium">
+    <div
+      className={`mx-4 mb-3 p-4 rounded-2xl border space-y-3 ${
+        isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50'
+      }`}
+    >
+      <div
+        className={`flex items-center gap-2 text-sm font-medium ${
+          isDark ? 'text-slate-300' : 'text-slate-600'
+        }`}
+      >
         <Mail size={14} />
         <span>담당자에게 문의하기</span>
       </div>
@@ -147,14 +164,22 @@ const ChatAssistant: React.FC<{
         value={inquiryEmail}
         onChange={(e) => setInquiryEmail(e.target.value)}
         placeholder="이메일 주소"
-        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition-all"
+        className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition-all ${
+          isDark
+            ? 'bg-white/5 border-white/10 text-white'
+            : 'bg-white border-slate-200 text-slate-900'
+        }`}
       />
       <textarea
         value={inquiryMessage}
         onChange={(e) => setInquiryMessage(e.target.value)}
         placeholder="문의 내용을 입력하세요"
         rows={3}
-        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition-all resize-none"
+        className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition-all resize-none ${
+          isDark
+            ? 'bg-white/5 border-white/10 text-white'
+            : 'bg-white border-slate-200 text-slate-900'
+        }`}
       />
       <button
         onClick={handleInquiry}
@@ -180,7 +205,13 @@ const ChatAssistant: React.FC<{
   return (
     <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100]">
       {isOpen ? (
-        <div className="w-[calc(100vw-2rem)] sm:w-[380px] h-[70vh] sm:h-[550px] bg-gray-900 rounded-4xl border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
+        <div
+          className={`w-[calc(100vw-2rem)] sm:w-[380px] h-[70vh] sm:h-[550px] rounded-4xl border shadow-2xl ${
+            isDark
+              ? 'bg-slate-900 border-white/10'
+              : 'bg-white border-slate-200'
+          } flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300`}
+        >
           <div className="p-6 bg-indigo-600 flex items-center justify-between text-white">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -212,7 +243,9 @@ const ChatAssistant: React.FC<{
 
           {showInquiry ? renderInquiryForm() : null}
 
-          <div className="p-4 border-t border-white/5">
+          <div
+            className={`p-4 border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}
+          >
             <div className="relative">
               <input
                 type="text"
@@ -220,7 +253,11 @@ const ChatAssistant: React.FC<{
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="무엇이든 물어보세요..."
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:border-indigo-500 transition-all pr-12"
+                className={`w-full border rounded-2xl px-6 py-4 text-sm focus:outline-none focus:border-indigo-500 transition-all pr-12 ${
+                  isDark
+                    ? 'bg-white/5 border-white/10 text-white'
+                    : 'bg-slate-50 border-slate-200 text-slate-900'
+                }`}
               />
               <button
                 onClick={handleSend}
@@ -240,7 +277,11 @@ const ChatAssistant: React.FC<{
             size={28}
             className="group-hover:rotate-12 transition-transform"
           />
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full animate-pulse" />
+          <div
+            className={`absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 border-2 rounded-full animate-pulse ${
+              isDark ? 'border-slate-900' : 'border-white'
+            }`}
+          />
         </button>
       )}
     </div>
