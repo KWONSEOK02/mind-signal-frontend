@@ -23,7 +23,15 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Geist 는 subsets:['latin'] 이라 한글 글리프가 없다. 라틴만 Geist 가 받고
+     한글은 뒤 폴백으로 넘어간다. Pretendard 는 설치돼 있을 때만 쓰이고,
+     없으면 OS 기본 고딕(macOS · Windows 순)으로 떨어진다. */
+  font-family:
+    var(--font-geist-sans),
+    'Pretendard',
+    'Apple SD Gothic Neo',
+    'Malgun Gothic',
+    sans-serif;
 }
 
 /*스크롤 튕김 차단*/
