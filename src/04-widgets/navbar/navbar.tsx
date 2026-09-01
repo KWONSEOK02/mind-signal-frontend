@@ -11,6 +11,11 @@ import {
   X,
 } from 'lucide-react';
 import { PageType } from '@/07-shared/types';
+import {
+  NAV_ITEMS,
+  GOOGLE_FORM_URL,
+  type NavItem,
+} from '@/07-shared/constants/nav-items';
 
 interface NavbarProps {
   currentPage: PageType;
@@ -42,26 +47,9 @@ const Navbar: React.FC<NavbarProps> = ({
     setIsMobileMenuOpen(false); // 모바일 메뉴 닫기 수행함
   };
 
-  // 기존 navItems에 '작업실' 추가 및 url 속성 정의
-  const navItems: { name: string; id: string; url?: string }[] = [
-    { name: '홈', id: 'home' },
-    { name: '소개', id: 'intro' },
-    { name: '실험실', id: 'lab' },
-    {
-      name: '작업실',
-      id: 'workspace',
-      url: 'http://seyun4047.iptime.org:10209/',
-    }, // 추가된 부분
-    { name: '결과확인', id: 'results' },
-    { name: '시즌 2', id: 'expand' },
-  ];
-  const GOOGLE_FORM_URL = 'https://forms.gle/g1vY9QuH1QjBzNmm9';
+  const navItems = NAV_ITEMS;
 
-  const handleItemClick = (item: {
-    name: string;
-    id: PageType | string;
-    url?: string;
-  }) => {
+  const handleItemClick = (item: NavItem) => {
     if (item.url) {
       window.open(item.url, '_blank', 'noopener,noreferrer');
       setIsMobileMenuOpen(false);
