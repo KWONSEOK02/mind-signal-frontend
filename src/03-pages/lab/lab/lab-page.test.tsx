@@ -21,7 +21,6 @@ vi.mock('@/05-features/sessions/model/use-dual-session', () => ({
 vi.mock('@/05-features/sessions', () => ({
   usePairing: vi.fn(),
   QRGenerator: () => null,
-  OperatorInviteQr: () => null,
   useDualSession: vi.fn(),
   PairingStep: vi.fn(),
   QRScanner: () => null,

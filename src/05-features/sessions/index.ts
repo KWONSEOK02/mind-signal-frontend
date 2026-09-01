@@ -10,4 +10,3 @@ export { default as QRGenerator } from './ui/qr-generator';
 // 클라이언트용 QR 스캔 컴포넌트 내보냄
 export { default as QRScanner } from './ui/qr-scanner';
 // DUAL_2PC 파트너 PC 초대 QR 컴포넌트 내보냄 (Phase 16)
-export { OperatorInviteQr } from './ui/operator-invite-qr.component';
