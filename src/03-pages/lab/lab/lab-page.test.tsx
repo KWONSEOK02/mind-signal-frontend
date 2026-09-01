@@ -47,14 +47,20 @@ vi.mock('@/05-features/signals', () => ({
  * next/navigation mock 수행함 — useSearchParams의 groupId를 테스트에서 제어함 (F2).
  * vi.hoisted로 mock 함수를 끌어올려 factory 내부 참조 안전성 보장함.
  */
-const { mockSearchParamsGet } = vi.hoisted(() => ({
+const { mockSearchParamsGet, mockRouterReplace } = vi.hoisted(() => ({
   mockSearchParamsGet: vi.fn((key: string): string | null => {
     void key;
     return null;
   }),
+  // A6 리다이렉트 단언을 위해 replace 를 공유 mock 으로 끌어올림
+  mockRouterReplace: vi.fn(),
 }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: mockRouterReplace,
+    refresh: vi.fn(),
+  }),
   useSearchParams: () => ({ get: mockSearchParamsGet }),
 }));
 
@@ -1032,5 +1038,66 @@ describe('LabPage 초대 운영자 experimentMode 복원 처리함', () => {
     await waitFor(() => {
       expect(useDualSession).toHaveBeenCalledWith('joined-group', 'DUAL_2PC');
     });
+  });
+});
+
+/**
+ * UI-W001 A6 회귀 — 모바일 접속이 안내 전용 화면(MobileLabView)에 멈춰 있었음.
+ * 그 화면이 /join 첫 화면과 같은 한 문장만 말해 화면 1개와 탭 1회가 낭비됐음.
+ * 수정 전에는 replace 가 호출되지 않아 RED 임.
+ */
+describe('LabPage 모바일 진입 리다이렉트 검증함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'idle',
+      partnerConnected: false,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: null,
+      pairingCode: null,
+      timeLeft: 0,
+      pairedSubjects: [],
+      isAllPaired: false,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'IDLE',
+      subjectIndex: null,
+      sessionId: null,
+    });
+  });
+
+  it('모바일 너비 진입 시 /join 으로 replace 처리됨', async () => {
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 390,
+    });
+
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(mockRouterReplace).toHaveBeenCalledWith('/join');
+    });
+  });
+
+  it('데스크톱 너비 진입 시 리다이렉트하지 않음', async () => {
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 1280,
+    });
+
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(useDualSession).toHaveBeenCalled();
+    });
+    expect(mockRouterReplace).not.toHaveBeenCalled();
   });
 });
