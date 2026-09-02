@@ -63,6 +63,16 @@ const LabPage = () => {
     () => false
   );
 
+  /**
+   * 라우팅 판정. UA 는 세션 중 바뀌지 않으므로 상태 없이 파생값으로 둠
+   *
+   * 화면 너비를 여기 섞으면 운영자가 창을 좁히는 것만으로 측정 도중 대시보드가
+   * 언마운트되어 소켓 구독과 페어링 상태가 소실됨 (FE #78). 너비는 아래 배너
+   * 표시 전용으로 분리함
+   */
+  const isMobileUA =
+    isClient && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   // dev mode 5-tap admin force-pair UI 진입 상태 구독함
   const isDevModeOn = useDevModeStore((s) => s.isDevModeOn);
   const setDevModeOn = useDevModeStore((s) => s.setOn);
@@ -70,8 +80,6 @@ const LabPage = () => {
   // windowMs 2000ms — CI Playwright 5-click 안정성 마진 확보함
   const { increment: incrementTap } = useTapCounter(5, 2000, setDevModeOn);
 
-  // 라우팅용 판정. 최초 진입 시 UA 로만 결정함 (FE #78)
-  const [isMobileUA, setIsMobileUA] = useState(false);
   // 표시용 판정. 좁은 창 안내 배너에만 씀
   const [isNarrowViewport, setIsNarrowViewport] = useState(false);
   const [isQRVisible, setIsQRVisible] = useState(false);
@@ -103,18 +111,6 @@ const LabPage = () => {
       setMode('DUAL_2PC');
     }
   }, [urlGroupId]);
-
-  /**
-   * 라우팅 판정. 최초 진입 시 UA 로 1회만 결정함
-   *
-   * 화면 너비를 여기 섞으면 운영자가 창을 좁히는 것만으로 측정 도중 대시보드가
-   * 언마운트되어 소켓 구독과 페어링 상태가 소실됨 (FE #78). 너비는 아래 배너
-   * 표시 전용으로 분리함
-   */
-  useEffect(() => {
-    if (!isClient) return;
-    setIsMobileUA(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
-  }, [isClient]);
 
   /**
    * 표시 판정. 좁은 창에 안내 배너를 띄우기 위한 값이라 resize 를 구독하되
