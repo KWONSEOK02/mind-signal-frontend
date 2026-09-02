@@ -8,7 +8,7 @@
  *   - token 없음 → 에러 UI 표시 + 재발급 요청 버튼 표시 (합류 버튼 미표시)
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import OperatorJoinPage from './operator-join-page';
 
@@ -236,6 +236,12 @@ describe('OperatorJoinPage — 토큰 없음 에러 UI 테스트 수행함', () 
     mockRouter.setCurrentUrl('/lab/operator-join');
   });
 
+  // clearAllMocks 는 호출 기록만 지우고 구현은 되돌리지 않음. window.alert 스텁을
+  // 원복하려면 restoreAllMocks 여야 함
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('token 없을 때 합류하기 버튼 미표시 처리됨', () => {
     render(<OperatorJoinPage />);
 
@@ -263,6 +269,5 @@ describe('OperatorJoinPage — 토큰 없음 에러 UI 테스트 수행함', () 
     fireEvent.click(reissueBtn);
 
     expect(alertSpy).toHaveBeenCalledOnce();
-    alertSpy.mockRestore();
   });
 });
