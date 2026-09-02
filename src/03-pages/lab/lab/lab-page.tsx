@@ -8,6 +8,7 @@ import React, {
   useRef,
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { OperatorStreamHealthBanner, useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
@@ -524,7 +525,7 @@ const LabPage = () => {
         좁은 창 안내 (FE #78). 리다이렉트하지 않고 대시보드를 그대로 두므로
         측정 중 창 크기를 바꿔도 세션이 끊기지 않음
       */}
-      {isNarrowViewport && (
+      {isNarrowViewport ? (
         <div
           data-testid="desktop-only-notice"
           className={`max-w-[1600px] mx-auto mb-6 rounded-2xl border px-5 py-4 text-sm ${
@@ -536,13 +537,16 @@ const LabPage = () => {
           <p className="font-bold">운영자 대시보드는 데스크톱 전용입니다.</p>
           <p className="mt-1">
             창을 넓히면 정상 배치로 돌아옵니다. 실험에 참여하려면{' '}
-            <a href="/join" className="underline font-bold">
+            <Link
+              href="/join"
+              className="underline font-bold focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
               합류 화면
-            </a>
+            </Link>
             으로 이동하세요.
           </p>
         </div>
-      )}
+      ) : null}
 
       {/* DUAL_2PC 측정 중 상단 배너 (FE-4) — PLAN L142-145 */}
       <DualSessionBanner

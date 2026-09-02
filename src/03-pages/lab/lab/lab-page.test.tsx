@@ -1139,6 +1139,22 @@ describe('LabPage 모바일 진입 리다이렉트 검증함', () => {
   });
 
   /**
+   * 배너의 합류 경로는 버튼이 아니라 링크여야 함. 새 탭 열기와 주소 복사가
+   * 이 자리의 실사용 시나리오라 링크 시맨틱을 잃으면 안 됨 (FE #78 교차검토)
+   */
+  it('안내 배너의 합류 경로가 링크 시맨틱을 유지함', async () => {
+    setViewportWidth(600);
+
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('desktop-only-notice')).toBeInTheDocument();
+    });
+    const joinLink = screen.getByRole('link', { name: '합류 화면' });
+    expect(joinLink).toHaveAttribute('href', '/join');
+  });
+
+  /**
    * FE #78 회귀 — 측정 세션 도중 resize 로 대시보드가 언마운트되면 소켓 구독과
    * 페어링 상태가 함께 소실됨. resize 는 배너 표시만 갱신해야 함
    */
