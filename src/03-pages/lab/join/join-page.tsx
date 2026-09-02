@@ -129,10 +129,11 @@ const JoinPage = () => {
     }
   };
 
-  if (!isClient) return <div className="min-h-screen bg-slate-950" />;
+  if (!isClient)
+    return <div className="min-h-[calc(100vh-80px)] bg-slate-950" />;
 
   return (
-    <main className="min-h-screen bg-slate-950 pt-24 pb-12 px-6">
+    <div className="min-h-[calc(100vh-80px)] bg-slate-950 pt-8 pb-12 px-6">
       <div className="max-w-md mx-auto space-y-8">
         <header className="text-center space-y-4">
           <div className="inline-flex p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 mb-2">
@@ -155,7 +156,7 @@ const JoinPage = () => {
               {(status === SESSION_STATUS.EXPIRED ||
                 status === SESSION_STATUS.ERROR) && (
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
                     <AlertCircle size={20} className="shrink-0 mt-0.5" />
                     <p className="text-sm font-medium">
                       {status === SESSION_STATUS.EXPIRED
@@ -177,7 +178,7 @@ const JoinPage = () => {
               {!isScannerOpen ? (
                 <button
                   onClick={() => setIsScannerOpen(true)}
-                  className="w-full py-10 rounded-[2.5rem] bg-white/[0.02] border border-white/10 flex flex-col items-center gap-4 hover:bg-white/[0.04] transition-all group"
+                  className="w-full py-10 rounded-5xl bg-white/[0.02] border border-white/10 flex flex-col items-center gap-4 hover:bg-white/[0.04] transition-all group"
                 >
                   <div className="p-4 rounded-full bg-indigo-500/20 text-indigo-400 group-hover:scale-110 transition-transform duration-500">
                     <LinkIcon size={24} />
@@ -197,7 +198,7 @@ const JoinPage = () => {
             </div>
           ) : (
             <div className="space-y-6 animate-in zoom-in duration-500">
-              <div className="p-8 rounded-[2.5rem] bg-indigo-600 border border-indigo-400 shadow-2xl shadow-indigo-500/20 text-white relative overflow-hidden">
+              <div className="p-8 rounded-5xl bg-indigo-600 border border-indigo-400 shadow-2xl shadow-indigo-500/20 text-white relative overflow-hidden">
                 <CheckCircle2
                   className="absolute -right-4 -top-4 text-white/10"
                   size={120}
@@ -321,7 +322,7 @@ const JoinPage = () => {
           </div>
         </footer>
       </div>
-    </main>
+    </div>
   );
 };
 

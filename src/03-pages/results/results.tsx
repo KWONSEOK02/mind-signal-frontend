@@ -431,7 +431,7 @@ const Results: React.FC<ResultsProps> = ({
         <div className="flex gap-3">
           <button
             onClick={handleShare}
-            className={`p-4 glass border rounded-2xl transition-all cursor-pointer ${isDark ? 'border-white/10 text-slate-400 hover:text-white' : 'border-indigo-100 text-slate-500 hover:text-indigo-600'}`}
+            className={`p-4 border rounded-2xl transition-all cursor-pointer ${isDark ? 'border-white/10 text-slate-400 hover:text-white' : 'border-indigo-100 text-slate-500 hover:text-indigo-600'}`}
           >
             <Share2 size={20} />
           </button>
@@ -478,7 +478,7 @@ const Results: React.FC<ResultsProps> = ({
 
           {analysisData.metricsMean ? (
             <div
-              className={`glass p-10 rounded-[40px] border space-y-6 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
+              className={`p-10 rounded-[40px] border space-y-6 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
             >
               <h4
                 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}
@@ -514,7 +514,7 @@ const Results: React.FC<ResultsProps> = ({
 
           {analysisData.wavesMean ? (
             <div
-              className={`glass p-10 rounded-[40px] border space-y-6 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
+              className={`p-10 rounded-[40px] border space-y-6 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
             >
               <h4
                 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}
@@ -572,7 +572,7 @@ const Results: React.FC<ResultsProps> = ({
 
           <div className="grid md:grid-cols-2 gap-8">
             <div
-              className={`glass p-10 rounded-[40px] border flex flex-col justify-center space-y-8 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
+              className={`p-10 rounded-[40px] border flex flex-col justify-center space-y-8 ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
             >
               <div className="space-y-6">
                 <div
@@ -633,7 +633,7 @@ const Results: React.FC<ResultsProps> = ({
             </div>
 
             <div
-              className={`glass p-12 rounded-[40px] border flex flex-col items-center justify-center text-center relative overflow-hidden ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
+              className={`p-12 rounded-[40px] border flex flex-col items-center justify-center text-center relative overflow-hidden ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
             >
               <div className="relative mb-8 p-6 flex items-center justify-center">
                 <svg
@@ -691,7 +691,7 @@ const Results: React.FC<ResultsProps> = ({
         </div>
 
         <div
-          className={`glass p-10 md:p-16 rounded-[50px] border overflow-hidden ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
+          className={`p-10 md:p-16 rounded-[50px] border overflow-hidden ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
         >
           <div className="grid md:grid-cols-1 gap-12 items-start">
             <div className="space-y-10">
@@ -719,7 +719,7 @@ const Results: React.FC<ResultsProps> = ({
       <section className="flex justify-center pt-20 pb-10">
         <button
           onClick={() => setCurrentPage('home')} // 실제로 사용하여 경고 해결
-          className={`group px-10 py-5 glass border rounded-3xl font-black text-lg flex items-center gap-3 cursor-pointer transition-all duration-300 ${
+          className={`group px-10 py-5 border rounded-3xl font-black text-lg flex items-center gap-3 cursor-pointer transition-all duration-300 ${
             isDark
               ? 'border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-transparent'
               : 'border-indigo-100 text-slate-700 hover:bg-indigo-100 hover:border-transparent hover:shadow-lg shadow-indigo-500/5'

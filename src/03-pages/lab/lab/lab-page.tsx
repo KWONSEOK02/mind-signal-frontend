@@ -8,6 +8,7 @@ import React, {
   useRef,
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { OperatorStreamHealthBanner, useSignal } from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
@@ -24,7 +25,6 @@ import {
 import { DualSessionBanner } from '@/04-widgets/dual-session-banner';
 import { SignalComparisonWidget } from '@/04-widgets';
 import { EXPERIMENT_CONFIG } from '@/07-shared';
-import MobileLabView from './ui/mobile-lab-view';
 import { useUI } from '@/app/providers/ui-context'; // 다크 라이트 모드를 위해 임포트 추가
 import {
   useDevModeStore,
@@ -64,6 +64,16 @@ const LabPage = () => {
     () => false
   );
 
+  /**
+   * 라우팅 판정. UA 는 세션 중 바뀌지 않으므로 상태 없이 파생값으로 둠
+   *
+   * 화면 너비를 여기 섞으면 운영자가 창을 좁히는 것만으로 측정 도중 대시보드가
+   * 언마운트되어 소켓 구독과 페어링 상태가 소실됨 (FE #78). 너비는 아래 배너
+   * 표시 전용으로 분리함
+   */
+  const isMobileUA =
+    isClient && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   // dev mode 5-tap admin force-pair UI 진입 상태 구독함
   const isDevModeOn = useDevModeStore((s) => s.isDevModeOn);
   const setDevModeOn = useDevModeStore((s) => s.setOn);
@@ -71,7 +81,8 @@ const LabPage = () => {
   // windowMs 2000ms — CI Playwright 5-click 안정성 마진 확보함
   const { increment: incrementTap } = useTapCounter(5, 2000, setDevModeOn);
 
-  const [isMobile, setIsMobile] = useState(false);
+  // 표시용 판정. 좁은 창 안내 배너에만 씀
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
   const [isQRVisible, setIsQRVisible] = useState(false);
   // 모드 상태 및 드롭다운 토글 상태 관리 추가함 (DUAL_2PC 추가)
   const [mode, setMode] = useState<'BTI' | 'DUAL_2PC'>('DUAL_2PC');
@@ -103,22 +114,26 @@ const LabPage = () => {
   }, [urlGroupId]);
 
   /**
-   * 브라우저 환경 및 화면 너비를 감지하여 모바일 모드 여부 결정함
-   * Window Resize 이벤트를 구독하여 실시간 대응함
+   * 표시 판정. 좁은 창에 안내 배너를 띄우기 위한 값이라 resize 를 구독하되
+   * 라우팅에는 쓰지 않음
    */
   useEffect(() => {
     if (!isClient) return;
 
-    const checkEnvironment = () => {
-      const isSmallScreen = window.innerWidth < 768;
-      const isMobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      setIsMobile(isSmallScreen || isMobileUA);
-    };
+    const checkViewport = () => setIsNarrowViewport(window.innerWidth < 768);
 
-    checkEnvironment();
-    window.addEventListener('resize', checkEnvironment);
-    return () => window.removeEventListener('resize', checkEnvironment);
+    checkViewport();
+    window.addEventListener('resize', checkViewport);
+    return () => window.removeEventListener('resize', checkViewport);
   }, [isClient]);
+
+  /**
+   * 모바일 접속은 합류 화면으로 넘김. 기존 안내 전용 뷰가 /join 첫 화면과
+   * 같은 한 문장만 말해 화면 1개와 탭 1회가 낭비됐음 (A6)
+   */
+  useEffect(() => {
+    if (isMobileUA) router.replace('/join');
+  }, [isMobileUA, router]);
 
   /**
    * 상태 기반으로 현재 실험 설정 동적 로드함
@@ -361,15 +376,19 @@ const LabPage = () => {
   if (!isClient)
     return (
       <div
-        className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
+        className={`min-h-[calc(100vh-80px)] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
       />
     );
 
   /**
-   * [진입점 검사] 모바일 환경인 경우 실험 참여 유도 뷰로 즉시 전환함
+   * [진입점 검사] 모바일 UA 는 위 effect 가 /join 으로 보냄. 전환 사이 빈 화면 유지함
    */
-  if (isMobile) {
-    return <MobileLabView />;
+  if (isMobileUA) {
+    return (
+      <div
+        className={`min-h-[calc(100vh-80px)] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
+      />
+    );
   }
 
   /**
@@ -499,9 +518,36 @@ const LabPage = () => {
 
   return (
     //  1. 최상단 main 배경색을 투명하게(transparent) 하거나 테마에 맞게 변경
-    <main
-      className={`min-h-screen pt-24 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
+    <div
+      className={`min-h-[calc(100vh-80px)] pt-8 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
     >
+      {/*
+        좁은 창 안내 (FE #78). 리다이렉트하지 않고 대시보드를 그대로 두므로
+        측정 중 창 크기를 바꿔도 세션이 끊기지 않음
+      */}
+      {isNarrowViewport ? (
+        <div
+          data-testid="desktop-only-notice"
+          className={`max-w-[1600px] mx-auto mb-6 rounded-2xl border px-5 py-4 text-sm ${
+            isDark
+              ? 'border-amber-500/30 bg-amber-500/10 text-amber-200'
+              : 'border-amber-300 bg-amber-50 text-amber-900'
+          }`}
+        >
+          <p className="font-bold">운영자 대시보드는 데스크톱 전용입니다.</p>
+          <p className="mt-1">
+            창을 넓히면 정상 배치로 돌아옵니다. 실험에 참여하려면{' '}
+            <Link
+              href="/join"
+              className="underline font-bold focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              합류 화면
+            </Link>
+            으로 이동하세요.
+          </p>
+        </div>
+      ) : null}
+
       {/* DUAL_2PC 측정 중 상단 배너 (FE-4) — PLAN L142-145 */}
       <DualSessionBanner
         experimentMode={mode}
@@ -613,7 +659,7 @@ const LabPage = () => {
           <section className="animate-in fade-in zoom-in duration-500">
             {/*}  6. QR코드 박스 배경/테두리 변경*/}
             <div
-              className={`p-8 rounded-[2.5rem] border backdrop-blur-sm flex flex-col items-center gap-6 ${
+              className={`p-8 rounded-5xl border backdrop-blur-sm flex flex-col items-center gap-6 ${
                 isDark
                   ? 'bg-indigo-500/5 border-indigo-500/20'
                   : 'bg-white/80 border-indigo-100 shadow-sm'
@@ -661,7 +707,7 @@ const LabPage = () => {
           <div className="lg:col-span-2">
             {/* 7. Live Connection Status 박스 배경/테두리 변경*/}
             <div
-              className={`p-8 rounded-[2rem] border space-y-4 ${
+              className={`p-8 rounded-4xl border space-y-4 ${
                 isDark
                   ? 'bg-white/[0.02] border-white/5'
                   : 'bg-white border-slate-200 shadow-sm'
@@ -723,7 +769,7 @@ const LabPage = () => {
 
           {/*  10. System Phase(우측 하단) 박스 배경/테두리 변경*/}
           <div
-            className={`p-8 rounded-[2rem] border relative overflow-hidden group ${
+            className={`p-8 rounded-4xl border relative overflow-hidden group ${
               isDark
                 ? 'bg-indigo-500/10 border-indigo-500/20'
                 : 'bg-indigo-50 border-indigo-100'
@@ -784,7 +830,7 @@ const LabPage = () => {
         pairingToken={pairingCode}
         theme={isDark ? 'dark' : 'light'}
       />
-    </main>
+    </div>
   );
 };
 

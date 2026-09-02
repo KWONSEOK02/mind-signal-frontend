@@ -10,7 +10,7 @@ import LabPage from './lab-page';
  *
  * LabPage는 다음 진입점 분기를 포함함:
  * - SSR 하이드레이션 전: 빈 슬레이트 배경만 렌더링함
- * - 모바일 환경: MobileLabView로 즉시 전환함
+ * - 모바일 환경: /join 으로 리다이렉트함 (A6)
  * - 데스크톱 환경: 실험 모드(DUAL_2PC / BTI) 기반 운영자 대시보드 렌더링함
  *
  * 페어링 흐름:

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Activity, Mail } from 'lucide-react';
 import { PageType } from '@/07-shared/types';
+import { NAV_ITEMS } from '@/07-shared/constants/nav-items';
 
 interface FooterProps {
   theme: 'light' | 'dark';
@@ -15,18 +16,7 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' }); // 스크롤을 맨 위로 부드럽게
   };
 
-  const sitemaps: { name: string; id: string; url?: string }[] = [
-    { name: '홈', id: 'home' },
-    { name: '프로젝트 소개', id: 'intro' },
-    { name: '실험실', id: 'lab' },
-    {
-      name: '작업실',
-      id: 'workspace',
-      url: 'http://seyun4047.iptime.org:10209/',
-    }, // 추가된 부분
-    { name: '결과확인', id: 'results' },
-    { name: '시즌 2', id: 'expand' },
-  ];
+  const sitemaps = NAV_ITEMS;
 
   return (
     <footer
@@ -92,7 +82,7 @@ const Footer: React.FC<FooterProps> = ({ theme, setCurrentPage }) => {
                     }}
                     className="cursor-pointer hover:text-indigo-500 transition-colors"
                   >
-                    {item.name}
+                    {item.footerName ?? item.name}
                   </button>
                 </li>
               ))}

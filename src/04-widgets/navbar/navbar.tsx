@@ -11,6 +11,11 @@ import {
   X,
 } from 'lucide-react';
 import { PageType } from '@/07-shared/types';
+import {
+  NAV_ITEMS,
+  GOOGLE_FORM_URL,
+  type NavItem,
+} from '@/07-shared/constants/nav-items';
 
 interface NavbarProps {
   currentPage: PageType;
@@ -42,26 +47,9 @@ const Navbar: React.FC<NavbarProps> = ({
     setIsMobileMenuOpen(false); // 모바일 메뉴 닫기 수행함
   };
 
-  // 기존 navItems에 '작업실' 추가 및 url 속성 정의
-  const navItems: { name: string; id: string; url?: string }[] = [
-    { name: '홈', id: 'home' },
-    { name: '소개', id: 'intro' },
-    { name: '실험실', id: 'lab' },
-    {
-      name: '작업실',
-      id: 'workspace',
-      url: 'http://seyun4047.iptime.org:10209/',
-    }, // 추가된 부분
-    { name: '결과확인', id: 'results' },
-    { name: '시즌 2', id: 'expand' },
-  ];
-  const GOOGLE_FORM_URL = 'https://forms.gle/g1vY9QuH1QjBzNmm9';
+  const navItems = NAV_ITEMS;
 
-  const handleItemClick = (item: {
-    name: string;
-    id: PageType | string;
-    url?: string;
-  }) => {
+  const handleItemClick = (item: NavItem) => {
     if (item.url) {
       window.open(item.url, '_blank', 'noopener,noreferrer');
       setIsMobileMenuOpen(false);
@@ -93,7 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-4 cursor-pointer group"
           onClick={() => handleNavClick('home')}
         >
-          <div className="w-12 h-12 bg-slate-900 rounded-[14px] flex items-center justify-center shadow-inner relative overflow-hidden border border-white/5">
+          <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center shadow-inner relative overflow-hidden border border-white/5">
             <div className="absolute inset-0 bg-indigo-500/5 blur-xl"></div>
             <Activity
               size={24}
@@ -127,6 +115,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
           <div className="flex items-center gap-3 ml-2 pl-4 border-l border-white/10">
             <button
+              data-testid="theme-toggle"
               onClick={toggleTheme}
               className="cursor-pointer p-2 rounded-full hover:bg-white/5 transition-colors mr-1"
             >
@@ -236,6 +225,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
             <div className="flex flex-col gap-5">
               <button
+                data-testid="theme-toggle-mobile"
                 onClick={() => {
                   toggleTheme();
                   setIsMobileMenuOpen(false);

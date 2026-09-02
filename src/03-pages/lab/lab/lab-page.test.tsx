@@ -21,7 +21,6 @@ vi.mock('@/05-features/sessions/model/use-dual-session', () => ({
 vi.mock('@/05-features/sessions', () => ({
   usePairing: vi.fn(),
   QRGenerator: () => null,
-  OperatorInviteQr: () => null,
   useDualSession: vi.fn(),
   PairingStep: vi.fn(),
   QRScanner: () => null,
@@ -48,14 +47,20 @@ vi.mock('@/05-features/signals', () => ({
  * next/navigation mock 수행함 — useSearchParams의 groupId를 테스트에서 제어함 (F2).
  * vi.hoisted로 mock 함수를 끌어올려 factory 내부 참조 안전성 보장함.
  */
-const { mockSearchParamsGet } = vi.hoisted(() => ({
+const { mockSearchParamsGet, mockRouterReplace } = vi.hoisted(() => ({
   mockSearchParamsGet: vi.fn((key: string): string | null => {
     void key;
     return null;
   }),
+  // A6 리다이렉트 단언을 위해 replace 를 공유 mock 으로 끌어올림
+  mockRouterReplace: vi.fn(),
 }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: mockRouterReplace,
+    refresh: vi.fn(),
+  }),
   useSearchParams: () => ({ get: mockSearchParamsGet }),
 }));
 
@@ -1033,5 +1038,139 @@ describe('LabPage 초대 운영자 experimentMode 복원 처리함', () => {
     await waitFor(() => {
       expect(useDualSession).toHaveBeenCalledWith('joined-group', 'DUAL_2PC');
     });
+  });
+});
+
+/**
+ * [Helper] navigator.userAgent 교체 수행함. UI-W002 에서 라우팅 판정이
+ * 화면 폭이 아니라 UA 로 바뀌었으므로 테스트도 UA 를 제어함
+ */
+const setUserAgent = (value: string) => {
+  Object.defineProperty(window.navigator, 'userAgent', {
+    writable: true,
+    configurable: true,
+    value,
+  });
+};
+
+const DESKTOP_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const MOBILE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+
+const setViewportWidth = (value: number) => {
+  Object.defineProperty(window, 'innerWidth', {
+    writable: true,
+    configurable: true,
+    value,
+  });
+};
+
+/**
+ * UI-W001 A6 회귀 — 모바일 접속이 안내 전용 화면(MobileLabView)에 멈춰 있었음.
+ * 그 화면이 /join 첫 화면과 같은 한 문장만 말해 화면 1개와 탭 1회가 낭비됐음.
+ *
+ * UI-W002 (FE #78) 로 판정 기준이 바뀜. 라우팅은 모바일 UA 단독으로 하고
+ * 화면 폭은 안내 배너 표시에만 씀. 운영자가 창을 좁히는 것만으로 측정 도중
+ * 대시보드에서 쫓겨나던 결함을 없앰
+ */
+describe('LabPage 모바일 진입 리다이렉트 검증함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setUserAgent(DESKTOP_UA);
+    setViewportWidth(1280);
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'idle',
+      partnerConnected: false,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: null,
+      pairingCode: null,
+      timeLeft: 0,
+      pairedSubjects: [],
+      isAllPaired: false,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'IDLE',
+      subjectIndex: null,
+      sessionId: null,
+    });
+  });
+
+  it('모바일 UA 진입 시 /join 으로 replace 처리됨', async () => {
+    setUserAgent(MOBILE_UA);
+    setViewportWidth(390);
+
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(mockRouterReplace).toHaveBeenCalledWith('/join');
+    });
+  });
+
+  it('데스크톱 진입 시 리다이렉트하지 않음', async () => {
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(useDualSession).toHaveBeenCalled();
+    });
+    expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+
+  /**
+   * FE #78 회귀 — 좁은 창은 라우팅 사유가 아님. 운영자가 창을 반분할로 놓거나
+   * DevTools 모바일 에뮬레이션을 켜는 것만으로 768px 미만이 됨
+   */
+  it('데스크톱 UA 는 창이 좁아도 리다이렉트하지 않고 안내 배너를 렌더함', async () => {
+    setViewportWidth(600);
+
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(useDualSession).toHaveBeenCalled();
+    });
+    expect(mockRouterReplace).not.toHaveBeenCalled();
+    expect(screen.getByTestId('desktop-only-notice')).toBeInTheDocument();
+  });
+
+  /**
+   * 배너의 합류 경로는 버튼이 아니라 링크여야 함. 새 탭 열기와 주소 복사가
+   * 이 자리의 실사용 시나리오라 링크 시맨틱을 잃으면 안 됨 (FE #78 교차검토)
+   */
+  it('안내 배너의 합류 경로가 링크 시맨틱을 유지함', async () => {
+    setViewportWidth(600);
+
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('desktop-only-notice')).toBeInTheDocument();
+    });
+    const joinLink = screen.getByRole('link', { name: '합류 화면' });
+    expect(joinLink).toHaveAttribute('href', '/join');
+  });
+
+  /**
+   * FE #78 회귀 — 측정 세션 도중 resize 로 대시보드가 언마운트되면 소켓 구독과
+   * 페어링 상태가 함께 소실됨. resize 는 배너 표시만 갱신해야 함
+   */
+  it('렌더 뒤 창을 좁혀도 리다이렉트하지 않음', async () => {
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(useDualSession).toHaveBeenCalled();
+    });
+
+    setViewportWidth(600);
+    window.dispatchEvent(new Event('resize'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('desktop-only-notice')).toBeInTheDocument();
+    });
+    expect(mockRouterReplace).not.toHaveBeenCalled();
   });
 });

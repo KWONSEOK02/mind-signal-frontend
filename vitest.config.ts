@@ -22,6 +22,9 @@ export default defineConfig({
       ],
       provider: playwright(),
       headless: true,
+      // ponytail: 기본 포트 63315 가 Windows 예약 대역(netsh excludedportrange)에 상시 포함돼
+      // EACCES 로 죽는다. 동적 대역(49152~) 밖 고정 포트로 회피. 다른 OS 에도 무해.
+      api: { port: 5199, strictPort: true },
     },
     globals: true,
     exclude: ['e2e/**', 'node_modules/**'],

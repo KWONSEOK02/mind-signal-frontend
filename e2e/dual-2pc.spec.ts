@@ -164,17 +164,46 @@ test.describe('Scenario 1: DUAL_2PC Happy Path', () => {
 
         // Step 4a [T17-8: RC-4]: mock DE 2개에 runtime groupId 주입 → /register-dual trigger
         // groupId가 확보된 경우에만 주입 (mock DE 기동 환경 전제)
+        //
+        // X-Engine-Secret은 실 DE(server/routes/control.py)가 요구하는 계약이고
+        // mock DE도 동일하게 요구함(OPS-W010). 헤더가 없으면 422/403이 나는데
+        // Playwright의 request.post는 4xx에 reject하지 않으므로, 아래에서
+        // 응답 상태를 직접 검사해 드러냄. mock DE 미기동(연결 거부)만 허용함.
+        //
+        // 행동 변화 주의: mock DE는 떠 있는데 ENGINE_SECRET_KEY만 미설정이면
+        // 이제 경고 뒤 하드 실패한다. 이전에는 조용히 통과했음.
+        const engineSecret = process.env.ENGINE_SECRET_KEY ?? '';
         if (groupId) {
-          await Promise.all([
-            pageA.request.post('http://localhost:8001/control/assign-group', {
-              data: { group_id: groupId },
-            }),
-            pageA.request.post('http://localhost:8002/control/assign-group', {
-              data: { group_id: groupId },
-            }),
-          ]).catch(() => {
-            // mock DE 미기동 환경에서는 실패 허용 (BE 없는 환경 대비)
-          });
+          if (!engineSecret) {
+            console.warn(
+              '[e2e] ENGINE_SECRET_KEY 미설정 — mock DE groupId 주입이 실패함. ' +
+                'mock DE의 --engine-secret과 같은 값을 넣을 것'
+            );
+          }
+          const assignOptions = {
+            data: { group_id: groupId },
+            headers: { 'X-Engine-Secret': engineSecret },
+          };
+          const assignResults = await Promise.allSettled([
+            pageA.request.post(
+              'http://localhost:8001/control/assign-group',
+              assignOptions
+            ),
+            pageA.request.post(
+              'http://localhost:8002/control/assign-group',
+              assignOptions
+            ),
+          ]);
+          for (const result of assignResults) {
+            // mock DE 미기동은 허용함 (BE 없는 환경 대비). 연결 거부는 rejected 로 옴
+            if (result.status === 'rejected') continue;
+            // 기동은 했는데 거부당한 것은 시크릿 불일치나 계약 위반이라 드러냄
+            const body = await result.value.text();
+            expect(
+              result.value.ok(),
+              `assign-group 실패 status=${result.value.status()} body=${body}`
+            ).toBe(true);
+          }
         }
 
         // Step 4: node_B — /lab/operator-join?token={token}&groupId={groupId} 진입

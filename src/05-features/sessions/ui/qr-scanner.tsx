@@ -126,7 +126,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
         ) : (
           /* 에러 상황 피드백 섹션 정의함 */
           <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
-            <AlertCircle size={48} className="text-red-500" />
+            <AlertCircle size={48} className="text-rose-500" />
             <p className="text-white text-sm font-medium">{error}</p>
             <button
               onClick={() => window.location.reload()}

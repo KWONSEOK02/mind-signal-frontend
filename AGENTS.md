@@ -34,6 +34,7 @@ EEG 실험 플랫폼 프론트엔드. Next.js 16 App Router + React 19 + TypeScr
 - `useMemo` / `useCallback` / `memo()` 수동 추가 금지 — React Compiler(Forget)가 자동 처리함. 수동 래핑은 Compiler 분석을 방해함.
 - 슬라이스 간 barrel 우회 deep import 금지 — 항상 `index.ts` 경유.
 - 조건부 렌더링은 `&&` 대신 삼항 연산자 사용(falsy `0` 렌더링 방지).
+- 내부 페이지 이동은 `next/link` 사용 — 평문 `<a href>`는 문서 전체를 다시 불러와 소켓과 상태가 날아가고, 버튼 더하기 `router.push`는 새 탭 열기·주소 복사·스크린리더 링크 인식을 잃음. **navbar의 버튼은 URL 이동이 아니라 `setCurrentPage` 상태 전환이라 링크의 선례가 아님**(FE #78에서 이 오독으로 버튼을 골랐다가 되돌림).
 
 상세: `.agents/rules/api-patterns.md`, `.agents/rules/react-components.md`.
 

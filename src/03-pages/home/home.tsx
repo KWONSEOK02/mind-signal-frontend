@@ -154,7 +154,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
       <div className="relative z-10 w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-y-4 lg:gap-y-0">
         <div className="order-1 lg:col-start-1 lg:row-start-1 flex flex-col items-center lg:items-start lg:pl-[100px] xl:pl-[150px] mb-4 lg:mb-12 w-full text-center lg:text-left">
           <div
-            className={`inline-flex items-center gap-3 px-6 py-3 rounded-full glass border cursor-default select-none ${
+            className={`inline-flex items-center gap-3 px-6 py-3 rounded-full border cursor-default select-none ${
               isDark
                 ? 'border-white/10 bg-white/5'
                 : 'border-indigo-100 bg-indigo-50/50'
@@ -223,7 +223,7 @@ const Home: React.FC<HomeProps> = ({ setCurrentPage, theme }) => {
         <div className="order-5 lg:col-start-1 lg:row-start-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 sm:gap-6 lg:pl-[100px] xl:pl-[150px] w-full sm:w-auto">
           <button
             onClick={() => handleNavigation('intro')}
-            className={`group w-full sm:w-auto px-8 py-4 glass border rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 ${
+            className={`group w-full sm:w-auto px-8 py-4 border rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 ${
               isDark
                 ? 'border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-transparent'
                 : 'border-indigo-100 text-slate-700 hover:bg-indigo-100 hover:border-transparent hover:shadow-lg shadow-indigo-500/5'
