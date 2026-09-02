@@ -3,7 +3,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NAV_ITEMS } from '@/07-shared/constants/nav-items';
 import Navbar from './navbar';
 import Footer from '../footer/footer';
@@ -24,6 +24,12 @@ const navbarProps = {
  * 수정 전에는 footer 가 자기 배열을 써서 NAV_ITEMS 와 무관하게 렌더됐음.
  */
 describe('내비 항목 단일 출처 회귀 검증함', () => {
+  // 테스트 본문 끝의 mockRestore 는 assertion 실패 시 도달하지 못해 spy 가 다음
+  // 테스트로 샘. 레포 관행대로 afterEach 로 원복함
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('navbar 가 NAV_ITEMS 의 name 을 그대로 렌더함', () => {
     render(<Navbar {...navbarProps} />);
 
@@ -73,8 +79,6 @@ describe('내비 항목 단일 출처 회귀 검증함', () => {
       '_blank',
       'noopener,noreferrer'
     );
-
-    openSpy.mockRestore();
   });
 
   it('테마 토글에 스크린샷 캡처용 testid 가 있음', () => {
