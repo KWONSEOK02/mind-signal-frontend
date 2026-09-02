@@ -70,7 +70,10 @@ const LabPage = () => {
   // windowMs 2000ms — CI Playwright 5-click 안정성 마진 확보함
   const { increment: incrementTap } = useTapCounter(5, 2000, setDevModeOn);
 
-  const [isMobile, setIsMobile] = useState(false);
+  // 라우팅용 판정. 최초 진입 시 UA 로만 결정함 (FE #78)
+  const [isMobileUA, setIsMobileUA] = useState(false);
+  // 표시용 판정. 좁은 창 안내 배너에만 씀
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
   const [isQRVisible, setIsQRVisible] = useState(false);
   // 모드 상태 및 드롭다운 토글 상태 관리 추가함 (DUAL_2PC 추가)
   const [mode, setMode] = useState<'BTI' | 'DUAL_2PC'>('DUAL_2PC');
@@ -102,21 +105,29 @@ const LabPage = () => {
   }, [urlGroupId]);
 
   /**
-   * 브라우저 환경 및 화면 너비를 감지하여 모바일 모드 여부 결정함
-   * Window Resize 이벤트를 구독하여 실시간 대응함
+   * 라우팅 판정. 최초 진입 시 UA 로 1회만 결정함
+   *
+   * 화면 너비를 여기 섞으면 운영자가 창을 좁히는 것만으로 측정 도중 대시보드가
+   * 언마운트되어 소켓 구독과 페어링 상태가 소실됨 (FE #78). 너비는 아래 배너
+   * 표시 전용으로 분리함
+   */
+  useEffect(() => {
+    if (!isClient) return;
+    setIsMobileUA(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+  }, [isClient]);
+
+  /**
+   * 표시 판정. 좁은 창에 안내 배너를 띄우기 위한 값이라 resize 를 구독하되
+   * 라우팅에는 쓰지 않음
    */
   useEffect(() => {
     if (!isClient) return;
 
-    const checkEnvironment = () => {
-      const isSmallScreen = window.innerWidth < 768;
-      const isMobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      setIsMobile(isSmallScreen || isMobileUA);
-    };
+    const checkViewport = () => setIsNarrowViewport(window.innerWidth < 768);
 
-    checkEnvironment();
-    window.addEventListener('resize', checkEnvironment);
-    return () => window.removeEventListener('resize', checkEnvironment);
+    checkViewport();
+    window.addEventListener('resize', checkViewport);
+    return () => window.removeEventListener('resize', checkViewport);
   }, [isClient]);
 
   /**
@@ -124,8 +135,8 @@ const LabPage = () => {
    * 같은 한 문장만 말해 화면 1개와 탭 1회가 낭비됐음 (A6)
    */
   useEffect(() => {
-    if (isMobile) router.replace('/join');
-  }, [isMobile, router]);
+    if (isMobileUA) router.replace('/join');
+  }, [isMobileUA, router]);
 
   /**
    * 상태 기반으로 현재 실험 설정 동적 로드함
@@ -373,9 +384,9 @@ const LabPage = () => {
     );
 
   /**
-   * [진입점 검사] 모바일은 위 effect 가 /join 으로 보냄. 전환 사이 빈 화면 유지함
+   * [진입점 검사] 모바일 UA 는 위 effect 가 /join 으로 보냄. 전환 사이 빈 화면 유지함
    */
-  if (isMobile) {
+  if (isMobileUA) {
     return (
       <div
         className={`min-h-[calc(100vh-80px)] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}
@@ -513,6 +524,30 @@ const LabPage = () => {
     <div
       className={`min-h-[calc(100vh-80px)] pt-8 pb-12 px-6 transition-colors duration-500 ${isDark ? 'bg-slate-950' : 'bg-transparent'}`}
     >
+      {/*
+        좁은 창 안내 (FE #78). 리다이렉트하지 않고 대시보드를 그대로 두므로
+        측정 중 창 크기를 바꿔도 세션이 끊기지 않음
+      */}
+      {isNarrowViewport && (
+        <div
+          data-testid="desktop-only-notice"
+          className={`max-w-[1600px] mx-auto mb-6 rounded-2xl border px-5 py-4 text-sm ${
+            isDark
+              ? 'border-amber-500/30 bg-amber-500/10 text-amber-200'
+              : 'border-amber-300 bg-amber-50 text-amber-900'
+          }`}
+        >
+          <p className="font-bold">운영자 대시보드는 데스크톱 전용입니다.</p>
+          <p className="mt-1">
+            창을 넓히면 정상 배치로 돌아옵니다. 실험에 참여하려면{' '}
+            <a href="/join" className="underline font-bold">
+              합류 화면
+            </a>
+            으로 이동하세요.
+          </p>
+        </div>
+      )}
+
       {/* DUAL_2PC 측정 중 상단 배너 (FE-4) — PLAN L142-145 */}
       <DualSessionBanner
         experimentMode={mode}
