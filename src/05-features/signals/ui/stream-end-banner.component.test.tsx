@@ -5,10 +5,15 @@ import '@testing-library/jest-dom/vitest';
 import { describe, expect, it } from 'vitest';
 import { StreamEndBanner } from './stream-end-banner.component';
 
-/** 20초 임계를 넘긴 과거 시각 */
-const STALE_AT = Date.now() - 30_000;
-/** 방금 수신한 시각 */
-const FRESH_AT = Date.now();
+/** 20초 임계를 넘긴 과거 시각 — 매 호출 시점 기준으로 계산함 */
+const staleAt = () => Date.now() - 30_000;
+/**
+ * 방금 수신한 시각.
+ *
+ * 모듈 로드 시각으로 고정하면 앞 테스트가 20초 넘게 걸린 실행에서 이 값이
+ * stale 로 넘어가 판정이 뒤집힘 (CodeRabbit PR #83). 호출 시점에 계산함
+ */
+const freshAt = () => Date.now();
 
 const BANNER_TEXT = /DE 자연 종료로 보입니다/;
 
@@ -18,8 +23,8 @@ describe('StreamEndBanner', () => {
       <StreamEndBanner
         enabled
         elapsedSeconds={300}
-        lastSampleAt1={STALE_AT}
-        lastSampleAt2={STALE_AT}
+        lastSampleAt1={staleAt()}
+        lastSampleAt2={staleAt()}
       />
     );
 
@@ -31,8 +36,8 @@ describe('StreamEndBanner', () => {
       <StreamEndBanner
         enabled
         elapsedSeconds={100}
-        lastSampleAt1={STALE_AT}
-        lastSampleAt2={STALE_AT}
+        lastSampleAt1={staleAt()}
+        lastSampleAt2={staleAt()}
       />
     );
 
@@ -44,8 +49,8 @@ describe('StreamEndBanner', () => {
       <StreamEndBanner
         enabled
         elapsedSeconds={300}
-        lastSampleAt1={STALE_AT}
-        lastSampleAt2={FRESH_AT}
+        lastSampleAt1={staleAt()}
+        lastSampleAt2={freshAt()}
       />
     );
 
@@ -57,8 +62,8 @@ describe('StreamEndBanner', () => {
       <StreamEndBanner
         enabled={false}
         elapsedSeconds={300}
-        lastSampleAt1={STALE_AT}
-        lastSampleAt2={STALE_AT}
+        lastSampleAt1={staleAt()}
+        lastSampleAt2={staleAt()}
       />
     );
 
