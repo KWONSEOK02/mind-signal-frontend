@@ -115,6 +115,7 @@ vi.mock('@/07-shared/api/session', () => ({
 
 import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
 import { usePairing } from '@/05-features/sessions';
+import { useSignal } from '@/05-features/signals';
 import LabPage from './lab-page';
 
 /**
@@ -1173,5 +1174,79 @@ describe('LabPage 모바일 진입 리다이렉트 검증함', () => {
       expect(screen.getByTestId('desktop-only-notice')).toBeInTheDocument();
     });
     expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * 운영자가 측정이 몇 분 지났는지 알 수 없던 문제. 값(elapsedSeconds)은 이미 있었고
+ * 운영자 화면만 그리지 않고 있었다
+ */
+describe('LabPage 측정 경과 시간 표시 검증 수행함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setViewportWidth(1280);
+
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'measuring',
+      partnerConnected: true,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'grp_elapsed',
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'PAIRED',
+      subjectIndex: null,
+      sessionId: 'sess_elapsed',
+    });
+  });
+
+  /** useSignal 반환값을 측정 상태로 고정함 */
+  const mockSignal = (isMeasuring: boolean, elapsedSeconds: number) => {
+    (useSignal as ReturnType<typeof vi.fn>).mockReturnValue({
+      isMeasuring,
+      elapsedSeconds,
+      currentMetrics: null,
+      currentMetrics2: null,
+      lastSampleAt1: null,
+      lastSampleAt2: null,
+      startMeasurement: vi.fn(),
+      stopMeasurement: vi.fn(),
+      joinDualRoom: vi.fn(),
+    });
+  };
+
+  it('측정 중이면 경과 시간을 MM:SS 로 표시함', async () => {
+    mockSignal(true, 204);
+    renderLabPage();
+
+    const timer = await screen.findByTestId('operator-elapsed-timer');
+    expect(timer).toHaveTextContent('03:24');
+  });
+
+  it('한 자리 분·초도 0 을 채워 표시함', async () => {
+    mockSignal(true, 65);
+    renderLabPage();
+
+    const timer = await screen.findByTestId('operator-elapsed-timer');
+    expect(timer).toHaveTextContent('01:05');
+  });
+
+  it('측정 중이 아니면 표시하지 않음', async () => {
+    mockSignal(false, 0);
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(useDualSession).toHaveBeenCalled();
+    });
+    expect(screen.queryByTestId('operator-elapsed-timer')).toBeNull();
   });
 });
