@@ -46,9 +46,16 @@ import {
   Square,
   X,
   CheckCircle2,
+  Timer,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
+
+/** 경과 초를 MM:SS 로 표기함. 60분을 넘기면 분 자리가 자연히 늘어남 */
+const formatElapsed = (seconds: number) =>
+  `${Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 
 /**
  * [Page] 운영자가 실험 모드에 따라 피실험자를 연결하고 모니터링하는 대시보드 정의함
@@ -396,6 +403,18 @@ const LabPage = () => {
   }
 
   /**
+  /** 제어 버튼과 경과 시간이 같은 판정을 쓰도록 파생값으로 둠 */
+  const isMeasuring = subject1Signal.isMeasuring || subject2Signal.isMeasuring;
+
+  /**
+   * DUAL_2PC 는 subject1Signal 이 양쪽을 함께 들고 있고 그 밖의 모드는 각자 센다.
+   * 시작 안 한 쪽이 0 이므로 큰 값이 곧 측정이 시작된 시점부터의 경과다
+   */
+  const elapsedSeconds = Math.max(
+    subject1Signal.elapsedSeconds,
+    subject2Signal.elapsedSeconds
+  );
+
   /**
    * 상태에 따른 제어 버튼 렌더링 함수 정의함
    */
@@ -691,6 +710,28 @@ const LabPage = () => {
               />
             </div>
           </section>
+        ) : null}
+
+        {/* 측정 경과 시간 — 운영자가 몇 분 지났는지 알 수 없던 문제. 종료 시각은 양쪽
+            데이터엔진의 EXPERIMENT_DURATION_MINUTES 가 정하고 프론트에 전달되지 않으므로
+            남은 시간은 표시하지 않는다 */}
+        {isMeasuring ? (
+          <div
+            className={`flex items-center justify-center gap-2 py-4 rounded-3xl border ${
+              isDark
+                ? 'bg-white/[0.02] border-white/5 text-white'
+                : 'bg-white border-slate-200 shadow-sm text-slate-900'
+            }`}
+            data-testid="operator-elapsed-timer"
+          >
+            <Timer size={18} className="text-indigo-500" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+              측정 경과
+            </span>
+            <span className="font-mono text-2xl font-black tracking-tighter tabular-nums">
+              {formatElapsed(elapsedSeconds)}
+            </span>
+          </div>
         ) : null}
 
         <section className="min-h-[400px]">
