@@ -120,3 +120,54 @@ describe('useOperatorConnection 운영자 채널 복원과 재연결 처리함',
     setItemSpy.mockRestore();
   });
 });
+
+/**
+ * CodeRabbit #85 반영 — 발급 세션 만료와 그룹별 오류 격리
+ */
+describe('useOperatorConnection CR — 만료와 그룹 격리', () => {
+  it('발급 세션도 만료 시각이 지나면 expired 로 전이함', async () => {
+    vi.useFakeTimers();
+    try {
+      mockCreateInvite.mockResolvedValue({ token: 't', expiresAt: 0 });
+      mockJoin.mockResolvedValue(okJoin(Date.now() + 30 * 60_000));
+
+      const { result } = renderHook(() => useOperatorConnection(GROUP));
+
+      await act(async () => {
+        await result.current.connect();
+      });
+      expect(result.current.status).toBe('connected');
+
+      // 30분 경과 — 타이머가 재평가를 걸어야 함
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30 * 60_000 + 1);
+      });
+
+      expect(result.current.status).toBe('expired');
+      expect(result.current.session).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('그룹 A 연결 실패 오류가 그룹 B 로 새지 않음', async () => {
+    mockCreateInvite.mockRejectedValue({
+      response: { data: { message: '그룹 A 거부됨' } },
+    });
+
+    const { result, rerender } = renderHook(
+      ({ gid }: { gid: string }) => useOperatorConnection(gid),
+      { initialProps: { gid: 'group-a' } }
+    );
+
+    await act(async () => {
+      await result.current.connect();
+    });
+    expect(result.current.error).toBe('그룹 A 거부됨');
+
+    rerender({ gid: 'group-b' });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.status).toBe('idle');
+  });
+});

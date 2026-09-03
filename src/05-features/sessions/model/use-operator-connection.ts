@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   createOperatorInviteToken,
   joinAsOperator,
@@ -54,7 +54,11 @@ export function useOperatorConnection(
     session: OperatorSocketSession;
   } | null>(null);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // 오류에 groupId 를 묶음. 그룹 A 실패가 그룹 B 화면에 남으면 안 됨 (CodeRabbit #85)
+  const [failure, setFailure] = useState<{
+    groupId: string;
+    message: string;
+  } | null>(null);
 
   /**
    * 저장 세션 복원은 effect 가 아니라 렌더 중 파생값으로 계산함.
@@ -62,16 +66,16 @@ export function useOperatorConnection(
    * effect + setState 로 하면 cascading render 를 만들고 lint 가 막음. 복원은
    * 외부 시스템 구독이 아니라 순수 읽기라 파생값이 맞음
    */
+  const issuedForGroup =
+    issued && issued.groupId === groupId ? issued.session : null;
   const stored =
-    groupId && (!issued || issued.groupId !== groupId)
-      ? readOperatorSocketSession(groupId)
-      : null;
-  const activeSession =
-    issued && issued.groupId === groupId
-      ? issued.session
-      : stored && !isExpired(stored)
-        ? stored
-        : null;
+    groupId && !issuedForGroup ? readOperatorSocketSession(groupId) : null;
+
+  // 발급 세션에도 만료를 적용함. 안 하면 30분 뒤에도 connected 로 남아
+  // 만료 안내와 재연결 흐름이 시작되지 않음 (CodeRabbit #85)
+  const candidate = issuedForGroup ?? stored;
+  const activeSession = candidate && !isExpired(candidate) ? candidate : null;
+  const error = failure && failure.groupId === groupId ? failure.message : null;
 
   const status: OperatorConnectionStatus = !groupId
     ? 'idle'
@@ -79,13 +83,27 @@ export function useOperatorConnection(
       ? 'connecting'
       : activeSession
         ? 'connected'
-        : error
-          ? 'error'
-          : stored
-            ? 'expired'
+        : candidate
+          ? 'expired'
+          : error
+            ? 'error'
             : 'idle';
 
   const session = status === 'connected' ? activeSession : null;
+
+  /**
+   * 만료 시각에 재평가를 예약함. 타이머가 없으면 화면이 열려 있는 동안
+   * connected 로 멈춰 있어 만료를 영영 알리지 못함 (CodeRabbit #85)
+   */
+  const expiresAt = activeSession?.socketTokenExpiresAt ?? null;
+  const [, forceReevaluate] = useState(0);
+  useEffect(() => {
+    if (expiresAt === null) return;
+    const delay = expiresAt - Date.now();
+    if (delay <= 0) return;
+    const timeoutId = setTimeout(() => forceReevaluate((n) => n + 1), delay);
+    return () => clearTimeout(timeoutId);
+  }, [expiresAt]);
 
   const connect = async (): Promise<boolean> => {
     if (!groupId) return false;
@@ -93,7 +111,7 @@ export function useOperatorConnection(
     if (pending) return false;
 
     setPending(true);
-    setError(null);
+    setFailure(null);
     try {
       const { token } = await createOperatorInviteToken(groupId);
       const joined = await joinAsOperator(token);
@@ -111,6 +129,7 @@ export function useOperatorConnection(
       }
 
       setIssued({ groupId: joined.groupId, session: next });
+      setFailure(null);
       setPending(false);
       return true;
     } catch (err) {
@@ -118,10 +137,12 @@ export function useOperatorConnection(
       console.error('[useOperatorConnection]', err);
       const beMessage = (err as { response?: { data?: { message?: string } } })
         ?.response?.data?.message;
-      setError(
-        beMessage ??
-          '운영자 연결 실패함 — 세션을 만든 계정으로만 가능함. 다시 시도 필요함.'
-      );
+      setFailure({
+        groupId,
+        message:
+          beMessage ??
+          '운영자 연결 실패함 — 세션을 만든 계정으로만 가능함. 다시 시도 필요함.',
+      });
       setIssued(null);
       setPending(false);
       return false;

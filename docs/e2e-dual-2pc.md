@@ -100,13 +100,10 @@ npx playwright test --list
 | Step | 동작 | 기대 결과 |
 |------|------|----------|
 | 1 | node_A: /lab 진입 | 세션 생성 UI |
-| 2 | node_A: DUAL_2PC 모드 + 파트너 PC 초대 QR 생성 | invite QR 표시 + 만료 타이머 |
-| 3 | node_A: QR data URL → token 파싱 | JWT token 확보 |
-| **4a** | **Playwright: mock DE 2개에 groupId 주입** | **`POST /control/assign-group` → `/register-dual` trigger** |
-| 4 | node_A: operator-self-join 클릭 (UI-W006 — 초대 라우트 폐기) | join-as-operator 200 |
-| 5 | node_B: "합류하기" 버튼 클릭 | joinAsOperator 성공 |
-| 6 | node_B: /lab?groupId={groupId} 리다이렉트 | 세션 대시보드 로드 |
-| 7 | node_B: socket.emit('join-room', groupId) | join-room 이벤트 발행 |
+| 2 | node_A: DUAL_2PC 모드 전환 | 모드 반영 |
+| **3a** | **Playwright: mock DE 2개에 groupId 주입** | **`POST /control/assign-group` → `/register-dual` trigger** |
+| 3 | node_A: operator-self-join 클릭 | join-as-operator 200, 응답에서 groupId 확보 |
+| 4 | node_B: 브라우저 합류 단계 없음 (UI-W006 — 초대 라우트 폐기) | DE 만 참여함 |
 | 8 | node_A: "파트너 PC 연결됨" 배너 | DualSessionBanner 표시 |
 | 9 | node_A: "측정 시작" | stimulus_start 이벤트 |
 | 10 | node_A+B: signal 차트 데이터 수신 | 두 차트 동시 업데이트 |
@@ -114,7 +111,7 @@ npx playwright test --list
 | 12 | 콘솔 에러 없음 | JS 런타임 오류 0건 |
 | 13 | 두 컨텍스트 스크린샷 저장 | test-results/ 저장 |
 
-#### Step 4a 상세 — mock DE runtime groupId 주입 (T17-8, RC-4)
+#### Step 3a 상세 — mock DE runtime groupId 주입 (T17-8, RC-4)
 
 DUAL_2PC에서 mock DE는 부팅 시 `groupId`를 알 수 없음. `groupId`는 BE가 세션 생성 응답으로 동적으로 발급하기 때문.
 
@@ -140,14 +137,12 @@ spec이 콘솔 경고만 남긴다.
 부팅 시점에 `/register-dual`을 직접 호출하므로 이 step이 필요 없음.
 `/control/assign-group` endpoint는 mock DE 전용임.
 
-### Scenario 2: Invalid/Expired Token (PLAN L876-883)
+### Scenario 2 — 삭제됨 (UI-W006, 2026-09-03)
 
-| Step | 동작 | 기대 결과 |
-|------|------|----------|
-| 1 | (Scenario 2 는 UI-W006 에서 삭제됨 — 폐기된 라우트의 자체 에러 UI 만 검증했고 MOCK 토큰 폴백으로 가짜 통과했음) | |
-| 2 | node_B: "합류하기" 클릭 | 401 + 에러 메시지 |
-| 3 | node_B: "재발급 요청" 버튼 표시 | 버튼 visible |
-| 4 | 콘솔 에러 없음 (handled) | JS 런타임 오류 0건 |
+`/lab/operator-join` 라우트를 폐기하면서 함께 지웠다. 그 테스트는 **폐기된 라우트의
+자체 에러 UI 만 검증**했고 제품 흐름을 하나도 타지 않았으며, `MOCK_TOKEN_FOR_E2E`
+폴백으로 조용히 통과했다. 운영자 합류는 이제 `operator-self-join` 으로만 하고
+Scenario 1 이 그 경로를 검증한다.
 
 ### Scenario 3: Partial Failure (PLAN L885-894 + R9-M)
 

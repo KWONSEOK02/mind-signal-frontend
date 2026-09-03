@@ -351,12 +351,12 @@ const LabPage = () => {
    * 조기 합류해도 BE 가 3조건을 모두 보므로(dual-2pc-trigger.service.ts) 순서가
    * 깨지지 않고, 중복 호출은 inFlight·isFullyRegistered 가드가 막음 (UI-W006 D5).
    *
-   * joinDualRoom 을 함께 부르는 이유 — 새로고침 뒤 room 합류를 하는 곳이 "실험 시작"
-   * 하나뿐이라, 이것 없이는 경보만 돌아오고 차트가 비어 있음. 호출은 멱등함.
+   * room 합류는 여기서 부르지 않음 — connect() 성공이 operatorConnected 를 참으로
+   * 만들고 위 effect 가 joinDualRoom 을 부름. 여기서 또 부르면 같은 소켓에
+   * join-room 을 두 번 emit 함 (emitJoinRoom 에 중복 방지가 없음, CodeRabbit #85)
    */
   const handleOperatorConnect = async () => {
-    const connected = await operatorConnection.connect();
-    if (connected) subject1Signal.joinDualRoom();
+    await operatorConnection.connect();
   };
 
   // 서버 렌더링 시 하이드레이션 오류 방지 화면도 라이트/다크에 맞게 변경
