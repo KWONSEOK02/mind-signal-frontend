@@ -103,7 +103,7 @@ npx playwright test --list
 | 2 | node_A: DUAL_2PC 모드 + 파트너 PC 초대 QR 생성 | invite QR 표시 + 만료 타이머 |
 | 3 | node_A: QR data URL → token 파싱 | JWT token 확보 |
 | **4a** | **Playwright: mock DE 2개에 groupId 주입** | **`POST /control/assign-group` → `/register-dual` trigger** |
-| 4 | node_B: /lab/operator-join?token={token}&groupId={groupId} | 페이지 로드 |
+| 4 | node_A: operator-self-join 클릭 (UI-W006 — 초대 라우트 폐기) | join-as-operator 200 |
 | 5 | node_B: "합류하기" 버튼 클릭 | joinAsOperator 성공 |
 | 6 | node_B: /lab?groupId={groupId} 리다이렉트 | 세션 대시보드 로드 |
 | 7 | node_B: socket.emit('join-room', groupId) | join-room 이벤트 발행 |
@@ -144,7 +144,7 @@ spec이 콘솔 경고만 남긴다.
 
 | Step | 동작 | 기대 결과 |
 |------|------|----------|
-| 1 | node_B: /lab/operator-join?token=invalid_jwt | 페이지 로드 |
+| 1 | (Scenario 2 는 UI-W006 에서 삭제됨 — 폐기된 라우트의 자체 에러 UI 만 검증했고 MOCK 토큰 폴백으로 가짜 통과했음) | |
 | 2 | node_B: "합류하기" 클릭 | 401 + 에러 메시지 |
 | 3 | node_B: "재발급 요청" 버튼 표시 | 버튼 visible |
 | 4 | 콘솔 에러 없음 (handled) | JS 런타임 오류 0건 |

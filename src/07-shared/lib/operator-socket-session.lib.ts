@@ -64,3 +64,35 @@ export function readOperatorSocketSession(
     return null;
   }
 }
+
+const ACTIVE_GROUP_KEY = 'mind-signal:operator-active-group';
+
+/**
+ * 현재 탭이 운영 중인 groupId를 저장함.
+ *
+ * URL 쿼리 대신 sessionStorage를 쓰는 이유 — `?groupId=`는 stale 값이 신선한 페어링을
+ * 덮어쓰는 표류를 만든 전력이 있음(F2 회귀). 소켓 토큰과 같은 저장소, 같은 수명을 씀.
+ *
+ * @param groupId - 그룹 식별자. null이면 저장분 제거함
+ */
+export function saveActiveGroupId(groupId: string | null): void {
+  try {
+    if (groupId) sessionStorage.setItem(ACTIVE_GROUP_KEY, groupId);
+    else sessionStorage.removeItem(ACTIVE_GROUP_KEY);
+  } catch {
+    // 저장 차단이 실험 진행을 막지 않도록 무시함
+  }
+}
+
+/**
+ * 현재 탭이 운영 중이던 groupId를 조회함.
+ *
+ * @returns 저장된 groupId 또는 부재 시 null
+ */
+export function readActiveGroupId(): string | null {
+  try {
+    return sessionStorage.getItem(ACTIVE_GROUP_KEY);
+  } catch {
+    return null;
+  }
+}

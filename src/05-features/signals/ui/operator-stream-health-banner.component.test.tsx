@@ -3,7 +3,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { saveOperatorSocketSession } from '@/07-shared/lib/operator-socket-session.lib';
+import type { OperatorSocketSession } from '@/07-shared/lib/operator-socket-session.lib';
 import { OperatorStreamHealthBanner } from './operator-stream-health-banner.component';
 
 const { mockSocket, socketControl } = vi.hoisted(() => ({
@@ -23,13 +23,12 @@ vi.mock('@/07-shared/lib/socket-client', () => ({
   getSocket: vi.fn(() => mockSocket),
 }));
 
-const saveValidSession = (groupId: string, token = 'socket-token') => {
-  saveOperatorSocketSession(groupId, {
-    socketToken: token,
-    socketTokenExpiresAt: Date.now() + 60_000,
-    experimentMode: 'DUAL_2PC',
-  });
-};
+// UI-W006: 배너가 저장소를 직접 읽지 않고 session 을 prop 으로 받도록 바뀜
+const validSession = (token = 'socket-token'): OperatorSocketSession => ({
+  socketToken: token,
+  socketTokenExpiresAt: Date.now() + 60_000,
+  experimentMode: 'DUAL_2PC',
+});
 
 const getRegisteredHandler = (eventName: string) => {
   const matchingCall = mockSocket.on.mock.calls.find(
@@ -60,9 +59,13 @@ describe('OperatorStreamHealthBanner 서버 경보 구독 처리함', () => {
   });
 
   it('저장 토큰으로 groupId와 token 객체를 emit 처리함', async () => {
-    saveValidSession('group-a', 'operator-token-a');
-
-    render(<OperatorStreamHealthBanner groupId="group-a" enabled />);
+    render(
+      <OperatorStreamHealthBanner
+        groupId="group-a"
+        enabled
+        session={validSession('operator-token-a')}
+      />
+    );
 
     await waitFor(() => {
       expect(mockSocket.emit).toHaveBeenCalledWith(
@@ -77,13 +80,16 @@ describe('OperatorStreamHealthBanner 서버 경보 구독 처리함', () => {
   });
 
   it('ack 인증 실패 배너가 측정 제어를 차단하지 않음', async () => {
-    saveValidSession('group-a');
     socketControl.ackOk = false;
     socketControl.ackError = 'unauthorized';
 
     render(
       <>
-        <OperatorStreamHealthBanner groupId="group-a" enabled />
+        <OperatorStreamHealthBanner
+          groupId="group-a"
+          enabled
+          session={validSession('operator-token-a')}
+        />
         <button type="button">실험 시작</button>
       </>
     );
@@ -98,8 +104,13 @@ describe('OperatorStreamHealthBanner 서버 경보 구독 처리함', () => {
   });
 
   it('stale 경보 표시 후 healthy recovered 수신 시 해제함', async () => {
-    saveValidSession('group-a');
-    render(<OperatorStreamHealthBanner groupId="group-a" enabled />);
+    render(
+      <OperatorStreamHealthBanner
+        groupId="group-a"
+        enabled
+        session={validSession('operator-token-a')}
+      />
+    );
 
     const streamHealthHandler = getRegisteredHandler('stream-health');
     act(() => {
@@ -131,19 +142,25 @@ describe('OperatorStreamHealthBanner 서버 경보 구독 처리함', () => {
 
   it('토큰 없음과 만료 상태에 경보 채널 배너 표시함', async () => {
     const { rerender } = render(
-      <OperatorStreamHealthBanner groupId="group-missing" enabled />
+      <OperatorStreamHealthBanner
+        groupId="group-missing"
+        enabled
+        session={null}
+      />
     );
 
     expect(
       await screen.findByText(/운영자 소켓 토큰이 없음/)
     ).toBeInTheDocument();
 
-    saveOperatorSocketSession('group-expired', {
-      socketToken: 'expired-token',
-      socketTokenExpiresAt: Date.now() - 1,
-      experimentMode: 'DUAL_2PC',
-    });
-    rerender(<OperatorStreamHealthBanner groupId="group-expired" enabled />);
+    rerender(
+      <OperatorStreamHealthBanner
+        groupId="group-expired"
+        enabled
+        session={null}
+        isExpiredSession
+      />
+    );
 
     expect(
       await screen.findByText(/운영자 소켓 토큰이 만료됨/)
@@ -151,16 +168,23 @@ describe('OperatorStreamHealthBanner 서버 경보 구독 처리함', () => {
   });
 
   it('groupId 변경 시 이전 이벤트 handler 참조로 정리함', async () => {
-    saveValidSession('group-a', 'token-a');
-    saveValidSession('group-b', 'token-b');
-
     const { rerender } = render(
-      <OperatorStreamHealthBanner groupId="group-a" enabled />
+      <OperatorStreamHealthBanner
+        groupId="group-a"
+        enabled
+        session={validSession('operator-token-a')}
+      />
     );
     const streamHealthHandler = getRegisteredHandler('stream-health');
     const connectHandler = getRegisteredHandler('connect');
 
-    rerender(<OperatorStreamHealthBanner groupId="group-b" enabled />);
+    rerender(
+      <OperatorStreamHealthBanner
+        groupId="group-b"
+        enabled
+        session={validSession('token-b')}
+      />
+    );
 
     await waitFor(() => {
       expect(mockSocket.off).toHaveBeenCalledWith(
@@ -172,8 +196,13 @@ describe('OperatorStreamHealthBanner 서버 경보 구독 처리함', () => {
   });
 
   it('소켓 connect 이벤트마다 운영자 room 재합류 처리함', () => {
-    saveValidSession('group-a');
-    render(<OperatorStreamHealthBanner groupId="group-a" enabled />);
+    render(
+      <OperatorStreamHealthBanner
+        groupId="group-a"
+        enabled
+        session={validSession('operator-token-a')}
+      />
+    );
 
     const connectHandler = getRegisteredHandler('connect');
     act(() => connectHandler());
