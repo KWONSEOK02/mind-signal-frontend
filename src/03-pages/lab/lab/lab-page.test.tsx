@@ -41,6 +41,7 @@ vi.mock('@/05-features/signals', () => ({
   })),
   SignalMeasurer: () => null,
   OperatorStreamHealthBanner: () => null,
+  StreamEndBanner: () => null,
 }));
 
 /**

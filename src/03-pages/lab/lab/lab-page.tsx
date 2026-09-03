@@ -9,7 +9,11 @@ import React, {
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { OperatorStreamHealthBanner, useSignal } from '@/05-features/signals';
+import {
+  OperatorStreamHealthBanner,
+  StreamEndBanner,
+  useSignal,
+} from '@/05-features/signals';
 import { QRGenerator, usePairing } from '@/05-features/sessions';
 import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
 import {
@@ -558,6 +562,13 @@ const LabPage = () => {
         groupId={groupId}
         enabled={mode === 'DUAL_2PC' && hasOperatorSocketSession}
         refreshKey={operatorSocketSessionVersion}
+      />
+      {/* DE 자연 종료 추정 배너 (SESSION-W004) — measurement-complete 미도착 시 운영자에게 알림 */}
+      <StreamEndBanner
+        enabled={mode === 'DUAL_2PC' && dualState === 'measuring'}
+        elapsedSeconds={subject1Signal.elapsedSeconds}
+        lastSampleAt1={subject1Signal.lastSampleAt1}
+        lastSampleAt2={subject1Signal.lastSampleAt2}
       />
 
       <div className="max-w-[1600px] mx-auto space-y-10">
