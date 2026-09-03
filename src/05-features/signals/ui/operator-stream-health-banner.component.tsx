@@ -5,11 +5,17 @@ import type {
   OperatorAlertChannelIssue,
   StreamHealthAlert,
 } from '../model/use-operator-stream-health';
+import type { OperatorSocketSession } from '@/07-shared/lib/operator-socket-session.lib';
 
 interface OperatorStreamHealthBannerProps {
   groupId: string | null;
   enabled: boolean;
-  refreshKey?: number;
+  /** 미만료 소켓 세션. null이면 missing-token 처리함 (UI-W006) */
+  session: OperatorSocketSession | null;
+  /** 저장 세션이 있으나 만료된 경우 true. expired-token 처리함 */
+  isExpiredSession?: boolean;
+  /** 채널 미연결 시 표시할 재연결 액션. 미지정이면 버튼 미표시함 */
+  onReconnect?: () => void;
 }
 
 const CHANNEL_ISSUE_MESSAGES: Record<OperatorAlertChannelIssue, string> = {
@@ -38,18 +44,21 @@ const formatAlertDetail = (alert: StreamHealthAlert) => {
 /**
  * 서버가 판정한 운영자 스트림 경보와 채널 상태를 상단 배너로 표시함.
  *
- * @param props - 그룹, 활성 여부, 토큰 갱신 식별자
+ * @param props - 그룹, 활성 여부, 소켓 세션, 만료 여부, 재연결 액션
  * @returns 경보 존재 시 비차단 배너, 경보 부재 시 null
  */
 export function OperatorStreamHealthBanner({
   groupId,
   enabled,
-  refreshKey = 0,
+  session,
+  isExpiredSession = false,
+  onReconnect,
 }: OperatorStreamHealthBannerProps) {
   const { alerts, channelIssue } = useOperatorStreamHealth(
     groupId,
     enabled,
-    refreshKey
+    session,
+    isExpiredSession
   );
 
   if (!enabled || (!channelIssue && alerts.length === 0)) return null;
@@ -76,6 +85,16 @@ export function OperatorStreamHealthBanner({
               실험은 진행 중이나 스트림 경보 채널이 연결되지 않음.{' '}
               {CHANNEL_ISSUE_MESSAGES[channelIssue]}.
             </p>
+            {onReconnect ? (
+              <button
+                type="button"
+                onClick={onReconnect}
+                data-testid="operator-reconnect"
+                className="mt-2 inline-flex cursor-pointer items-center rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-xs font-black text-amber-200 transition-colors hover:bg-amber-400/20"
+              >
+                운영자 연결 복구
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
