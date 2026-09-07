@@ -462,13 +462,10 @@ const Results: React.FC<ResultsProps> = ({
         </div>
       ) : null}
 
-      {/* 분석 섹션 01 — DUAL이면 동조율, BTI면 개인 메트릭 */}
+      {/* 분석 섹션 — DUAL이면 동조율, BTI면 개인 메트릭 */}
       {analysisData?.isBTI ? (
         <section className="space-y-12">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-600/20">
-              01
-            </div>
             <h3
               className={`text-base sm:text-2xl font-black uppercase tracking-tighter sm:tracking-tight whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}
             >
@@ -560,9 +557,6 @@ const Results: React.FC<ResultsProps> = ({
       ) : (
         <section className="space-y-12">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-600/20">
-              01
-            </div>
             <h3
               className={`text-base sm:text-2xl font-black uppercase tracking-tighter sm:tracking-tight whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}
             >
@@ -676,45 +670,6 @@ const Results: React.FC<ResultsProps> = ({
           </div>
         </section>
       )}
-
-      {/* 분석 섹션 02 */}
-      <section className="space-y-8 scroll-mt-32">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-purple-600/20">
-            02
-          </div>
-          <h3
-            className={`text-base sm:text-2xl font-black uppercase tracking-tighter sm:tracking-tight whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}
-          >
-            재미로 보는 뇌BTI (Neural Profile)
-          </h3>
-        </div>
-
-        <div
-          className={`p-10 md:p-16 rounded-[50px] border overflow-hidden ${isDark ? 'border-white/5' : 'border-indigo-100'}`}
-        >
-          <div className="grid md:grid-cols-1 gap-12 items-start">
-            <div className="space-y-10">
-              <div className="space-y-6">
-                <h4
-                  className={`text-6xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}
-                >
-                  ENFJ-A
-                </h4>
-                <h5 className="text-2xl font-black text-indigo-400">
-                  &quot;동조화 리더형 (Neural Synchronizer)&quot;
-                </h5>
-                <p
-                  className={`text-lg font-bold leading-relaxed max-w-3xl ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
-                >
-                  참여자가 실험에 참여했을 때 활성화된 영역에 따라 분석한 유형
-                  지도입니다.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <section className="flex justify-center pt-20 pb-10">
         <button
