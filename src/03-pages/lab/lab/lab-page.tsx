@@ -7,20 +7,24 @@ import React, {
   useEffect,
   useRef,
 } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { OperatorStreamHealthBanner, useSignal } from '@/05-features/signals';
-import { QRGenerator, usePairing } from '@/05-features/sessions';
-import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
 import {
-  createOperatorInviteToken,
-  joinAsOperator,
-} from '@/07-shared/api/session';
+  OperatorStreamHealthBanner,
+  StreamEndBanner,
+  useSignal,
+} from '@/05-features/signals';
+import {
+  QRGenerator,
+  usePairing,
+  useOperatorConnection,
+} from '@/05-features/sessions';
+import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
 import { postDualTrigger } from '@/07-shared/api/dual-trigger';
 import measurementApi from '@/07-shared/api/signal';
 import {
-  readOperatorSocketSession,
-  saveOperatorSocketSession,
+  readActiveGroupId,
+  saveActiveGroupId,
 } from '@/07-shared/lib/operator-socket-session.lib';
 import { DualSessionBanner } from '@/04-widgets/dual-session-banner';
 import { SignalComparisonWidget } from '@/04-widgets';
@@ -42,9 +46,16 @@ import {
   Square,
   X,
   CheckCircle2,
+  Timer,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
+
+/** 경과 초를 MM:SS 로 표기함. 60분을 넘기면 분 자리가 자연히 늘어남 */
+const formatElapsed = (seconds: number) =>
+  `${Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 
 /**
  * [Page] 운영자가 실험 모드에 따라 피실험자를 연결하고 모니터링하는 대시보드 정의함
@@ -54,7 +65,6 @@ const LabPage = () => {
   // UI 컨텍스트에서 테마 가져오기 & isDark 변수 생성
   const ui = useUI();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const isDark = ui.theme === 'dark';
 
   // 클라이언트 사이드 마운트 여부 확인 수행함
@@ -86,32 +96,14 @@ const LabPage = () => {
   const [isQRVisible, setIsQRVisible] = useState(false);
   // 모드 상태 및 드롭다운 토글 상태 관리 추가함 (DUAL_2PC 추가)
   const [mode, setMode] = useState<'BTI' | 'DUAL_2PC'>('DUAL_2PC');
-  const [operatorSocketSessionVersion, setOperatorSocketSessionVersion] =
-    useState(0);
-  // 운영자 합류 전에는 토큰 부재가 정상이므로 경보 채널 배너를 띄우지 않음
-  const [hasOperatorSocketSession, setHasOperatorSocketSession] =
-    useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  // DUAL_2PC 초대 QR 표시 여부 상태 정의함
 
-  // URL query param에서 groupId 파싱 (operator-join 합류 후 리다이렉트 처리)
-  const urlGroupId = searchParams?.get('groupId') ?? null;
-
-  /**
-   * 초대 운영자 탭에 저장된 실험 모드를 대시보드 상태로 복원함
-   */
+  // 새로고침 복원용 활성 groupId. URL 쿼리는 stale 값이 신선한 페어링을 덮는
+  // 표류를 만들어(F2) 쓰지 않고, 소켓 토큰과 같은 sessionStorage 를 씀 (UI-W006 D4)
+  const [storedGroupId, setStoredGroupId] = useState<string | null>(null);
   useEffect(() => {
-    if (!urlGroupId) {
-      setHasOperatorSocketSession(false);
-      return;
-    }
-
-    const operatorSession = readOperatorSocketSession(urlGroupId);
-    setHasOperatorSocketSession(Boolean(operatorSession));
-    if (operatorSession?.experimentMode === 'DUAL_2PC') {
-      setMode('DUAL_2PC');
-    }
-  }, [urlGroupId]);
+    setStoredGroupId(readActiveGroupId());
+  }, []);
 
   /**
    * 표시 판정. 좁은 창에 안내 배너를 띄우기 위한 값이라 resize 를 구독하되
@@ -155,9 +147,18 @@ const LabPage = () => {
     resetStatus,
   } = usePairing(currentConfig.targetCount, mode);
 
-  // groupId: 로컬 신규 페어링 우선, 없으면(순수 합류 PC) URL 파라미터 사용 (F2).
-  // stale URL ?groupId= 가 새 페어링을 덮어쓰는 그룹ID 표류를 차단함.
-  const groupId = pairingGroupId ?? urlGroupId;
+  // groupId: 로컬 신규 페어링 우선, 없으면(새로고침 복원) 저장분 사용 (F2 정합).
+  // 신선한 페어링이 항상 이기므로 stale 값이 덮어쓰는 그룹ID 표류가 생기지 않음.
+  const groupId = pairingGroupId ?? storedGroupId;
+
+  // 활성 groupId 를 탭에 남겨 새로고침 뒤 재연결이 가능하게 함
+  useEffect(() => {
+    if (pairingGroupId) saveActiveGroupId(pairingGroupId);
+  }, [pairingGroupId]);
+
+  // 운영자 경보 채널의 복원·발급·저장을 한 곳에서 소유함 (UI-W006 D1)
+  const operatorConnection = useOperatorConnection(groupId);
+  const operatorConnected = operatorConnection.status === 'connected';
 
   // DUAL_2PC 세션 상태 머신 훅 구독함 (Phase 16 FE-4)
   const {
@@ -211,6 +212,23 @@ const LabPage = () => {
   });
   // groupId 를 넘겨야 소켓 room 에 합류함 (AUTH-W001)
   const subject2Signal = useSignal(sessions[1]?.id ?? null, { groupId });
+
+  /**
+   * 운영자 세션이 살아 있으면 차트 room 에 합류함.
+   *
+   * 새로고침 뒤 room 합류를 하는 곳이 `실험 시작` 하나뿐이라, 측정 중 새로고침하면
+   * 경보 채널만 돌아오고 차트가 비어 있었음. joinDualRoom 은 이전 등록을 해제하므로
+   * 멱등함 (UI-W006 T3)
+   *
+   * 의존성은 훅 반환 객체가 아니라 함수 참조만 잡음. useSignal 은 매 렌더 새
+   * 객체를 돌려줘 객체를 잡으면 aligned_pair 수신과 타이머 tick 마다 effect 가
+   * 다시 돌아 join-room 이 초당 약 3회 나갔음 (2026-09-07 측정 실측)
+   */
+  const joinDualRoom = subject1Signal.joinDualRoom;
+  useEffect(() => {
+    if (mode !== 'DUAL_2PC' || !groupId || !operatorConnected) return;
+    joinDualRoom();
+  }, [mode, groupId, operatorConnected, joinDualRoom]);
 
   // DUAL_2PC 측정 시작 in-flight 가드 — 더블클릭 중복 start 차단함 (F3)
   const startPendingRef = useRef(false);
@@ -313,8 +331,7 @@ const LabPage = () => {
       resetStatus();
       setIsQRVisible(false);
       setIsSettingsOpen(false);
-      setSelfJoinError(null);
-      setSelfJoinPending(false);
+      // 운영자 연결 상태는 groupId 변경에 따라 훅이 스스로 복원함 (UI-W006 D1)
     },
     [resetStatus]
   );
@@ -332,44 +349,19 @@ const LabPage = () => {
     }
   };
 
-  // operator 자가 합류 상태 정의함 (단일 PC 데모 — invite+join 원클릭)
-  const [selfJoinPending, setSelfJoinPending] = useState(false);
-  const [selfJoinError, setSelfJoinError] = useState<string | null>(null);
-
   /**
-   * operator가 이 PC에서 직접 그룹에 합류함 — invite-operator 토큰 발급 후
-   * join-as-operator를 한 번에 호출함 (2번째 탭/QR 없이). 단일 PC 강제 페어링
-   * 데모 동선 단축 + operatorJoined 충족으로 자동 트리거 발동시킴.
+   * operator 가 이 PC 에서 그룹에 합류하거나 잃은 연결을 되찾음.
+   *
+   * 노출 조건에서 페어링 완료와 partnerConnected 를 뺐으므로 재진입 수단이기도 함.
+   * 조기 합류해도 BE 가 3조건을 모두 보므로(dual-2pc-trigger.service.ts) 순서가
+   * 깨지지 않고, 중복 호출은 inFlight·isFullyRegistered 가드가 막음 (UI-W006 D5).
+   *
+   * room 합류는 여기서 부르지 않음 — connect() 성공이 operatorConnected 를 참으로
+   * 만들고 위 effect 가 joinDualRoom 을 부름. 여기서 또 부르면 같은 소켓에
+   * join-room 을 두 번 emit 함 (emitJoinRoom 에 중복 방지가 없음, CodeRabbit #85)
    */
-  const handleOperatorSelfJoin = async () => {
-    if (!groupId) return;
-    setSelfJoinPending(true);
-    setSelfJoinError(null);
-    try {
-      const { token } = await createOperatorInviteToken(groupId);
-      const operatorSession = await joinAsOperator(token);
-      try {
-        saveOperatorSocketSession(operatorSession.groupId, {
-          socketToken: operatorSession.socketToken,
-          socketTokenExpiresAt: operatorSession.socketTokenExpiresAt,
-          experimentMode: operatorSession.experimentMode,
-        });
-        setOperatorSocketSessionVersion((version) => version + 1);
-        setHasOperatorSocketSession(true);
-      } catch (storageError) {
-        // 저장 실패가 실험 진행을 차단하지 않도록 경고만 기록함
-        console.warn('운영자 소켓 세션 저장 실패함:', storageError);
-      }
-      // operatorJoined=true → 자동 트리거 → use-dual-session 폴링이 partnerConnected 전이
-    } catch (err) {
-      // 실제 오류를 삼키지 않고 콘솔 기록 + BE 메시지 우선 노출함 (진단 가능성 확보)
-      console.error('[handleOperatorSelfJoin]', err);
-      const beMsg = (err as { response?: { data?: { message?: string } } })
-        ?.response?.data?.message;
-      setSelfJoinError(beMsg ?? 'operator 합류 실패 — 다시 시도 필요함.');
-    } finally {
-      setSelfJoinPending(false);
-    }
+  const handleOperatorConnect = async () => {
+    await operatorConnection.connect();
   };
 
   // 서버 렌더링 시 하이드레이션 오류 방지 화면도 라이트/다크에 맞게 변경
@@ -392,6 +384,18 @@ const LabPage = () => {
   }
 
   /**
+  /** 제어 버튼과 경과 시간이 같은 판정을 쓰도록 파생값으로 둠 */
+  const isMeasuring = subject1Signal.isMeasuring || subject2Signal.isMeasuring;
+
+  /**
+   * DUAL_2PC 는 subject1Signal 이 양쪽을 함께 들고 있고 그 밖의 모드는 각자 센다.
+   * 시작 안 한 쪽이 0 이므로 큰 값이 곧 측정이 시작된 시점부터의 경과다
+   */
+  const elapsedSeconds = Math.max(
+    subject1Signal.elapsedSeconds,
+    subject2Signal.elapsedSeconds
+  );
+
   /**
    * 상태에 따른 제어 버튼 렌더링 함수 정의함
    */
@@ -452,22 +456,26 @@ const LabPage = () => {
         );
       }
 
-      // 페어링 완료 후 operator 합류(이 PC 원클릭) 1차 + 파트너 PC 초대 QR(2-PC) 보조 표시함
+      // 페어링 완료 후 operator 합류(이 PC 원클릭) 표시함. 재연결은 경보 배너가 담당함
       return (
         <div className="flex flex-col gap-3 items-center">
           <button
             data-testid="operator-self-join"
-            onClick={() => void handleOperatorSelfJoin()}
-            disabled={selfJoinPending}
+            onClick={() => void handleOperatorConnect()}
+            disabled={operatorConnection.status === 'connecting'}
             className="group relative inline-flex items-center cursor-pointer gap-2 px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black transition-all duration-300 hover:scale-105 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
           >
             <CheckCircle2 size={20} />
             <span>
-              {selfJoinPending ? '합류 중...' : 'operator 합류 (이 PC)'}
+              {operatorConnection.status === 'connecting'
+                ? '합류 중...'
+                : 'operator 합류 (이 PC)'}
             </span>
           </button>
-          {selfJoinError ? (
-            <p className="text-xs text-rose-500 max-w-md">{selfJoinError}</p>
+          {operatorConnection.error ? (
+            <p className="text-xs text-rose-500 max-w-md">
+              {operatorConnection.error}
+            </p>
           ) : null}
           {showFallback ? (
             <>
@@ -556,8 +564,17 @@ const LabPage = () => {
       />
       <OperatorStreamHealthBanner
         groupId={groupId}
-        enabled={mode === 'DUAL_2PC' && hasOperatorSocketSession}
-        refreshKey={operatorSocketSessionVersion}
+        enabled={mode === 'DUAL_2PC' && Boolean(groupId)}
+        session={operatorConnection.session}
+        isExpiredSession={operatorConnection.status === 'expired'}
+        onReconnect={() => void handleOperatorConnect()}
+      />
+      {/* DE 자연 종료 추정 배너 (SESSION-W004) — measurement-complete 미도착 시 운영자에게 알림 */}
+      <StreamEndBanner
+        enabled={mode === 'DUAL_2PC' && dualState === 'measuring'}
+        elapsedSeconds={subject1Signal.elapsedSeconds}
+        lastSampleAt1={subject1Signal.lastSampleAt1}
+        lastSampleAt2={subject1Signal.lastSampleAt2}
       />
 
       <div className="max-w-[1600px] mx-auto space-y-10">
@@ -680,6 +697,28 @@ const LabPage = () => {
               />
             </div>
           </section>
+        ) : null}
+
+        {/* 측정 경과 시간 — 운영자가 몇 분 지났는지 알 수 없던 문제. 종료 시각은 양쪽
+            데이터엔진의 EXPERIMENT_DURATION_MINUTES 가 정하고 프론트에 전달되지 않으므로
+            남은 시간은 표시하지 않는다 */}
+        {isMeasuring ? (
+          <div
+            className={`flex items-center justify-center gap-2 py-4 rounded-3xl border ${
+              isDark
+                ? 'bg-white/[0.02] border-white/5 text-white'
+                : 'bg-white border-slate-200 shadow-sm text-slate-900'
+            }`}
+            data-testid="operator-elapsed-timer"
+          >
+            <Timer size={18} className="text-indigo-500" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+              측정 경과
+            </span>
+            <span className="font-mono text-2xl font-black tracking-tighter tabular-nums">
+              {formatElapsed(elapsedSeconds)}
+            </span>
+          </div>
         ) : null}
 
         <section className="min-h-[400px]">

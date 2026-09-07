@@ -5,7 +5,6 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { UIProvider } from '@/app/providers/ui-context';
-import { saveOperatorSocketSession } from '@/07-shared/lib/operator-socket-session.lib';
 
 /**
  * [R-1 반영] lab-page.tsx:13은 `@/05-features/sessions/model/use-dual-session`
@@ -24,6 +23,13 @@ vi.mock('@/05-features/sessions', () => ({
   useDualSession: vi.fn(),
   PairingStep: vi.fn(),
   QRScanner: () => null,
+  // 운영자 연결 훅 (UI-W006). 기본은 미연결 — 테스트별로 mockReturnValue 로 덮음
+  useOperatorConnection: vi.fn(() => ({
+    status: 'idle',
+    session: null,
+    error: null,
+    connect: vi.fn().mockResolvedValue(true),
+  })),
 }));
 
 /**
@@ -41,6 +47,7 @@ vi.mock('@/05-features/signals', () => ({
   })),
   SignalMeasurer: () => null,
   OperatorStreamHealthBanner: () => null,
+  StreamEndBanner: () => null,
 }));
 
 /**
@@ -113,7 +120,8 @@ vi.mock('@/07-shared/api/session', () => ({
 }));
 
 import { useDualSession } from '@/05-features/sessions/model/use-dual-session';
-import { usePairing } from '@/05-features/sessions';
+import { usePairing, useOperatorConnection } from '@/05-features/sessions';
+import { useSignal } from '@/05-features/signals';
 import LabPage from './lab-page';
 
 /**
@@ -125,6 +133,31 @@ const renderLabPage = () =>
       <LabPage />
     </UIProvider>
   );
+
+/**
+ * [Helper] navigator.userAgent 교체 수행함. UI-W002 에서 라우팅 판정이
+ * 화면 폭이 아니라 UA 로 바뀌었으므로 테스트도 UA 를 제어함
+ */
+const setUserAgent = (value: string) => {
+  Object.defineProperty(window.navigator, 'userAgent', {
+    writable: true,
+    configurable: true,
+    value,
+  });
+};
+
+const DESKTOP_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const MOBILE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+
+const setViewportWidth = (value: number) => {
+  Object.defineProperty(window, 'innerWidth', {
+    writable: true,
+    configurable: true,
+    value,
+  });
+};
 
 describe('LabPage 실험 시작 버튼 조건 render 검증 수행함', () => {
   beforeEach(() => {
@@ -964,26 +997,27 @@ describe('LabPage CR — operator self-join 클릭 경로', () => {
     await user.click(screen.getByTestId('operator-self-join'));
   };
 
-  it('합류 클릭 시 합류 중... pending 표시함', async () => {
-    const sessionMod = await import('@/07-shared/api/session');
-    // invite 토큰 발급이 진행 중인 동안 pending 상태 유지
-    vi.mocked(sessionMod.createOperatorInviteToken).mockReturnValue(
-      new Promise(() => {}) as never
-    );
+  // UI-W006: 발급·교환·저장은 useOperatorConnection 이 소유하므로 그 훅 테스트가
+  // 검증함. 여기서는 훅 상태가 화면에 반영되는지만 봄
+  it('connecting 이면 합류 중... pending 표시함', async () => {
+    (useOperatorConnection as ReturnType<typeof vi.fn>).mockReturnValue({
+      status: 'connecting',
+      session: null,
+      error: null,
+      connect: vi.fn().mockResolvedValue(true),
+    });
 
     await openDual2pcAndClickJoin();
 
     expect(await screen.findByText(/합류 중/)).toBeInTheDocument();
   });
 
-  it('합류 실패 시 BE 오류 메시지 노출함', async () => {
-    const sessionMod = await import('@/07-shared/api/session');
-    vi.mocked(sessionMod.createOperatorInviteToken).mockResolvedValue({
-      token: 'tok',
-      expiresAt: 9999999999999,
-    });
-    vi.mocked(sessionMod.joinAsOperator).mockRejectedValue({
-      response: { data: { message: 'operator 합류 거부됨' } },
+  it('훅 error 를 화면에 그대로 노출함', async () => {
+    (useOperatorConnection as ReturnType<typeof vi.fn>).mockReturnValue({
+      status: 'error',
+      session: null,
+      error: 'operator 합류 거부됨',
+      connect: vi.fn().mockResolvedValue(false),
     });
 
     await openDual2pcAndClickJoin();
@@ -992,88 +1026,6 @@ describe('LabPage CR — operator self-join 클릭 경로', () => {
   });
 });
 
-describe('LabPage 초대 운영자 experimentMode 복원 처리함', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    sessionStorage.clear();
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: 1280,
-    });
-    mockSearchParamsGet.mockImplementation((key: string) =>
-      key === 'groupId' ? 'joined-group' : null
-    );
-    saveOperatorSocketSession('joined-group', {
-      socketToken: 'operator-socket-token',
-      socketTokenExpiresAt: Date.now() + 60_000,
-      experimentMode: 'DUAL_2PC',
-    });
-    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
-      state: 'waiting',
-      partnerConnected: false,
-      registryStatus: null,
-      showFallback: false,
-      setDualSessionState: vi.fn(),
-    });
-    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
-      groupId: null,
-      pairingCode: null,
-      timeLeft: 300,
-      pairedSubjects: [],
-      isAllPaired: false,
-      sessions: [],
-      startPairing: vi.fn(),
-      resetStatus: vi.fn(),
-      requestPairing: vi.fn(),
-      status: 'IDLE',
-      subjectIndex: null,
-      sessionId: null,
-    });
-  });
-
-  it('저장된 DUAL_2PC 모드를 대시보드 소켓 경로에 반영함', async () => {
-    renderLabPage();
-
-    await waitFor(() => {
-      expect(useDualSession).toHaveBeenCalledWith('joined-group', 'DUAL_2PC');
-    });
-  });
-});
-
-/**
- * [Helper] navigator.userAgent 교체 수행함. UI-W002 에서 라우팅 판정이
- * 화면 폭이 아니라 UA 로 바뀌었으므로 테스트도 UA 를 제어함
- */
-const setUserAgent = (value: string) => {
-  Object.defineProperty(window.navigator, 'userAgent', {
-    writable: true,
-    configurable: true,
-    value,
-  });
-};
-
-const DESKTOP_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-const MOBILE_UA =
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
-
-const setViewportWidth = (value: number) => {
-  Object.defineProperty(window, 'innerWidth', {
-    writable: true,
-    configurable: true,
-    value,
-  });
-};
-
-/**
- * UI-W001 A6 회귀 — 모바일 접속이 안내 전용 화면(MobileLabView)에 멈춰 있었음.
- * 그 화면이 /join 첫 화면과 같은 한 문장만 말해 화면 1개와 탭 1회가 낭비됐음.
- *
- * UI-W002 (FE #78) 로 판정 기준이 바뀜. 라우팅은 모바일 UA 단독으로 하고
- * 화면 폭은 안내 배너 표시에만 씀. 운영자가 창을 좁히는 것만으로 측정 도중
- * 대시보드에서 쫓겨나던 결함을 없앰
- */
 describe('LabPage 모바일 진입 리다이렉트 검증함', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1172,5 +1124,219 @@ describe('LabPage 모바일 진입 리다이렉트 검증함', () => {
       expect(screen.getByTestId('desktop-only-notice')).toBeInTheDocument();
     });
     expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * 운영자가 측정이 몇 분 지났는지 알 수 없던 문제. 값(elapsedSeconds)은 이미 있었고
+ * 운영자 화면만 그리지 않고 있었다
+ */
+describe('LabPage 측정 경과 시간 표시 검증 수행함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setViewportWidth(1280);
+
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'measuring',
+      partnerConnected: true,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'grp_elapsed',
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'PAIRED',
+      subjectIndex: null,
+      sessionId: 'sess_elapsed',
+    });
+  });
+
+  /** useSignal 반환값을 측정 상태로 고정함 */
+  const mockSignal = (isMeasuring: boolean, elapsedSeconds: number) => {
+    (useSignal as ReturnType<typeof vi.fn>).mockReturnValue({
+      isMeasuring,
+      elapsedSeconds,
+      currentMetrics: null,
+      currentMetrics2: null,
+      lastSampleAt1: null,
+      lastSampleAt2: null,
+      startMeasurement: vi.fn(),
+      stopMeasurement: vi.fn(),
+      joinDualRoom: vi.fn(),
+    });
+  };
+
+  it('측정 중이면 경과 시간을 MM:SS 로 표시함', async () => {
+    mockSignal(true, 204);
+    renderLabPage();
+
+    const timer = await screen.findByTestId('operator-elapsed-timer');
+    expect(timer).toHaveTextContent('03:24');
+  });
+
+  it('한 자리 분·초도 0 을 채워 표시함', async () => {
+    mockSignal(true, 65);
+    renderLabPage();
+
+    const timer = await screen.findByTestId('operator-elapsed-timer');
+    expect(timer).toHaveTextContent('01:05');
+  });
+
+  it('측정 중이 아니면 표시하지 않음', async () => {
+    mockSignal(false, 0);
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(useDualSession).toHaveBeenCalled();
+    });
+    expect(screen.queryByTestId('operator-elapsed-timer')).toBeNull();
+  });
+});
+
+/**
+ * UI-W006 — 운영자 연결 복구. A11 을 "진입점 신설"이 아니라 "연결 복구"로 재분류함
+ */
+describe('LabPage 운영자 연결 복구 검증 수행함', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setViewportWidth(1280);
+
+    (useDualSession as ReturnType<typeof vi.fn>).mockReturnValue({
+      state: 'measuring',
+      partnerConnected: true,
+      registryStatus: null,
+      showFallback: false,
+      setDualSessionState: vi.fn(),
+    });
+    (usePairing as ReturnType<typeof vi.fn>).mockReturnValue({
+      groupId: 'grp_recover',
+      pairingCode: null,
+      timeLeft: 300,
+      pairedSubjects: [1, 2],
+      isAllPaired: true,
+      sessions: [],
+      startPairing: vi.fn(),
+      resetStatus: vi.fn(),
+      requestPairing: vi.fn(),
+      status: 'PAIRED',
+      subjectIndex: null,
+      sessionId: null,
+    });
+  });
+
+  /**
+   * 복원된 세션이 있으면 room 재합류를 걸어야 함. 이것이 없으면 새로고침 뒤
+   * 경보만 돌아오고 차트가 비어 있음 (UI-W006 T3)
+   */
+  it('운영자 세션이 connected 면 차트 room 에 재합류함', async () => {
+    const joinDualRoom = vi.fn();
+    (useSignal as ReturnType<typeof vi.fn>).mockReturnValue({
+      isMeasuring: true,
+      elapsedSeconds: 200,
+      currentMetrics: null,
+      currentMetrics2: null,
+      lastSampleAt1: null,
+      lastSampleAt2: null,
+      startMeasurement: vi.fn(),
+      stopMeasurement: vi.fn(),
+      joinDualRoom,
+    });
+    (useOperatorConnection as ReturnType<typeof vi.fn>).mockReturnValue({
+      status: 'connected',
+      session: {
+        socketToken: 't',
+        socketTokenExpiresAt: Date.now() + 60_000,
+        experimentMode: 'DUAL_2PC',
+      },
+      error: null,
+      connect: vi.fn().mockResolvedValue(true),
+    });
+
+    renderLabPage();
+
+    await waitFor(() => expect(joinDualRoom).toHaveBeenCalled());
+  });
+
+  /**
+   * useSignal 은 매 렌더 새 객체를 돌려줌. 재합류 effect 가 그 객체를 의존성으로
+   * 잡으면 aligned_pair 수신과 타이머 tick 마다 join-room 이 다시 나감 — 2026-09-07
+   * 측정에서 같은 소켓이 초당 약 3회 room 에 재합류했음. 함수 참조만 의존해야 함
+   */
+  it('리렌더돼도 room 재합류는 한 번만 걸림', async () => {
+    const joinDualRoom = vi.fn();
+    // 실제 훅처럼 렌더마다 새 객체를 반환함 — 같은 객체를 돌려주면 결함이 재현되지 않음
+    (useSignal as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      isMeasuring: true,
+      elapsedSeconds: 200,
+      currentMetrics: null,
+      currentMetrics2: null,
+      lastSampleAt1: null,
+      lastSampleAt2: null,
+      startMeasurement: vi.fn(),
+      stopMeasurement: vi.fn(),
+      joinDualRoom,
+    }));
+    (useOperatorConnection as ReturnType<typeof vi.fn>).mockReturnValue({
+      status: 'connected',
+      session: {
+        socketToken: 't',
+        socketTokenExpiresAt: Date.now() + 60_000,
+        experimentMode: 'DUAL_2PC',
+      },
+      error: null,
+      connect: vi.fn().mockResolvedValue(true),
+    });
+
+    const { rerender } = renderLabPage();
+    await waitFor(() => expect(joinDualRoom).toHaveBeenCalledTimes(1));
+
+    rerender(
+      <UIProvider>
+        <LabPage />
+      </UIProvider>
+    );
+    rerender(
+      <UIProvider>
+        <LabPage />
+      </UIProvider>
+    );
+
+    expect(joinDualRoom).toHaveBeenCalledTimes(1);
+  });
+
+  it('운영자 세션이 없으면 room 재합류를 걸지 않음', async () => {
+    const joinDualRoom = vi.fn();
+    (useSignal as ReturnType<typeof vi.fn>).mockReturnValue({
+      isMeasuring: false,
+      elapsedSeconds: 0,
+      currentMetrics: null,
+      currentMetrics2: null,
+      lastSampleAt1: null,
+      lastSampleAt2: null,
+      startMeasurement: vi.fn(),
+      stopMeasurement: vi.fn(),
+      joinDualRoom,
+    });
+    (useOperatorConnection as ReturnType<typeof vi.fn>).mockReturnValue({
+      status: 'idle',
+      session: null,
+      error: null,
+      connect: vi.fn().mockResolvedValue(true),
+    });
+
+    renderLabPage();
+
+    await waitFor(() => {
+      expect(useDualSession).toHaveBeenCalled();
+    });
+    expect(joinDualRoom).not.toHaveBeenCalled();
   });
 });

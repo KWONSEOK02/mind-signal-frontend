@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { config } from '@/07-shared/config/config';
 import { getSocket } from '@/07-shared/lib/socket-client';
-import { readOperatorSocketSession } from '@/07-shared/lib/operator-socket-session.lib';
+import type { OperatorSocketSession } from '@/07-shared/lib/operator-socket-session.lib';
 
 const JOIN_ACK_TIMEOUT_MS = 5_000;
 const JOIN_RETRY_DELAY_MS = 1_000;
@@ -60,13 +60,15 @@ interface OperatorAlertChannelState {
  *
  * @param groupId - 구독 대상 그룹 식별자
  * @param enabled - 운영자 경보 채널 활성 여부
- * @param refreshKey - 저장 토큰 변경 후 재구독 트리거
+ * @param session - 미만료 소켓 세션. null이면 missing-token 처리함
+ * @param isExpiredSession - 저장 세션이 있으나 만료된 경우 true. expired-token 처리함
  * @returns 활성 서버 경보와 경보 채널 미연결 사유
  */
 export function useOperatorStreamHealth(
   groupId: string | null,
   enabled: boolean,
-  refreshKey = 0
+  session: OperatorSocketSession | null,
+  isExpiredSession = false
 ): UseOperatorStreamHealthResult {
   const [alertState, setAlertState] = useState<StreamHealthAlertState>({
     groupId: null,
@@ -75,7 +77,9 @@ export function useOperatorStreamHealth(
   const [channelState, setChannelState] =
     useState<OperatorAlertChannelState | null>(null);
 
-  const subscriptionKey = groupId ? `${groupId}:${refreshKey}` : null;
+  const subscriptionKey = groupId
+    ? `${groupId}:${session?.socketToken ?? (isExpiredSession ? 'expired' : 'none')}`
+    : null;
   const alerts = alertState.groupId === groupId ? alertState.alerts : [];
   const channelIssue =
     enabled &&
@@ -88,7 +92,7 @@ export function useOperatorStreamHealth(
     if (!enabled || !groupId) return;
 
     let isDisposed = false;
-    const currentSubscriptionKey = `${groupId}:${refreshKey}`;
+    const currentSubscriptionKey = `${groupId}:${session?.socketToken ?? (isExpiredSession ? 'expired' : 'none')}`;
     const setSessionIssue = (issue: OperatorAlertChannelIssue) => {
       queueMicrotask(() => {
         if (!isDisposed) {
@@ -100,16 +104,18 @@ export function useOperatorStreamHealth(
       });
     };
 
-    const operatorSession = readOperatorSocketSession(groupId);
-    if (!operatorSession) {
-      setSessionIssue('missing-token');
+    // 만료 판정은 useOperatorConnection이 소유함. 여기서 저장소를 다시 읽지 않음.
+    // isExpiredSession 분기를 지우면 만료 신호가 영영 안 뜨므로 반드시 유지할 것
+    if (isExpiredSession) {
+      setSessionIssue('expired-token');
       return () => {
         isDisposed = true;
       };
     }
 
-    if (Date.now() >= operatorSession.socketTokenExpiresAt) {
-      setSessionIssue('expired-token');
+    const operatorSession = session;
+    if (!operatorSession) {
+      setSessionIssue('missing-token');
       return () => {
         isDisposed = true;
       };
@@ -269,7 +275,7 @@ export function useOperatorStreamHealth(
       socket.off('stream-health', streamHealthHandler);
       socket.off('connect', connectHandler);
     };
-  }, [enabled, groupId, refreshKey]);
+  }, [enabled, groupId, session, isExpiredSession]);
 
   return { alerts, channelIssue };
 }
