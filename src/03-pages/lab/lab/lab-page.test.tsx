@@ -1265,6 +1265,53 @@ describe('LabPage 운영자 연결 복구 검증 수행함', () => {
     await waitFor(() => expect(joinDualRoom).toHaveBeenCalled());
   });
 
+  /**
+   * useSignal 은 매 렌더 새 객체를 돌려줌. 재합류 effect 가 그 객체를 의존성으로
+   * 잡으면 aligned_pair 수신과 타이머 tick 마다 join-room 이 다시 나감 — 2026-09-07
+   * 측정에서 같은 소켓이 초당 약 3회 room 에 재합류했음. 함수 참조만 의존해야 함
+   */
+  it('리렌더돼도 room 재합류는 한 번만 걸림', async () => {
+    const joinDualRoom = vi.fn();
+    // 실제 훅처럼 렌더마다 새 객체를 반환함 — 같은 객체를 돌려주면 결함이 재현되지 않음
+    (useSignal as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      isMeasuring: true,
+      elapsedSeconds: 200,
+      currentMetrics: null,
+      currentMetrics2: null,
+      lastSampleAt1: null,
+      lastSampleAt2: null,
+      startMeasurement: vi.fn(),
+      stopMeasurement: vi.fn(),
+      joinDualRoom,
+    }));
+    (useOperatorConnection as ReturnType<typeof vi.fn>).mockReturnValue({
+      status: 'connected',
+      session: {
+        socketToken: 't',
+        socketTokenExpiresAt: Date.now() + 60_000,
+        experimentMode: 'DUAL_2PC',
+      },
+      error: null,
+      connect: vi.fn().mockResolvedValue(true),
+    });
+
+    const { rerender } = renderLabPage();
+    await waitFor(() => expect(joinDualRoom).toHaveBeenCalledTimes(1));
+
+    rerender(
+      <UIProvider>
+        <LabPage />
+      </UIProvider>
+    );
+    rerender(
+      <UIProvider>
+        <LabPage />
+      </UIProvider>
+    );
+
+    expect(joinDualRoom).toHaveBeenCalledTimes(1);
+  });
+
   it('운영자 세션이 없으면 room 재합류를 걸지 않음', async () => {
     const joinDualRoom = vi.fn();
     (useSignal as ReturnType<typeof vi.fn>).mockReturnValue({

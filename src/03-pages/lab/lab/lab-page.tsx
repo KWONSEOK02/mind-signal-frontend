@@ -219,11 +219,16 @@ const LabPage = () => {
    * 새로고침 뒤 room 합류를 하는 곳이 `실험 시작` 하나뿐이라, 측정 중 새로고침하면
    * 경보 채널만 돌아오고 차트가 비어 있었음. joinDualRoom 은 이전 등록을 해제하므로
    * 멱등함 (UI-W006 T3)
+   *
+   * 의존성은 훅 반환 객체가 아니라 함수 참조만 잡음. useSignal 은 매 렌더 새
+   * 객체를 돌려줘 객체를 잡으면 aligned_pair 수신과 타이머 tick 마다 effect 가
+   * 다시 돌아 join-room 이 초당 약 3회 나갔음 (2026-09-07 측정 실측)
    */
+  const joinDualRoom = subject1Signal.joinDualRoom;
   useEffect(() => {
     if (mode !== 'DUAL_2PC' || !groupId || !operatorConnected) return;
-    subject1Signal.joinDualRoom();
-  }, [mode, groupId, operatorConnected, subject1Signal]);
+    joinDualRoom();
+  }, [mode, groupId, operatorConnected, joinDualRoom]);
 
   // DUAL_2PC 측정 시작 in-flight 가드 — 더블클릭 중복 start 차단함 (F3)
   const startPendingRef = useRef(false);
